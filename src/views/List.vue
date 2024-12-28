@@ -38,11 +38,12 @@ const meals = ref([]);
 const meta = ref({});
 const links = ref({});
 const searchTerm = ref('');
+const BASE_URL = 'http://127.0.0.1:8000/api';
 
 // Fetch the meal list with pagination
 async function fetchMealList(page = 1) {
   try {
-    const response = await axios.get(`http://127.0.0.1:8000/list?page=${page}`);
+    const response = await axios.get(`${BASE_URL}/list?page=${page}`);
     meals.value = response.data.data;
     console.log(meals.value);
     meta.value = response.data;
@@ -57,7 +58,7 @@ async function fetchMealList(page = 1) {
 
 function toggleMealStatus(meal) {
   meal.active = !meal.active; // Optimistically update status on frontend
-  axios.post(`http://127.0.0.1:8000/meal/${meal.id}/toggle-status`) // Use meal ID in URL
+  axios.post(`${BASE_URL}/meal/${meal.id}/toggle-status`) // Use meal ID in URL
     .catch(error => {
       console.error("Error toggling meal status:", error);
       meal.active = !meal.active; // Revert status on error
@@ -72,7 +73,7 @@ const filteredMeals = computed(() => {
 
 async function search() {
   try {
-    const response = await axios.get(`http://127.0.0.1:8000/search?q=${searchTerm.value}`);
+    const response = await axios.get(`${BASE_URL}/search?q=${searchTerm.value}`);
     meals.value = response.data; // Update meals with filtered results
   } catch (error) {
     console.error("Error searching meals:", error);
