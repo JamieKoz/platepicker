@@ -1,29 +1,32 @@
 <template>
   <ion-header>
     <ion-toolbar>
-      <ion-searchbar v-model="searchTerm" @input="search" placeholder="Search meals"></ion-searchbar>
+      <ion-searchbar v-model="searchTerm" @ionInput="search" :debounce="300" placeholder="Search meals"></ion-searchbar>
     </ion-toolbar>
   </ion-header>
 
   <ion-content>
     <ion-list>
-      <ion-item v-for="meal in filteredMeals" :key="meal.id">
+      <ion-item v-for="meal in meals" :key="meal.id">
         <ion-label>{{ meal.title }}</ion-label>
-        <ion-button @click="toggleMealStatus(meal) "color="success" v-if="meal.active">Active</ion-button>
-        <ion-button @click="toggleMealStatus(meal)" color="danger" v-else>Inactive</ion-button>
+        <ion-button @click="toggleMealStatus(meal)" color="danger" size="small" v-if="meal.active">Deactivate</ion-button>
+        <ion-button @click="toggleMealStatus(meal)" color="success" size="small" v-else>Activate</ion-button>
       </ion-item>
     </ion-list>
 
     <!-- Pagination Controls -->
-    <ion-toolbar>
-      <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="solid">
-        Previous
-      </ion-button>
-      <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="solid">
-        Next
-      </ion-button>
-      <ion-text>Page {{ meta.current_page }} of {{ meta.last_page }}</ion-text>
-    </ion-toolbar>
+    <div class="pagination-controls">
+      <ion-toolbar class="flex justify-between">
+        <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="clear" size="small">
+          Previous
+        </ion-button>
+        <ion-text class="text-xs text-center items-center">Page {{ meta.current_page }} / {{ meta.last_page
+          }}</ion-text>
+        <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="clear" size="small">
+          Next
+        </ion-button>
+      </ion-toolbar>
+    </div>
   </ion-content>
 </template>
 
@@ -39,20 +42,64 @@ const meta = ref({});
 const links = ref({});
 const searchTerm = ref('');
 const BASE_URL = 'http://127.0.0.1:8000/api';
+const currentSearch = ref('');
 
-// Fetch the meal list with pagination
 async function fetchMealList(page = 1) {
   try {
-    const response = await axios.get(`${BASE_URL}/list?page=${page}`);
+    // Always use the currentSearch value, not searchTerm
+    if (currentSearch.value) {
+      console.log('Fetching search results for:', currentSearch.value, 'page:', page);
+      const response = await axios.get(`${BASE_URL}/search`, {
+        params: {
+          q: currentSearch.value,
+          page: page
+        }
+      });
+      meals.value = response.data.data;
+      meta.value = response.data;
+      links.value = {
+        prev: response.data.prev_page_url,
+        next: response.data.next_page_url,
+      };
+    } else {
+      console.log('Fetching all meals, page:', page);
+      const response = await axios.get(`${BASE_URL}/list?page=${page}`);
+      meals.value = response.data.data;
+      meta.value = response.data;
+      links.value = {
+        prev: response.data.prev_page_url,
+        next: response.data.next_page_url,
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching meals:", error);
+  }
+}
+
+async function search(event: any) {
+  try {
+    const searchValue = event.target.value?.trim();
+    currentSearch.value = searchValue; // Update the persistent search value
+
+    if (!searchValue) {
+      return fetchMealList(1);
+    }
+
+    const response = await axios.get(`${BASE_URL}/search`, {
+      params: {
+        q: searchValue,
+        page: 1 // Reset to first page on new search
+      }
+    });
+
     meals.value = response.data.data;
-    console.log(meals.value);
     meta.value = response.data;
     links.value = {
       prev: response.data.prev_page_url,
       next: response.data.next_page_url,
     };
   } catch (error) {
-    console.error("Error fetching meals:", error);
+    console.error("Error searching meals:", error);
   }
 }
 
@@ -71,15 +118,14 @@ const filteredMeals = computed(() => {
   );
 });
 
-async function search() {
-  try {
-    const response = await axios.get(`${BASE_URL}/search?q=${searchTerm.value}`);
-    meals.value = response.data; // Update meals with filtered results
-  } catch (error) {
-    console.error("Error searching meals:", error);
-  }
-}
 // Fetch the first page on component mount
 onMounted(() => fetchMealList(1));
 </script>
 
+<style scoped>
+.pagination-controls {
+  margin-bottom: 2.5rem;
+  /* Adjust this value based on your tab bar height */
+  padding: 1rem;
+}
+</style>

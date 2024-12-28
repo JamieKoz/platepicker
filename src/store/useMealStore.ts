@@ -4,11 +4,12 @@ import axios from 'axios';
 
 export const useMealStore = defineStore('mealStore', () => {
   const meals = ref([]);
+  const BASE_URL = 'http://127.0.0.1:8000/api';
 
   // Fetch meals from API
   const fetchMeals = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/recipe');
+      const response = await axios.get(`${BASE_URL}/recipe`);
       meals.value = response.data;
     } catch (error) {
       console.error('Error fetching meals:', error);
