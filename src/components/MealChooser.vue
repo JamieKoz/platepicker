@@ -1,11 +1,6 @@
 <template>
   <ion-header class="ion-no-border">
       <ion-toolbar class="transparent-toolbar">
-        <ion-buttons slot="start">
-          <ion-button @click="goBack">
-            <ion-icon :icon="arrowBack" />
-          </ion-button>
-        </ion-buttons>
         <ion-title class="text-center">{{ mealStore.mealCounter }}</ion-title>
         <ion-buttons slot="end" v-if="showRefreshButton">
           <ion-button @click="handleRefresh">
@@ -25,20 +20,34 @@
     </ion-row>
 
     <ion-row v-else class="flex flex-col justify-center winner-row">
-      <ion-col>
-        <h2 class="text-center text-2xl font-bold">{{ winner.title }}</h2>
-
-        <div class="meal-image">
-          <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${winner.image_name}.jpg`"
-            class="h-full w-full object-fit"></ion-img>
+    <ion-col>
+      <h2 class="text-center text-2xl font-bold mb-4">{{ winner.title }}</h2>
+      <div class="meal-image mb-4">
+        <ion-img 
+          :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${winner.image_name}.jpg`"
+          class="h-full w-full object-fit"
+        ></ion-img>
+      </div>
+      <div class="recipe-content">
+        <div class="ingredients-section">
+          <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
+          <ul class="ingredient-list">
+            <li v-for="(ingredient, index) in formattedIngredients" 
+                :key="index" 
+                class="ingredient-item">
+              {{ ingredient }}
+            </li>
+          </ul>
         </div>
-        <ion-content class="ion-padding overflow-auto">
-          {{ winner.cleaned_ingredients }}>
-          <p>{{ winner.instructions }}</p>
-
-        </ion-content>
-      </ion-col>
-    </ion-row>
+        <div class="instructions-section">
+          <h3 class="text-xl font-semibold mb-4">Instructions</h3>
+          <div class="instructions-text">
+            {{ winner.instructions }}
+          </div>
+        </div>
+      </div>
+    </ion-col>
+  </ion-row>
   </ion-grid>
 </template>
 
@@ -46,7 +55,7 @@
 import { ref, onMounted, computed } from 'vue';
 import MealCard from '@/components/MealCard.vue';
 import { IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon } from '@ionic/vue';
-import { arrowBack, refresh } from 'ionicons/icons';
+import { refresh } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { useMealStore } from '@/store/useMealStore';
 import type { Meal } from '@/types/meal';
@@ -83,13 +92,37 @@ if (mealStore.mealCounter === 0) {
     }
   }
 };
+
+const formattedIngredients = computed(() => {
+  if (!winner.value?.ingredients) return [];
+  
+  try {
+    const withoutQuotes = winner.value.ingredients.replace(/^"|"$/g, '');
+    
+    const cleanStr = withoutQuotes
+      .replace(/^\[|\]$/g, '')  // Remove outer brackets
+      .split("', '")            // Split on items
+      .map(item => {
+        return item
+          .replace(/^'|'$/g, '') // Remove single quotes at start/end
+          .replace(/\\/g, '')     // Remove all backslashes
+          .trim()
+          // Convert all Unicode escapes to their actual characters
+          .replace(/u([0-9a-fA-F]{4})/g, (match, grp) => 
+            String.fromCharCode(parseInt(grp, 16))
+          );
+      });
+
+    return cleanStr;
+  } catch (e) {
+    console.error('Error parsing ingredients:', e);
+    return [];
+  }
+});
+
 const showRefreshButton = computed(() => {
   return mealStore.mealCounter === 0 && winner.value !== null;
 });
-
-const goBack = () => {
-  router.push('/home');
-};
 
 const handleRefresh = async () => {
   winner.value = null;
@@ -140,5 +173,42 @@ const handleRefresh = async () => {
 
 :global(.header-md::after) {
   background-image: none;
+}
+.recipe-content {
+  padding: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ingredients-section {
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.ingredient-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.ingredient-list li {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.ingredient-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0.5rem;
+  color: #666;
+}
+
+.instructions-section {
+  padding: 0 1rem;
+}
+
+.instructions-text {
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 </style>
