@@ -1,5 +1,19 @@
 <template>
-  <ion-header class="text-center"> {{ mealStore.mealCounter }}</ion-header>
+  <ion-header class="ion-no-border">
+      <ion-toolbar class="transparent-toolbar">
+        <ion-buttons slot="start">
+          <ion-button @click="goBack">
+            <ion-icon :icon="arrowBack" />
+          </ion-button>
+        </ion-buttons>
+        <ion-title class="text-center">{{ mealStore.mealCounter }}</ion-title>
+        <ion-buttons slot="end" v-if="showRefreshButton">
+          <ion-button @click="handleRefresh">
+            <ion-icon :icon="refresh" />
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
   <ion-grid class="flex items-center justify-center">
     <ion-row v-if="!winner" class="flex justify-between items-center meal-row">
       <ion-col class="flex justify-center items-center flex-1">
@@ -29,12 +43,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import MealCard from '@/components/MealCard.vue';
-import { IonCol, IonGrid, IonRow, IonImg } from '@ionic/vue';
+import { IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon } from '@ionic/vue';
+import { arrowBack, refresh } from 'ionicons/icons';
+import { useRouter } from 'vue-router';
 import { useMealStore } from '@/store/useMealStore';
 import type { Meal } from '@/types/meal';
 
+const router = useRouter();
 const mealStore = useMealStore();
 let meal1 = ref<Meal | null>(null);
 let meal2 = ref<Meal | null>(null);
@@ -65,6 +82,22 @@ if (mealStore.mealCounter === 0) {
       meal1.value = newMeal;
     }
   }
+};
+const showRefreshButton = computed(() => {
+  return mealStore.mealCounter === 0 && winner.value !== null;
+});
+
+const goBack = () => {
+  router.push('/home');
+};
+
+const handleRefresh = async () => {
+  winner.value = null;
+  await mealStore.fetchMeals();
+  const newMeal1 = mealStore.getNewMeal();
+  const newMeal2 = mealStore.getNewMeal();
+  if(newMeal1) meal1.value = newMeal1;
+  if(newMeal2) meal2.value = newMeal2;
 };
 </script>
 
@@ -98,5 +131,14 @@ if (mealStore.mealCounter === 0) {
   align-items: center;
   justify-content: center;
   height: 70%;
+}
+.transparent-toolbar {
+  --background: transparent;
+  --border-width: 0;
+  --border-color: transparent;
+}
+
+:global(.header-md::after) {
+  background-image: none;
 }
 </style>

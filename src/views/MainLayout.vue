@@ -2,6 +2,12 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <!-- Home button -->
+          <ion-button @click="navigateTo('/home')">
+            <ion-icon :icon="home" />
+          </ion-button>
+        </ion-buttons>
         <ion-title>Meal Decider</ion-title>
         <ion-buttons slot="end">
           <ion-button id="user-menu-trigger">
@@ -60,7 +66,13 @@ import {
   IonLabel,
   IonRouterOutlet
 } from '@ionic/vue';
-import { personCircle, person, list, settings } from 'ionicons/icons';
+import { 
+  personCircle, 
+  person, 
+  list, 
+  settings, 
+  home 
+} from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();

@@ -2,12 +2,12 @@
   <ion-page class="mt-12">
     <ion-content :fullscreen="true">
       <OptionSelector 
-        option1Title="Buy"
-        option2Title="Cook"
-        option1Icon="dollar"
-        option2Icon="chef"
-        @option1Click="handleBuy"
-        @option2Click="handleCook"
+        option1Title="Dine In"
+        option2Title="Delivery"
+        option1Icon="utensils"
+        option2Icon="car"
+        @option1Click="handleDineIn"
+        @option2Click="handleDelivery"
       />
     </ion-content>
   </ion-page>
@@ -20,6 +20,6 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const handleBuy = () => router.push('/buy-options');
-const handleCook = () => router.push('/meal-chooser');
+const handleDineIn = () => router.push('/restaurant-chooser/dine-in');
+const handleDelivery = () => router.push('/restaurant-chooser/delivery');
 </script>

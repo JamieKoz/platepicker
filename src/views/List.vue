@@ -1,33 +1,36 @@
 <template>
-  <ion-header class="mt-12">
-    <ion-toolbar>
-      <ion-searchbar v-model="searchTerm" @ionInput="search" :debounce="300" placeholder="Search meals" ></ion-searchbar>
-    </ion-toolbar>
-  </ion-header>
-  <ion-content>
-    <ion-list>
-      <ion-item v-for="meal in meals" :key="meal.id">
-        <ion-label>{{ meal.title }}</ion-label>
-        <ion-button @click="toggleMealStatus(meal)" :color="meal.active ? 'danger' : 'success'" size="small" >
-          {{ meal.active ? 'Deactivate' : 'Activate' }}
-        </ion-button>
-      </ion-item>
-    </ion-list>
-    
-    <div class="pagination-controls">
-      <ion-toolbar class="flex justify-between">
-        <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="clear" size="small" >
-          Previous
-        </ion-button>
-        <ion-text class="text-xs text-center items-center">
-          Page {{ meta.current_page }} / {{ meta.last_page }}
-        </ion-text>
-        <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="clear" size="small" >
-          Next
-        </ion-button>
+  <ion-page>
+    <ion-header class="mt-12">
+      <ion-toolbar>
+        <ion-searchbar v-model="searchTerm" @ionInput="search" :debounce="300"
+          placeholder="Search meals"></ion-searchbar>
       </ion-toolbar>
-    </div>
-  </ion-content>
+    </ion-header>
+    <ion-content>
+      <ion-list>
+        <ion-item v-for="meal in meals" :key="meal.id">
+          <ion-label>{{ meal.title }}</ion-label>
+          <ion-button @click="toggleMealStatus(meal)" :color="meal.active ? 'danger' : 'success'" size="small">
+            {{ meal.active ? 'Deactivate' : 'Activate' }}
+          </ion-button>
+        </ion-item>
+      </ion-list>
+
+      <div class="pagination-controls">
+        <ion-toolbar class="flex justify-between">
+          <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="clear" size="small">
+            Previous
+          </ion-button>
+          <ion-text class="text-xs text-center items-center">
+            Page {{ meta.current_page }} / {{ meta.last_page }}
+          </ion-text>
+          <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="clear" size="small">
+            Next
+          </ion-button>
+        </ion-toolbar>
+      </div>
+    </ion-content>
+  </ion-page>
 </template>
 
 <script setup lang="ts">

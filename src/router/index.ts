@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import MainLayout from '../views/MainLayout.vue' // Rename TabsPage to MainLayout
+import MainLayout from '../views/MainLayout.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -13,16 +13,24 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: 'home',
-        component: () => import('@/views/Home.vue') // Renamed from Tab1Page
+        component: () => import('@/views/Home.vue')
       },
       {
         path: 'meal-chooser',
-        component: () => import('@/views/MealChooser.vue') // Renamed from Tab2Page
+        component: () => import('@/views/MealChooser.vue')
       },
       {
         path: 'list',
         component: () => import('@/views/List.vue')
-      }
+      },
+      {
+        path: 'buy-options',
+        component: () => import('@/views/BuyOptions.vue')
+      },
+      {
+        path: 'restaurant-chooser/:mode',
+        component: () => import('@/views/RestaurantChooser.vue')
+      },
       // {
       //   path: 'profile',
       //   component: () => import('@/views/Profile.vue')

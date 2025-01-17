@@ -1,0 +1,69 @@
+<!-- components/OptionSelector.vue -->
+<template>
+  <ion-grid class="flex items-center justify-center">
+    <ion-row class="flex justify-between items-center meal-row">
+      <ion-col class="flex justify-center items-center flex-1">
+        <ion-card class="meal-card" @click="$emit('option1Click')">
+          <ion-ripple-effect></ion-ripple-effect>
+          <ion-card-header>
+            <div class="icon-container">
+              <div class="icon-container" v-html="optionIcons[option1Icon]"></div>
+            </div>
+            <ion-card-title class="text-center">
+              {{ option1Title }}
+            </ion-card-title>
+          </ion-card-header>
+        </ion-card>
+      </ion-col>
+      <ion-col class="flex justify-center items-center flex-1">
+        <ion-card class="meal-card" @click="$emit('option2Click')">
+          <ion-ripple-effect></ion-ripple-effect>
+          <ion-card-header>
+            <div class="icon-container">
+              <div class="icon-container" v-html="optionIcons[option2Icon]"></div>
+            </div>
+            <ion-card-title class="text-center">
+              {{ option2Title }}
+            </ion-card-title>
+          </ion-card-header>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</template>
+
+<script setup lang="ts">
+import { IonCol, IonGrid, IonRow, IonCard, IonCardHeader, IonCardTitle, IonRippleEffect } from '@ionic/vue';
+import { optionIcons } from '@/assets/optionIcons';
+
+defineProps<{
+  option1Title: string;
+  option2Title: string;
+  option1Icon: keyof typeof optionIcons;
+  option2Icon: keyof typeof optionIcons;
+}>();
+
+defineEmits<{
+  (e: 'option1Click'): void;
+  (e: 'option2Click'): void;
+}>();
+</script>
+
+<style scoped>
+.meal-card {
+  height: 150px;
+  width: 350px;
+}
+
+.icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+ion-icon {
+  width: 64px;
+  height: 64px;
+}
+</style>
