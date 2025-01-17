@@ -1,5 +1,5 @@
 <template>
-  <ion-page>
+  <ion-page class="mt-12">
     <ion-content :fullscreen="true">
       <MealChooser />
     </ion-content>
@@ -7,6 +7,6 @@
 </template>
 
 <script setup lang="ts">
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent } from '@ionic/vue';
+import { IonPage, IonContent } from '@ionic/vue';
 import MealChooser from '@/components/MealChooser.vue';
 </script>

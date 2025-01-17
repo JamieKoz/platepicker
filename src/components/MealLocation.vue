@@ -56,7 +56,7 @@ function handleBuyOption() {
 }
 
 function handleCookOption() {
-  router.push('/tabs/tab2');  // Navigate to tab2
+  router.push('/meal-chooser');
 }
 
 function setDineInOption() {

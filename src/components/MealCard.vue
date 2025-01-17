@@ -3,7 +3,7 @@
     <ion-card class="card-content my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
       <div class="meal-image">
-        <ion-img :src="`http://127.0.0.1:8000/storage/food-images/${mealData.image_name}.jpg`" class="h-full w-full object-cover"></ion-img>
+        <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${mealData.image_name}.jpg`" class="h-full w-full object-cover"></ion-img>
       </div>
       <ion-card-title class="py-4">
         <ion-card-subtitle class="text-white text-center">{{ mealData.title }}</ion-card-subtitle>
@@ -12,36 +12,22 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import { useMealStore } from '@/store/useMealStore';
-import { IonCard, IonCardHeader, IonCardTitle, IonRippleEffect, IonImg } from '@ionic/vue';
+<script setup lang="ts">
+import { IonCard, IonCardHeader, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle } from '@ionic/vue';
+import type { Meal } from '@/types/meal';
 
-export default defineComponent({
-  components: { IonCard, IonCardHeader, IonCardTitle, IonRippleEffect, IonImg },
+defineProps<{
+  mealData: Meal | null
+}>();
 
-  props: {
-    mealData: {
-      type: Object,
-      required: true
-    }
-  },
+const emit = defineEmits<{
+  (e: 'replaceMeal', meal: Meal): void
+}>();
 
-  setup(props, { emit }) {
-    const mealStore = useMealStore();
-
-    const chooseMeal = (meal) => {
-      // Get a new meal and emit an event to update the parent component
-      emit('replaceMeal', meal); // Notify parent to replace the meal
-    };
-
-    return {
-      chooseMeal
-    };
-  }
-});
+const chooseMeal = (meal: Meal) => {
+  emit('replaceMeal', meal);
+};
 </script>
-
 
 <style scoped>
   .ripple-parent {
@@ -85,6 +71,4 @@ export default defineComponent({
     word-wrap: break-word;
     overflow: hidden;
   }
-
 </style>
-

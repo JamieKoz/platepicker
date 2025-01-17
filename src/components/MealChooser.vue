@@ -15,7 +15,7 @@
         <h2 class="text-center text-2xl font-bold">{{ winner.title }}</h2>
 
         <div class="meal-image">
-          <ion-img :src="`http://127.0.0.1:8000/storage/food-images/${winner.image_name}.jpg`"
+          <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${winner.image_name}.jpg`"
             class="h-full w-full object-fit"></ion-img>
         </div>
         <ion-content class="ion-padding overflow-auto">
@@ -33,32 +33,36 @@ import { ref, onMounted } from 'vue';
 import MealCard from '@/components/MealCard.vue';
 import { IonCol, IonGrid, IonRow, IonImg } from '@ionic/vue';
 import { useMealStore } from '@/store/useMealStore';
+import type { Meal } from '@/types/meal';
 
 const mealStore = useMealStore();
-let meal1 = ref(null);
-let meal2 = ref(null);
-const winner = ref(null); // Track the winning meal
+let meal1 = ref<Meal | null>(null);
+let meal2 = ref<Meal | null>(null);
+const winner = ref<Meal | null>(null);
 
 // Fetch initial meals on mount
 onMounted(async () => {
   await mealStore.fetchMeals();
-  meal1.value = mealStore.getNewMeal();
-  meal2.value = mealStore.getNewMeal();
+  const newMeal1 = mealStore.getNewMeal();
+  const newMeal2 = mealStore.getNewMeal();
+  if(newMeal1) meal1.value = newMeal1;
+  if(newMeal2) meal2.value = newMeal2;
 });
 
 // Replace meal handler
-const replaceMeal = (clickedMeal) => {
-  if (mealStore.mealCounter === 0) {
-    winner.value = clickedMeal; // The last clicked meal is the winner
+const replaceMeal = (clickedMeal: Meal) => {
+if (mealStore.mealCounter === 0) {
+    winner.value = clickedMeal;
     meal1.value = null;
     meal2.value = null;
   } else {
-    // Replace only the other meal, not the one that was clicked
-    if (clickedMeal === meal1.value) {
-      meal2.value = mealStore.getNewMeal(); // Replace the other meal
-    } else if (clickedMeal === meal2.value) {
-      meal1.value = mealStore.getNewMeal(); // Replace the other meal
+    const newMeal = mealStore.getNewMeal();
+    if (!newMeal) return;
 
+    if (clickedMeal.id === meal1.value?.id) {
+      meal2.value = newMeal;
+    } else if (clickedMeal.id === meal2.value?.id) {
+      meal1.value = newMeal;
     }
   }
 };

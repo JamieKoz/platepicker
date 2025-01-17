@@ -1,46 +1,46 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import TabsPage from '../views/TabsPage.vue'
+import MainLayout from '../views/MainLayout.vue' // Rename TabsPage to MainLayout
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/tabs/tab1'
+    redirect: '/home'
   },
   {
-    path: '/tabs/',
-    component: TabsPage,
+    path: '/',
+    component: MainLayout,
     children: [
       {
-        path: '',
-        redirect: '/tabs/tab1'
+        path: 'home',
+        component: () => import('@/views/Home.vue') // Renamed from Tab1Page
       },
       {
-        path: 'tab1',
-        component: () => import('@/views/Tab1Page.vue')
-      },
-      {
-        path: 'tab2',
-        component: () => import('@/views/Tab2Page.vue')
+        path: 'meal-chooser',
+        component: () => import('@/views/MealChooser.vue') // Renamed from Tab2Page
       },
       {
         path: 'list',
         component: () => import('@/views/List.vue')
-      },
-      {
-        path: '/profile',
-        component: () => import('@/views/Profile.vue')
-      },
-      {
-        path: '/login',
-        component: () => import('@/views/Login.vue')
-      },
-      {
-        path: '/register',
-        component: () => import('@/views/Register.vue')
-      },
+      }
+      // {
+      //   path: 'profile',
+      //   component: () => import('@/views/Profile.vue')
+      // },
+      // {
+      //   path: 'settings',
+      //   component: () => import('@/views/Settings.vue')
+      // },
+      // {
+      //   path: 'login',
+      //   component: () => import('@/views/Login.vue')
+      // },
+      // {
+      //   path: 'register',
+      //   component: () => import('@/views/Register.vue')
+      // },
     ]
-  },
+  }
 ]
 
 const router = createRouter({
