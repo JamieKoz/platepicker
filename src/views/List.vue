@@ -5,6 +5,16 @@
         <ion-searchbar v-model="searchTerm" @ionInput="search" :debounce="300"
           placeholder="Search meals"></ion-searchbar>
       </ion-toolbar>
+      <ion-toolbar>
+        <div class="flex justify-between px-4 gap-2">
+          <ion-button @click="toggleTitleSort" size="small" fill="clear">
+            A-Z {{ titleDirection === 'asc' ? '↑' : '↓' }}
+          </ion-button>
+          <ion-button @click="toggleActiveSort" size="small" fill="clear">
+            Status {{ activeDirection === 'asc' ? '↑' : '↓' }}
+          </ion-button>
+        </div>
+      </ion-toolbar>
     </ion-header>
     <ion-content>
       <ion-list>
@@ -34,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import type { Meal } from '@/types/meal';
 import type { PaginationMeta, PaginationLinks, PaginatedResponse } from '@/types/pagination';
@@ -70,23 +80,37 @@ const links = ref<PaginationLinks>({
 });
 const searchTerm = ref('');
 const currentSearch = ref('');
+const activeDirection = ref<'asc' | 'desc'>('desc');
+const titleDirection = ref<'asc' | 'desc'>('asc');
+
+function toggleActiveSort() {
+  activeDirection.value = activeDirection.value === 'asc' ? 'desc' : 'asc';
+  fetchMealList(1);
+}
+
+function toggleTitleSort() {
+  titleDirection.value = titleDirection.value === 'asc' ? 'desc' : 'asc';
+  fetchMealList(1);
+}
 
 async function fetchMealList(page = 1) {
   try {
     let response;
+    const params = {
+      page,
+      active_direction: activeDirection.value,
+      title_direction: titleDirection.value
+    };
+
     if (currentSearch.value) {
-      console.log('Fetching search results for:', currentSearch.value, 'page:', page);
       response = await axios.get<PaginatedResponse<Meal>>(`${BASE_URL}/search`, {
         params: {
-          q: currentSearch.value,
-          page
+          ...params,
+          q: currentSearch.value
         }
       });
     } else {
-      console.log('Fetching all meals, page:', page);
-      response = await axios.get<PaginatedResponse<Meal>>(`${BASE_URL}/list`, {
-        params: { page }
-      });
+      response = await axios.get<PaginatedResponse<Meal>>(`${BASE_URL}/list`, { params });
     }
 
     meals.value = response.data.data;
@@ -113,33 +137,7 @@ async function search(event: CustomEvent) {
   try {
     const searchValue = (event.target as HTMLIonSearchbarElement).value?.trim() ?? '';
     currentSearch.value = searchValue;
-
-    if (!searchValue) {
-      return fetchMealList(1);
-    }
-
-    const response = await axios.get<PaginatedResponse<Meal>>(`${BASE_URL}/search`, {
-      params: {
-        q: searchValue,
-        page: 1
-      }
-    });
-
-    meals.value = response.data.data;
-    meta.value = {
-      current_page: response.data.current_page,
-      last_page: response.data.last_page,
-      per_page: response.data.per_page,
-      total: response.data.total,
-      from: response.data.from,
-      to: response.data.to,
-      prev_page_url: response.data.prev_page_url,
-      next_page_url: response.data.next_page_url
-    };
-    links.value = {
-      prev: response.data.prev_page_url,
-      next: response.data.next_page_url
-    };
+    fetchMealList(1);
   } catch (error) {
     console.error("Error searching meals:", error);
   }
@@ -151,6 +149,8 @@ async function toggleMealStatus(meal: Meal) {
 
   try {
     await axios.post(`${BASE_URL}/meal/${meal.id}/toggle-status`);
+    // Refresh the list to maintain sort order
+    fetchMealList(meta.value.current_page);
   } catch (error) {
     console.error("Error toggling meal status:", error);
     meal.active = originalStatus;
