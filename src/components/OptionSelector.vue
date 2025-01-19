@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonCol, IonGrid, IonRow, IonCard, IonCardHeader, IonCardTitle, IonRippleEffect } from '@ionic/vue';
+import { IonCol, IonGrid, IonRow, IonCard, IonCardTitle, IonRippleEffect } from '@ionic/vue';
 import { optionIcons } from '@/assets/optionIcons';
 
 defineProps<{

@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonCard, IonCardHeader, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle } from '@ionic/vue';
+import { IonCard, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle } from '@ionic/vue';
 import type { Meal } from '@/types/meal';
 
 defineProps<{

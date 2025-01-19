@@ -47,7 +47,8 @@ import {
   IonItem,
   IonLabel,
   IonButton,
-  IonText
+  IonText,
+  IonPage
 } from '@ionic/vue';
 
 const BASE_URL = 'http://52.64.17.108/api';
