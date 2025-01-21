@@ -5,7 +5,7 @@ import type { Meal } from '@/types/meal';
 
 export const useMealStore = defineStore('mealStore', () => {
   const meals = ref<Meal[]>([]);
-  const BASE_URL = 'http://localhost/api';
+  const BASE_URL = 'http://127.0.0.1:8000/api';
 
   // Fetch meals from API
   const fetchMeals = async () => {

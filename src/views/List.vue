@@ -13,6 +13,9 @@
           <ion-button @click="toggleActiveSort" size="small" fill="clear">
             Status {{ activeDirection === 'asc' ? '↑' : '↓' }}
           </ion-button>
+          <ion-button @click="openAddModal" size="small" color="primary">
+           Add +
+          </ion-button>
         </div>
       </ion-toolbar>
     </ion-header>
@@ -20,6 +23,11 @@
       <ion-list>
         <ion-item v-for="meal in meals" :key="meal.id">
           <ion-label>{{ meal.title }}</ion-label>
+        <ion-button @click="openEditModal(meal)" color="secondary" size="small" class="mr-2">
+          <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="10" height="10" viewBox="0 0 30 30">
+              <path d="M 22.828125 3 C 22.316375 3 21.804562 3.1954375 21.414062 3.5859375 L 19 6 L 24 11 L 26.414062 8.5859375 C 27.195062 7.8049375 27.195062 6.5388125 26.414062 5.7578125 L 24.242188 3.5859375 C 23.851688 3.1954375 23.339875 3 22.828125 3 z M 17 8 L 5.2597656 19.740234 C 5.2597656 19.740234 6.1775313 19.658 6.5195312 20 C 6.8615312 20.342 6.58 22.58 7 23 C 7.42 23.42 9.6438906 23.124359 9.9628906 23.443359 C 10.281891 23.762359 10.259766 24.740234 10.259766 24.740234 L 22 13 L 17 8 z M 4 23 L 3.0566406 25.671875 A 1 1 0 0 0 3 26 A 1 1 0 0 0 4 27 A 1 1 0 0 0 4.328125 26.943359 A 1 1 0 0 0 4.3378906 26.939453 L 4.3632812 26.931641 A 1 1 0 0 0 4.3691406 26.927734 L 7 26 L 5.5 24.5 L 4 23 z"></path>
+          </svg>
+          </ion-button>
           <ion-button @click="toggleMealStatus(meal)" :color="meal.active ? 'danger' : 'success'" size="small">
             {{ meal.active ? 'Deactivate' : 'Activate' }}
           </ion-button>
@@ -40,6 +48,49 @@
         </ion-toolbar>
       </div>
     </ion-content>
+  <ion-modal :is-open="isModalOpen" @didDismiss="closeModal">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ editingMeal ? 'Edit' : 'Add' }} Meal</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="closeModal">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <form @submit.prevent="saveMeal">
+          <ion-item>
+            <ion-label position="stacked">Title</ion-label>
+            <ion-input v-model="mealForm.title" required></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Ingredients</ion-label>
+            <ion-textarea v-model="mealForm.ingredients" ></ion-textarea>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Instructions</ion-label>
+            <ion-textarea v-model="mealForm.instructions" ></ion-textarea>
+          </ion-item>
+          <ion-item>
+            <ion-label position="stacked">Image</ion-label>
+            <input type="file" @change="handleImageChange" accept="image/*">
+          </ion-item>
+
+          <ion-item>
+            <ion-label>Active</ion-label>
+            <ion-toggle v-model="mealForm.active"></ion-toggle>
+          </ion-item>
+
+          <div class="ion-padding">
+            <ion-button type="submit" expand="block">
+              {{ editingMeal ? 'Update' : 'Create' }} Meal
+            </ion-button>
+          </div>
+        </form>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -58,10 +109,16 @@ import {
   IonLabel,
   IonButton,
   IonText,
-  IonPage
+  IonPage,
+  IonModal,
+  IonTitle,
+  IonButtons,
+  IonInput,
+  IonTextarea,
+  IonToggle
 } from '@ionic/vue';
 
-const BASE_URL = 'http://52.64.17.108/api';
+const BASE_URL = 'http://127.0.0.1:8000/api';
 
 const meals = ref<Meal[]>([]);
 const meta = ref<PaginationMeta>({
@@ -82,6 +139,83 @@ const searchTerm = ref('');
 const currentSearch = ref('');
 const activeDirection = ref<'asc' | 'desc'>('desc');
 const titleDirection = ref<'asc' | 'desc'>('asc');
+const isModalOpen = ref(false);
+const editingMeal = ref<Meal | null>(null);
+const mealForm = ref({
+  title: '',
+  ingredients: '',
+  instructions: '',
+  image: null as File | null,
+  active: true
+});
+
+function openAddModal() {
+  editingMeal.value = null;
+  mealForm.value = {
+    title: '',
+    ingredients: '',
+    instructions: '',
+    image: null,
+    active: true
+  };
+  isModalOpen.value = true;
+}
+
+function openEditModal(meal: Meal) {
+  editingMeal.value = meal;
+  mealForm.value = {
+    title: meal.title,
+    ingredients: meal.ingredients || '',
+    instructions: meal.instructions || '',
+    image: null,
+    active: meal.active
+  };
+  isModalOpen.value = true;
+}
+
+function closeModal() {
+  isModalOpen.value = false;
+  editingMeal.value = null;
+}
+
+function handleImageChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files[0]) {
+    mealForm.value.image = input.files[0];
+  }
+}
+
+async function saveMeal() {
+  try {
+    const formData = new FormData();
+    formData.append('title', mealForm.value.title);
+    formData.append('ingredients', mealForm.value.ingredients);
+    formData.append('instructions', mealForm.value.instructions);  // Add this line
+    if (mealForm.value.image) {
+      formData.append('image', mealForm.value.image);
+    }
+    formData.append('active', mealForm.value.active ? '1' : '0');
+
+    if (editingMeal.value) {
+      await axios.post(`${BASE_URL}/meal/${editingMeal.value.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    } else {
+      await axios.post(`${BASE_URL}/meal`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    }
+
+    await fetchMealList(meta.value.current_page);
+    closeModal();
+  } catch (error) {
+    console.error("Error saving meal:", error);
+  }
+}
 
 function toggleActiveSort() {
   activeDirection.value = activeDirection.value === 'asc' ? 'desc' : 'asc';
