@@ -4,7 +4,7 @@ import router from './router';
 import { createPinia } from 'pinia';
 
 import { IonicVue } from '@ionic/vue';
-
+import { clerkPlugin } from '@clerk/vue';
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css';
 
@@ -36,7 +36,15 @@ import '@ionic/vue/css/palettes/dark.system.css';
 import './theme/variables.css';
 
 const pinia = createPinia();
-const app = createApp(App)
+
+const app = createApp(App);
+
+app.use(clerkPlugin, {
+  // publishableKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_ZGl2ZXJzZS1rb2RpYWstOTYuY2xlcmsuYWNjb3VudHMuZGV2JA'
+  publishableKey: 'pk_test_ZGl2ZXJzZS1rb2RpYWstOTYuY2xlcmsuYWNjb3VudHMuZGV2JA'
+});
+
+app
   .use(IonicVue)
   .use(pinia)
   .use(router);
