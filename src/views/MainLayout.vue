@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useUser, useAuth } from '@clerk/vue';
 import { 
   IonPage, 
@@ -94,6 +94,14 @@ const router = useRouter();
 const { user } = useUser();
 const { isSignedIn, signOut } = useAuth();
 const isUserMenuOpen = ref(false);
+
+watch(user, (newUser) => {
+  if (newUser?.id) {
+    localStorage.setItem('clerkUserId', newUser.id);
+  } else {
+    localStorage.removeItem('clerkUserId');
+  }
+});
 
 const navigateTo = async (path: string) => {
   console.log('Navigating to:', path);

@@ -1,0 +1,17 @@
+// src/api/axios.ts
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://127.0.0.1:8000/api'
+});
+
+// Get Clerk user ID from localStorage on each request
+api.interceptors.request.use((config) => {
+  const userId = localStorage.getItem('clerkUserId');
+  if (userId) {
+    config.headers['X-User-ID'] = userId;
+  }
+  return config;
+});
+
+export default api;

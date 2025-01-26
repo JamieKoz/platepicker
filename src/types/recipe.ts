@@ -1,7 +1,5 @@
-export interface Meal {
+export interface Recipe {
   id: number;
-  user_id: number;
-  recipe_id: number | null;
   title: string;
   ingredients: string | null;
   instructions: string | null;
