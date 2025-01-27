@@ -21,12 +21,13 @@
     </ion-header>
 
     <ion-content>
-      <ion-list>
+      <RetryConnection v-if="loadError" @retry="retryConnection" />
+      <ion-list v-else>
         <ion-item v-for="meal in meals" :key="meal.id">
           <ion-label>
             <h2>{{ meal.title }}</h2>
           </ion-label>
-          <ion-button @click="openEditModal(meal)" color="warning" size="small" class="mr-2"> 
+          <ion-button @click="openEditModal(meal)" color="warning" size="small" class="mr-2">
             <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="10" height="10" viewBox="0 0 30 30">
               <path
                 d="M 22.828125 3 C 22.316375 3 21.804562 3.1954375 21.414062 3.5859375 L 19 6 L 24 11 L 26.414062 8.5859375 C 27.195062 7.8049375 27.195062 6.5388125 26.414062 5.7578125 L 24.242188 3.5859375 C 23.851688 3.1954375 23.339875 3 22.828125 3 z M 17 8 L 5.2597656 19.740234 C 5.2597656 19.740234 6.1775313 19.658 6.5195312 20 C 6.8615312 20.342 6.58 22.58 7 23 C 7.42 23.42 9.6438906 23.124359 9.9628906 23.443359 C 10.281891 23.762359 10.259766 24.740234 10.259766 24.740234 L 22 13 L 17 8 z M 4 23 L 3.0566406 25.671875 A 1 1 0 0 0 3 26 A 1 1 0 0 0 4 27 A 1 1 0 0 0 4.328125 26.943359 A 1 1 0 0 0 4.3378906 26.939453 L 4.3632812 26.931641 A 1 1 0 0 0 4.3691406 26.927734 L 7 26 L 5.5 24.5 L 4 23 z">
@@ -66,12 +67,8 @@
       </ion-header>
     </ion-modal>
 
-<MealFormModal 
-  :is-open="isModalOpen"
-  :editing-meal="editingMeal"
-  @close="closeModal"
-  @saved="fetchMealList(meta.current_page)"
-/>
+    <MealFormModal :is-open="isModalOpen" :editing-meal="editingMeal" @close="closeModal"
+      @saved="fetchMealList(meta.current_page)" />
   </ion-page>
 </template>
 
@@ -82,11 +79,14 @@ import type { PaginationMeta, PaginationLinks } from '@/types/pagination';
 import {
   IonHeader, IonToolbar, IonSearchbar, IonContent, IonList,
   IonItem, IonLabel, IonButton, IonText, IonPage, IonModal,
-  IonTitle, IonButtons, IonInput, IonTextarea, IonToggle, IonAlert 
+  IonTitle, IonButtons
 } from '@ionic/vue';
 import api from '@/api/axios';
 import RecipeBrowser from '@/components/RecipeBrowser.vue';
 import MealFormModal from '@/components/MealFormModal.vue';
+import RetryConnection from '@/components/RetryConnection.vue';
+
+const loadError = ref(false);
 const isRecipeBrowserOpen = ref(false);
 const meals = ref<Meal[]>([]);
 const meta = ref<PaginationMeta>({
@@ -170,8 +170,14 @@ async function fetchMealList(page = 1) {
       next: response.data.next_page_url
     };
   } catch (error) {
+    loadError.value = true;
     console.error("Error fetching meals:", error);
   }
+}
+
+function retryConnection() {
+  loadError.value = false;
+  return fetchMealList(meta.value.current_page);
 }
 
 async function search(event: CustomEvent) {

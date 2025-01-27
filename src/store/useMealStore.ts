@@ -11,9 +11,13 @@ export const useMealStore = defineStore('mealStore', () => {
   const fetchMeals = async () => {
     try {
       const response = await axios.get<Meal[]>(`${BASE_URL}/recipe`);
+      if (!response.data) {
+        throw new Error('No data received');
+      }
       meals.value = response.data;
     } catch (error) {
       console.error('Error fetching meals:', error);
+      throw error;
     }
   };
 
