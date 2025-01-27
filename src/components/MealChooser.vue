@@ -104,7 +104,11 @@ const replaceMeal = async (clickedMeal: Meal) => {
     } else {
       const newMeal = mealStore.getNewMeal();
       if (!newMeal) return;
-      await trackMealSelection(clickedMeal.id);
+
+      if (clickedMeal.recipe_id != null) {
+        await trackMealSelection(clickedMeal.recipe_id);
+      }
+
       if (clickedMeal.id === meal1.value?.id) {
         meal2.value = newMeal;
       } else if (clickedMeal.id === meal2.value?.id) {

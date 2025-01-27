@@ -8,8 +8,12 @@ const api = axios.create({
 // Get Clerk user ID from localStorage on each request
 api.interceptors.request.use((config) => {
   const userId = localStorage.getItem('clerkUserId');
+  const userData = localStorage.getItem('clerkUserData');
   if (userId) {
     config.headers['X-User-ID'] = userId;
+  }
+  if (userData) {
+    config.headers['X-User-Data'] = userData;
   }
   return config;
 });

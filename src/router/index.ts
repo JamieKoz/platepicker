@@ -46,6 +46,10 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/List.vue')
       },
       {
+        path: 'favourites',
+        component: () => import('@/views/Favourites.vue')
+      },
+      {
         path: 'buy-options',
         component: () => import('@/views/BuyOptions.vue')
       },
@@ -64,7 +68,6 @@ const router = createRouter({
 
 // Add navigation guard
 router.beforeEach((to, from, next) => {
-  console.log('Route navigation:', { to, from });
   next();
 });
 

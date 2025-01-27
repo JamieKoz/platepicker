@@ -31,17 +31,26 @@
       <ion-content class="ion-no-padding">
         <ion-list>
           <template v-if="isSignedIn">
+
             <ion-item>
               <ion-label>{{ user?.username }}</ion-label>
             </ion-item>
+
             <ion-item button @click="navigateTo('/list')">
               <ion-icon :icon="list" slot="start"></ion-icon>
               <ion-label>Meal List</ion-label>
             </ion-item>
+            
+            <ion-item button @click="navigateTo('/favourites')">
+              <ion-icon :icon="trophy" slot="start"></ion-icon>
+              <ion-label>Favourites</ion-label>
+            </ion-item>
+
             <ion-item button @click="doSignOut">
               <ion-icon :icon="logOut" slot="start"></ion-icon>
               <ion-label>Sign Out</ion-label>
             </ion-item>
+
           </template>
           <!-- Show these items when not signed in -->
           <template v-else>
@@ -86,7 +95,8 @@ import {
   home,
   logOut,
   logIn,
-  personAdd
+  personAdd,
+  trophy
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 
@@ -97,9 +107,16 @@ const isUserMenuOpen = ref(false);
 
 watch(user, (newUser) => {
   if (newUser?.id) {
+    const userData = {
+      id: newUser.id,
+      name: newUser.firstName || newUser.username || newUser.emailAddresses?.[0]?.emailAddress?.split('@')[0],
+      email: newUser.emailAddresses?.[0]?.emailAddress
+    };
     localStorage.setItem('clerkUserId', newUser.id);
+    localStorage.setItem('clerkUserData', JSON.stringify(userData));
   } else {
     localStorage.removeItem('clerkUserId');
+    localStorage.removeItem('clerkUserData');
   }
 });
 
