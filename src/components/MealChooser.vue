@@ -189,7 +189,7 @@ const handleShare = async () => {
         },
         icon: clipboardOutline,
         handler: async () => {
-          const shareText = `${winner.value?.title}\n\nIngredients:\n${formattedIngredients.value.join('\n')}\n\nInstructions:\n${winner.value?.instructions}`;
+          const shareText = `${winner.value?.title}`;
           try {
             await navigator.clipboard.writeText(shareText);
             const toast = await toastController.create({
