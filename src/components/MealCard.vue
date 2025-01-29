@@ -40,6 +40,8 @@ const chooseMeal = (meal: Meal) => {
   .meal-card {
     display: flex;
     flex-direction: column;
+    width: 90vw;
+    height: 40vh;
   }
 
   .meal-image {

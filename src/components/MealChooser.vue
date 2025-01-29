@@ -9,54 +9,70 @@
       </ion-buttons>
     </ion-toolbar>
   </ion-header>
+
   <RetryConnection v-if="loadError" message="Unable to load meals. Please check your connection."
     @retry="handleRetry" />
-  <ion-grid v-else class="flex items-center justify-center">
-    <ion-row v-if="!winner" class="flex justify-between items-center meal-row">
-      <ion-col class="flex justify-center items-center flex-1">
-        <MealCard :mealData="meal1" @replaceMeal="replaceMeal" />
-      </ion-col>
-      <ion-col class="flex justify-center items-center flex-1">
-        <MealCard :mealData="meal2" @replaceMeal="replaceMeal" />
-      </ion-col>
-    </ion-row>
 
-    <ion-row v-else class="flex flex-col justify-center winner-row">
-      <ion-col>
-        <h2 class="text-center text-2xl font-bold mb-4">{{ winner.title }}</h2>
-        <div class="meal-image mb-4">
-          <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${winner.image_name}.jpg`"
-            class="h-full w-full object-fit"></ion-img>
-        </div>
-        <div class="recipe-content">
-          <div class="ingredients-section">
-            <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
-            <ul class="ingredient-list">
-              <li v-for="(ingredient, index) in formattedIngredients" :key="index" class="ingredient-item">
-                {{ ingredient }}
-              </li>
-            </ul>
-          </div>
-          <div class="instructions-section">
-            <h3 class="text-xl font-semibold mb-4">Instructions</h3>
-            <div class="instructions-text">
-              {{ winner.instructions }}
+  <ion-content v-else class="ion-padding">
+    <ion-grid class="h-full">
+      <!-- Competition View -->
+      <ion-row v-if="!winner" class="h-full flex justify-between items-center meal-row">
+        <ion-col class="flex justify-center items-center">
+          <MealCard :mealData="meal1" @replaceMeal="replaceMeal" />
+        </ion-col>
+        <ion-col class="flex justify-center items-center">
+          <MealCard :mealData="meal2" @replaceMeal="replaceMeal" />
+        </ion-col>
+      </ion-row>
+
+      <!-- Winner View -->
+      <ion-row v-else class="h-full flex justify-center items-start">
+        <ion-col class="flex flex-col items-center">
+          <div class="w-full flex justify-between items-center mb-4">
+            <div class="flex-1"></div> <!-- Empty div for spacing -->
+            <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
+            <div class="flex-1 flex justify-end">
+              <ion-button fill="clear" @click="handleShare">
+                <ion-icon :icon="share" class="text-white" />
+              </ion-button>
             </div>
           </div>
-        </div>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+          <div class="winner-container">
+            <MealCard :mealData="winner" class="winner-card" />
+          </div>
+
+
+          <div class="mt-4 mb-16">
+            <div class="ingredients-section">
+              <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
+              <ul class="ingredient-list">
+                <li v-for="(ingredient, index) in formattedIngredients" :key="index" class="ingredient-item">
+                  {{ ingredient }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="instructions-section">
+              <h3 class="text-xl font-semibold mb-4">Instructions</h3>
+              <div class="instructions-text">
+                {{ winner.instructions }}
+              </div>
+            </div>
+          </div>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </ion-content>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import api from '@/api/axios';
-import { refresh } from 'ionicons/icons';
+import { refresh, share, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline } from 'ionicons/icons';
 import { useMealStore } from '@/store/useMealStore';
 import MealCard from '@/components/MealCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
-import { IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon } from '@ionic/vue';
+import { IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, toastController, actionSheetController, IonActionSheet } from '@ionic/vue';
 import type { Meal } from '@/types/meal';
 
 const mealStore = useMealStore();
@@ -156,21 +172,101 @@ const handleRefresh = async () => {
   winner.value = null;
   await fetchInitialMeals();
 };
+
+const handleShare = async () => {
+  if (!winner.value) return;
+
+  const actionSheet = await actionSheetController.create({
+    header: 'Share Recipe',
+    cssClass: 'custom-action-sheet',
+    buttons: [
+      {
+        text: 'Copy',
+        cssClass: 'custom-button',
+        role: 'copy',
+        data: {
+          action: 'copy',
+        },
+        icon: clipboardOutline,
+        handler: async () => {
+          const shareText = `${winner.value?.title}\n\nIngredients:\n${formattedIngredients.value.join('\n')}\n\nInstructions:\n${winner.value?.instructions}`;
+          try {
+            await navigator.clipboard.writeText(shareText);
+            const toast = await toastController.create({
+              message: 'Recipe copied to clipboard!',
+              duration: 2000,
+              position: 'bottom'
+            });
+            await toast.present();
+          } catch (error) {
+            console.error('Error copying to clipboard:', error);
+          }
+        }
+      },
+      {
+        text: 'Share via Email',
+        cssClass: 'custom-button',
+
+        icon: mailOutline,
+        handler: () => {
+          const subject = encodeURIComponent(winner.value?.title || 'Recipe');
+          const body = encodeURIComponent(`${winner.value?.title}\n\nIngredients:\n${formattedIngredients.value.join('\n')}\n\nInstructions:\n${winner.value?.instructions}`);
+          window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+      },
+      {
+        text: 'Share via Messages',
+        cssClass: 'custom-button',
+        icon: chatbubbleOutline,
+        handler: () => {
+          const text = encodeURIComponent(`${winner.value?.title}\n\nIngredients:\n${formattedIngredients.value.join('\n')}\n\nInstructions:\n${winner.value?.instructions}`);
+          window.location.href = `sms:?&body=${text}`;
+        }
+      },
+      {
+        text: 'Share via Social Media',
+        cssClass: 'custom-button',
+        icon: shareSocialOutline,
+        handler: () => {
+          const text = `Check out this recipe for ${winner.value?.title}!`;
+          if (navigator.share) {
+            navigator.share({
+              title: winner.value?.title,
+              text: text
+            });
+          } else {
+            // Fallback for browsers that don't support Web Share API
+            const toast = toastController.create({
+              message: 'Social sharing not supported on this device',
+              duration: 2000,
+              position: 'bottom'
+            });
+            toast.then(t => t.present());
+          }
+        }
+      },
+      {
+        text: 'Cancel',
+        cssClass: 'custom-button',
+        icon: closeOutline,
+        role: 'cancel'
+      }
+    ]
+  });
+
+  await actionSheet.present();
+};
+
 </script>
 
 <style scoped>
-/* Ensure the meal cards are responsive */
 .meal-row {
-  width: 100vw;
-  /* Full width of the viewport */
-  height: 50vh;
   /* Cards take 50% of the viewport height */
+  height: 50vh;
 }
 
-/* Force each card to take 45% of the screen width and adjust height */
-.meal-card {
-  width: 90vw;
-  height: 40vh;
+.winner-meal {
+  width: 100vw;
 }
 
 .winner-row {
@@ -189,6 +285,7 @@ const handleRefresh = async () => {
   justify-content: center;
   height: 70%;
 }
+
 .transparent-toolbar {
   --background: transparent;
   --border-width: 0;
@@ -198,14 +295,8 @@ const handleRefresh = async () => {
 :global(.header-md::after) {
   background-image: none;
 }
-.recipe-content {
-  padding: 1.5rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
 
 .ingredients-section {
-  padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
 }
@@ -229,10 +320,26 @@ const handleRefresh = async () => {
 
 .instructions-section {
   padding: 0 1rem;
+  overflow-y: auto;
 }
 
 .instructions-text {
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+:global(.custom-action-sheet .custom-button) {
+  --button-inner-justify-content: space-between !important;
+  --justify-content: space-between !important;
+}
+
+:global(.custom-action-sheet .action-sheet-button.custom-button .action-sheet-button-inner) {
+  justify-content: space-between !important;
+  width: 100%;
+  flex-direction: row-reverse !important;
+}
+
+:global(.custom-action-sheet .action-sheet-icon) {
+  margin: 0;
 }
 </style>
