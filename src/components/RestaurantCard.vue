@@ -1,18 +1,30 @@
 # RestaurantCard.vue
 <template>
-  <div v-if="restaurantData" class="ion-activatable ripple-parent rectangle meal-card"
-    @click="$emit('chooseRestaurant', restaurantData)">
+ <div v-if="restaurantData" class="ion-activatable ripple-parent rectangle meal-card"
+    @click="handleCardClick">
     <ion-card class="card-content my-2 mx-2">
-      <ion-ripple-effect></ion-ripple-effect>
       <div class="meal-image-container">
-        <vue-swiper :modules="swiperModules" :pagination="{ clickable: true }"
-          :autoplay="{ delay: 3000, disableOnInteraction: false }" :slides-per-view="1" :space-between="0"
-          @swiper="setSwiper">
+        <vue-swiper 
+          :modules="swiperModules" 
+          :navigation="true"
+          :slides-per-view="1" 
+          :space-between="0"
+          @swiper="setSwiper"
+        >
           <vue-swiper-slide v-for="(photo, index) in restaurantData.photos" :key="index">
             <img :src="getPhotoUrl(photo.photo_reference)" :alt="`${restaurantData.name} photo ${index + 1}`"
               class="meal-image" @error="handleImageError" />
           </vue-swiper-slide>
         </vue-swiper>
+        <!-- Add navigation button overlays -->
+        <div class="navigation-buttons">
+          <button class="nav-button prev" @click.stop="navigatePrev">
+            <ion-icon :icon="chevronBack"></ion-icon>
+          </button>
+          <button class="nav-button next" @click.stop="navigateNext">
+            <ion-icon :icon="chevronForward"></ion-icon>
+          </button>
+        </div>
       </div>
       <ion-card-title class="card-title-section">
         <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
@@ -48,23 +60,30 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonSpinner, IonCard, IonCardTitle, IonRippleEffect, IonCardSubtitle, IonCardContent } from '@ionic/vue';
+import { IonSpinner, IonCard, IonCardTitle, IonCardSubtitle, IonCardContent } from '@ionic/vue';
 import type { Restaurant } from '@/types/restaurant';
 import { Swiper as VueSwiper, SwiperSlide as VueSwiperSlide } from 'swiper/vue';
-import { Pagination, Autoplay } from 'swiper/modules';
+import { chevronBack, chevronForward } from 'ionicons/icons';
+import { Pagination } from 'swiper/modules';
 import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/autoplay';
+import 'swiper/css/navigation';
 
 const swiper = ref(null);
-const swiperModules = [Pagination, Autoplay];
+const swiperModules = [Pagination];
 const props = defineProps<{
   restaurantData: Restaurant;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'chooseRestaurant', restaurant: Restaurant): void;
 }>();
+
+const handleCardClick = (event: MouseEvent) => {
+  // Check if click was on navigation buttons
+  if (!(event.target as HTMLElement).closest('.nav-button')) {
+    emit('chooseRestaurant', props.restaurantData);
+  }
+};
 function setSwiper(swiperInstance: any) {
   swiper.value = swiperInstance;
 }
@@ -74,8 +93,20 @@ function getPhotoUrl(photoReference?: string) {
     return '/placeholder-restaurant.jpg';
   }
   return `https://maps.googleapis.com/maps/api/place/photo?height=500&maxwidth=800&photo_reference=${photoReference}&key=AIzaSyA0_KFXP-WfyEfVzAt7tmVwQ3zZnV09w4A&t=${Date.now()}`;
+
 }
 
+const navigatePrev = () => {
+  if (swiper.value) {
+    swiper.value.slidePrev();
+  }
+};
+
+const navigateNext = () => {
+  if (swiper.value) {
+    swiper.value.slideNext();
+  }
+};
 function handleImageError(event: Event) {
   const img = event.target as HTMLImageElement;
   img.src = '/placeholder-restaurant.jpg';
@@ -175,5 +206,44 @@ function handleImageError(event: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.navigation-buttons {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none; /* Allow clicks to pass through to the card */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.nav-button {
+  pointer-events: auto; /* Make buttons clickable */
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  z-index: 10;
+}
+
+.nav-button:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Remove Swiper's default buttons */
+:deep(.swiper-button-next),
+:deep(.swiper-button-prev) {
+  display: none;
 }
 </style>
