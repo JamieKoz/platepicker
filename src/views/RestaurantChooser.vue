@@ -1,40 +1,40 @@
 # RestaurantChooser.vue
 <template>
-<ion-page>
+   <ion-page>
     <ion-header class="ion-no-border">
-      <ion-toolbar class="transparent-toolbar">
-        <ion-title class="text-center">{{ restaurantStore.restaurantCounter }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
+      <div class="search-section">
+        <div class="search-container">
+          <!-- Searchbar -->
+          <ion-searchbar v-model="searchQuery" placeholder="Search address" @ionInput="handleSearchInput"
+            @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur" class="address-searchbar">
+          </ion-searchbar>
 
-    <div class="px-4 relative">
-      <div class="relative">
-        <ion-searchbar v-model="searchQuery" 
-          placeholder="Enter your location" 
-          @ionInput="handleSearchInput"
-          @ionFocus="searchBarFocused = true"
-          @ionBlur="handleSearchBlur"
-          class="address-searchbar">
-        </ion-searchbar>
-        
-        <ion-list v-if="searchBarFocused" 
-          class="use-location-button"
-          @click="getUserLocation">
-          <ion-icon :icon="locationOutline" class="location-icon"></ion-icon>
-          <span>Use your location</span>
-        </ion-list>
+          <!-- Counter below searchbar -->
+          <div class="counter-display">
+            <span class="justify-center text-white text-xl">{{ restaurantStore.restaurantCounter }}</span>
+          </div>
+
+          <!-- Dropdown container for suggestions and location button -->
+          <div v-if="searchBarFocused || addressSuggestions.length > 0" class="dropdown-container">
+            <!-- Location button -->
+            <ion-list class="use-location-button mx-auto" @click="getUserLocation">
+              <ion-icon :icon="locationOutline" class="location-icon"></ion-icon>
+              <span>Use current location</span>
+            </ion-list>
+
+            <!-- Address suggestions -->
+            <ion-list v-if="addressSuggestions.length > 0" class="address-suggestions">
+              <ion-item v-for="suggestion in addressSuggestions" :key="suggestion.place_id" button
+                @click="selectAddress(suggestion)">
+                <ion-label>{{ suggestion.description }}</ion-label>
+              </ion-item>
+            </ion-list>
+          </div>
+        </div>
       </div>
-      
-      <ion-list v-if="addressSuggestions.length > 0" class="address-suggestions">
-        <ion-item v-for="suggestion in addressSuggestions" :key="suggestion.place_id" button
-          @click="selectAddress(suggestion)">
-          <ion-label>{{ suggestion.description }}</ion-label>
-        </ion-item>
-      </ion-list>
-    </div>
-
+    </ion-header>
     <!-- Restaurant Competition View -->
-    <ion-content v-if="hasLocation" class="ion-padding">
+    <ion-content v-if="hasLocation" class="main-content">
       <ion-grid class="h-full">
         <RetryConnection v-if="loadError" message="Unable to load restaurants. Please check your connection."
           @retry="handleRetry" />
@@ -252,7 +252,7 @@ const getUserLocation = async () => {
   try {
     loading.value = true;
     
-    const position = await new Promise((resolve, reject) => {
+    const position: GeolocationPosition = await new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(resolve, reject, {
         enableHighAccuracy: true,
         timeout: 5000,
@@ -297,7 +297,6 @@ const getUserLocation = async () => {
   --color: black;
   --placeholder-color: #666;
   border-radius: 8px;
-  margin-bottom: 8px;
 }
 
 .address-suggestions {
@@ -333,13 +332,11 @@ const getUserLocation = async () => {
   bottom: 80%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background-color: 0 2px 8px rgba(0, 0, 0, 0.1);
-  left: 2.2%;
-  right: 8px;
   height: 100%;
+  width: 80%;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
   cursor: pointer;
   color: #666;
   z-index: 2;
@@ -353,8 +350,49 @@ const getUserLocation = async () => {
   font-size: 20px;
 }
 
-/* Update searchbar to accommodate the button */
-.address-searchbar {
-  --padding-end: 120px;
+.search-section {
+  position: fixed;
+  top: 5%; /* Move higher up */
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: transparent;
+}
+
+.counter-display {
+  text-align: center;
+}
+
+/* Update dropdown positions relative to new structure */
+.address-suggestions {
+  position: absolute;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-height: 400px;
+  overflow-y: auto;
+  top: 100%; /* Position relative to search container */
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  margin-top: 45px; /* Space for the location button */
+}
+
+.use-location-button {
+  border-radius: 8px;
+  background: #141414;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 40px;
+  cursor: pointer;
+  z-index: 1000;
+  width: 95%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 10px; /* Small gap between searchbar and button */
+}
+
+.main-content {
+  --padding-top: 35%;
 }
 </style>
