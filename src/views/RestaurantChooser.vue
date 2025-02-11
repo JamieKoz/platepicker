@@ -370,7 +370,7 @@ const getUserLocation = async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   max-height: 400px;
   overflow-y: auto;
-  top: 100%; /* Position relative to search container */
+  bottom: -285%; /* Position relative to search container */
   left: 0;
   right: 0;
   z-index: 1000;

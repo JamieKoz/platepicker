@@ -14,12 +14,17 @@
         <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
         <ion-card-content class="card-details">
           <div class="flex justify-between">
-          <span class=""> {{ '⭐'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})</span>
+          <span>
+            <span class="filled">{{ '★'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
+            <span class="empty">{{ '★'.repeat(5 - Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
+            ({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})
+          </span>
               
             <span class="">
             </span>
             <p v-if="restaurantData.price_level" class="">
-              {{ '$'.repeat(Math.min(restaurantData.price_level, 4)) }}
+            <span class="filled">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
+            <span class="empty">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
             </p>
           </div>
           <p class="mt-1 location-text text-xs">{{ restaurantData.vicinity }}</p>
@@ -114,5 +119,11 @@ function getPhotoUrl(photoReference?: string) {
 }
 .location-text {
   font-size: 0.75rem;
+}
+.filled {
+  color: gold;
+}
+.empty {
+  color: #666;
 }
 </style>
