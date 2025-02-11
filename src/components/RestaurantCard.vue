@@ -1,30 +1,37 @@
 # RestaurantCard.vue
 <template>
-  <div v-if="restaurantData" class="ion-activatable ripple-parent rectangle meal-card" @click="$emit('chooseRestaurant', restaurantData)">
+  <div v-if="restaurantData" class="ion-activatable ripple-parent rectangle meal-card"
+    @click="$emit('chooseRestaurant', restaurantData)">
     <ion-card class="card-content my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
       <div class="meal-image-container">
-        <ion-img :src="getPhotoUrl(restaurantData.photos?.[0]?.photo_reference)" 
-                :alt="restaurantData.name"
-                class="meal-image"
-                onerror="this.src='/placeholder-restaurant.jpg'">
-        </ion-img>
+        <vue-swiper :modules="swiperModules" :pagination="{ clickable: true }"
+          :autoplay="{ delay: 3000, disableOnInteraction: false }" :slides-per-view="1" :space-between="0"
+          @swiper="setSwiper">
+          <vue-swiper-slide v-for="(photo, index) in restaurantData.photos" :key="index">
+            <img :src="getPhotoUrl(photo.photo_reference)" :alt="`${restaurantData.name} photo ${index + 1}`"
+              class="meal-image" @error="handleImageError" />
+          </vue-swiper-slide>
+        </vue-swiper>
       </div>
       <ion-card-title class="card-title-section">
         <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
         <ion-card-content class="card-details">
           <div class="flex justify-between">
-          <span>
-            <span class="filled">{{ '★'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
-            <span class="empty">{{ '★'.repeat(5 - Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
-            ({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})
-          </span>
-              
+            <span>
+              <span class="filled-rating">{{ '★'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
+              <span class="empty-rating">{{ '★'.repeat(5 - Math.min(Math.round(restaurantData.rating || 0), 5))
+                }}</span>
+              <span class="ml-1 text-xs">({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})</span>
+            </span>
+
             <span class="">
             </span>
             <p v-if="restaurantData.price_level" class="">
-            <span class="filled">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
-            <span class="empty">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
+              <span class="filled-rating">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4))
+                }}</span>
+              <span class="empty-rating">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4))
+                }}</span>
             </p>
           </div>
           <p class="mt-1 location-text text-xs">{{ restaurantData.vicinity }}</p>
@@ -40,9 +47,17 @@
 </template>
 
 <script setup lang="ts">
-import { IonSpinner } from '@ionic/vue';
+import { ref } from 'vue';
+import { IonSpinner, IonCard, IonCardTitle, IonRippleEffect, IonCardSubtitle, IonCardContent } from '@ionic/vue';
 import type { Restaurant } from '@/types/restaurant';
+import { Swiper as VueSwiper, SwiperSlide as VueSwiperSlide } from 'swiper/vue';
+import { Pagination, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/autoplay';
 
+const swiper = ref(null);
+const swiperModules = [Pagination, Autoplay];
 const props = defineProps<{
   restaurantData: Restaurant;
 }>();
@@ -50,13 +65,22 @@ const props = defineProps<{
 defineEmits<{
   (e: 'chooseRestaurant', restaurant: Restaurant): void;
 }>();
+function setSwiper(swiperInstance: any) {
+  swiper.value = swiperInstance;
+}
 
 function getPhotoUrl(photoReference?: string) {
   if (!photoReference) {
     return '/placeholder-restaurant.jpg';
   }
-  return `https://maps.googleapis.com/maps/api/place/photo?height=500&maxwidth=800&photo_reference=${photoReference}&key=AIzaSyA0_KFXP-WfyEfVzAt7tmVwQ3zZnV09w4A`;
+  return `https://maps.googleapis.com/maps/api/place/photo?height=500&maxwidth=800&photo_reference=${photoReference}&key=AIzaSyA0_KFXP-WfyEfVzAt7tmVwQ3zZnV09w4A&t=${Date.now()}`;
 }
+
+function handleImageError(event: Event) {
+  const img = event.target as HTMLImageElement;
+  img.src = '/placeholder-restaurant.jpg';
+}
+
 </script>
 
 <style scoped>
@@ -120,10 +144,36 @@ function getPhotoUrl(photoReference?: string) {
 .location-text {
   font-size: 0.75rem;
 }
-.filled {
+
+.filled-rating {
   color: gold;
 }
-.empty {
+
+.empty-rating {
   color: #666;
+}
+
+:deep(.swiper) {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.swiper-pagination-bullet) {
+  background: white;
+  opacity: 0.7;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  background: white;
+  opacity: 1;
+}
+
+
+.meal-image-container :deep(.swiper-slide) {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
