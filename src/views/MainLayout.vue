@@ -32,8 +32,8 @@
         <ion-list>
           <template v-if="isSignedIn">
 
-            <ion-item>
-              <ion-label>{{ user?.username }}</ion-label>
+            <ion-item button @click="navigateTo('/profile')">
+              <ion-label>{{ capitalizeFirstLetter(user?.username || '') }}</ion-label>
             </ion-item>
 
             <ion-item button @click="navigateTo('/list')">
@@ -99,6 +99,7 @@ import {
   trophy
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
+import { capitalizeFirstLetter } from '@/utils/string-utils';
 
 const router = useRouter();
 const { user } = useUser();

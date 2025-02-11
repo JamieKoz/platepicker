@@ -12,10 +12,6 @@ const routes: Array<RouteRecordRaw> = [
     component: MainLayout,
     children: [
       {
-        path: 'home',
-        component: () => import('@/views/Home.vue')
-      },
-      {
         path: '/sign-in',
         name: 'SignIn',
         component: () => import('@/views/SignIn.vue'),
@@ -37,6 +33,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/SignUp.vue'),
         meta: { requiresAuth: false }
       },
+
+      {
+        path: 'home',
+        component: () => import('@/views/Home.vue')
+      },
       {
         path: 'meal-chooser',
         component: () => import('@/views/MealChooser.vue')
@@ -56,6 +57,11 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'restaurant-chooser/:mode',
         component: () => import('@/views/RestaurantChooser.vue')
+      },
+      {
+        path: 'profile',
+        component: () => import('@/views/Profile.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   }

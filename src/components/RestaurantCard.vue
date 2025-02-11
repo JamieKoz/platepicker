@@ -3,24 +3,26 @@
   <div v-if="restaurantData" class="ion-activatable ripple-parent rectangle meal-card" @click="$emit('chooseRestaurant', restaurantData)">
     <ion-card class="card-content my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
-      <div class="meal-image">
-        <ion-img :src="getPhotoUrl(restaurantData.photos?.[0]?.photo_reference)" :alt="restaurantData.name"
-          class="w-full h-full object-cover rounded-t-lg" onerror="this.src='/placeholder-restaurant.jpg'"></ion-img>
+      <div class="meal-image-container">
+        <ion-img :src="getPhotoUrl(restaurantData.photos?.[0]?.photo_reference)" 
+                :alt="restaurantData.name"
+                class="meal-image"
+                onerror="this.src='/placeholder-restaurant.jpg'">
+        </ion-img>
       </div>
-      <ion-card-title class="py-4">
+      <ion-card-title class="card-title-section">
         <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
-        <ion-card-content>
-
-        <span class="text-yellow-400">
-          {{ '⭐'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}
-        </span>
-        <span class="ml-2 text-xs">
-          ({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})
-        </span>
-        <p class="text-xs">{{ restaurantData.vicinity }}</p>
-        <p v-if="restaurantData.price_level" class="text-xs mt-1">
-          {{ '💰'.repeat(Math.min(restaurantData.price_level, 4)) }}
-        </p>
+        <ion-card-content class="card-details">
+          <div class="flex justify-between">
+          <span class=""> {{ '⭐'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})</span>
+              
+            <span class="">
+            </span>
+            <p v-if="restaurantData.price_level" class="">
+              {{ '$'.repeat(Math.min(restaurantData.price_level, 4)) }}
+            </p>
+          </div>
+          <p class="mt-1 location-text text-xs">{{ restaurantData.vicinity }}</p>
         </ion-card-content>
       </ion-card-title>
     </ion-card>
@@ -53,47 +55,64 @@ function getPhotoUrl(photoReference?: string) {
 </script>
 
 <style scoped>
-  .ripple-parent {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid #ddd;
-    border-radius: .75rem;
-  }
+.ripple-parent {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  border-radius: 0.75rem;
+}
 
-  .meal-card {
-    display: flex;
-    flex-direction: column;
-    width: 90vw;
-    height: 40vh;
-  }
+.meal-card {
+  width: 90vw;
+  height: 40vh;
+}
 
-  .meal-image {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    height: 70%;
-  }
+.card-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
-  .card-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-  }
+.meal-image-container {
+  height: 70%;
+  min-height: 70%;
+  max-height: 70%;
+  overflow: hidden;
+  position: relative;
+}
 
-  .ion-card-header {
-    flex: 0 1 auto;
-    padding: 10px;
-    text-align: center;
-  }
+.meal-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
 
-  .ion-card-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    padding: 5px;
-    white-space: normal;
-    word-wrap: break-word;
-    overflow: hidden;
-  }
+.card-title-section {
+  height: 30%;
+  min-height: 30%;
+  max-height: 30%;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.card-details {
+  padding: 0.5rem;
+  overflow-y: auto;
+}
+
+.restaurant-card-placeholder {
+  width: 90vw;
+  height: 40vh;
+  border: 1px solid #ddd;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.location-text {
+  font-size: 0.75rem;
+}
 </style>

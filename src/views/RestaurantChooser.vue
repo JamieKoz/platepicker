@@ -1,27 +1,40 @@
 # RestaurantChooser.vue
 <template>
-  <ion-page>
+<ion-page>
     <ion-header class="ion-no-border">
       <ion-toolbar class="transparent-toolbar">
         <ion-title class="text-center">{{ restaurantStore.restaurantCounter }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <!-- Address Search Section (only shown before restaurants are loaded) -->
-    <div v-if="!hasLocation" class="p-4">
-      <ion-searchbar v-model="searchQuery" placeholder="Enter your location" @ionInput="handleSearchInput"
-        class="address-searchbar"></ion-searchbar>
+    <div class="px-4 relative">
+      <div class="relative">
+        <ion-searchbar v-model="searchQuery" 
+          placeholder="Enter your location" 
+          @ionInput="handleSearchInput"
+          @ionFocus="searchBarFocused = true"
+          @ionBlur="handleSearchBlur"
+          class="address-searchbar">
+        </ion-searchbar>
+        
+        <ion-list v-if="searchBarFocused" 
+          class="use-location-button"
+          @click="getUserLocation">
+          <ion-icon :icon="locationOutline" class="location-icon"></ion-icon>
+          <span>Use your location</span>
+        </ion-list>
+      </div>
+      
+      <ion-list v-if="addressSuggestions.length > 0" class="address-suggestions">
+        <ion-item v-for="suggestion in addressSuggestions" :key="suggestion.place_id" button
+          @click="selectAddress(suggestion)">
+          <ion-label>{{ suggestion.description }}</ion-label>
+        </ion-item>
+      </ion-list>
     </div>
 
-    <ion-list v-if="addressSuggestions.length > 0" class="address-suggestions">
-      <ion-item v-for="suggestion in addressSuggestions" :key="suggestion.place_id" button
-        @click="selectAddress(suggestion)">
-        <ion-label>{{ suggestion.description }}</ion-label>
-      </ion-item>
-    </ion-list>
-
     <!-- Restaurant Competition View -->
-    <ion-content v-else class="ion-padding">
+    <ion-content v-if="hasLocation" class="ion-padding">
       <ion-grid class="h-full">
         <RetryConnection v-if="loadError" message="Unable to load restaurants. Please check your connection."
           @retry="handleRetry" />
@@ -83,7 +96,13 @@ import {
   IonTitle, IonButton, IonIcon, IonSearchbar, IonList, IonItem, IonLabel,
   IonSpinner, toastController, actionSheetController
 } from '@ionic/vue';
-import { share, clipboardOutline, mailOutline, navigateOutline } from 'ionicons/icons';
+import { 
+  share, 
+  clipboardOutline, 
+  mailOutline, 
+  navigateOutline,
+  locationOutline 
+} from 'ionicons/icons';
 import RestaurantCard from '@/components/RestaurantCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 
@@ -97,6 +116,7 @@ const loadError = ref(false);
 const restaurant1 = ref<any>(null);
 const restaurant2 = ref<any>(null);
 const winner = ref<any>(null);
+const searchBarFocused = ref(false);
 const BASE_URL = 'http://127.0.0.1:8000/api';
 
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
@@ -221,7 +241,50 @@ const selectAddress = async (suggestion: any) => {
     loading.value = false;
   }
 };
+const handleSearchBlur = () => {
+  // Small delay to allow for clicking the location button
+  setTimeout(() => {
+    searchBarFocused.value = false;
+  }, 200);
+};
 
+const getUserLocation = async () => {
+  try {
+    loading.value = true;
+    
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
+    });
+
+    const { latitude, longitude } = position.coords;
+    
+    // Get address from coordinates using reverse geocoding
+    const response = await axios.get(`${BASE_URL}/restaurants/reverse-geocode`, {
+      params: { lat: latitude, lng: longitude }
+    });
+
+    if (response.data && response.data.place_id) {
+      await selectAddress(response.data);
+      searchQuery.value = response.data.description || 'Current Location';
+    }
+
+  } catch (error) {
+    console.error('Error getting location:', error);
+    const toast = await toastController.create({
+      message: 'Unable to get your location. Please enter it manually.',
+      duration: 3000,
+      position: 'bottom',
+      color: 'danger'
+    });
+    await toast.present();
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -239,14 +302,14 @@ const selectAddress = async (suggestion: any) => {
 
 .address-suggestions {
   position: absolute;
-  width: calc(100% - 2rem);
+  width: 100%;
   z-index: 1000;
-  background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-height: 500px;
+  max-height: 300px;
   overflow-y: auto;
-  padding-top: 40px;
+  bottom: 75%;
+  left: 0;
 }
 
 .transparent-toolbar {
@@ -264,5 +327,34 @@ const selectAddress = async (suggestion: any) => {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 1rem;
+}
+.use-location-button {
+  position: absolute;
+  bottom: 80%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: 0 2px 8px rgba(0, 0, 0, 0.1);
+  left: 2.2%;
+  right: 8px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  color: #666;
+  z-index: 2;
+}
+
+.use-location-button:hover {
+  background-color: black;
+}
+
+.location-icon {
+  font-size: 20px;
+}
+
+/* Update searchbar to accommodate the button */
+.address-searchbar {
+  --padding-end: 120px;
 }
 </style>
