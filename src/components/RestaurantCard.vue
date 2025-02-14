@@ -46,7 +46,7 @@
                 }}</span>
             </p>
           </div>
-          <p class="mt-1 location-text text-xs">{{ restaurantData.vicinity }}</p>
+          <p class="mt-1 location-text">{{ restaurantData.vicinity }}</p>
         </ion-card-content>
       </ion-card-title>
     </ion-card>
@@ -79,7 +79,6 @@ const emit = defineEmits<{
 }>();
 
 const handleCardClick = (event: MouseEvent) => {
-  // Check if click was on navigation buttons
   if (!(event.target as HTMLElement).closest('.nav-button')) {
     emit('chooseRestaurant', props.restaurantData);
   }
@@ -173,7 +172,7 @@ function handleImageError(event: Event) {
   justify-content: center;
 }
 .location-text {
-  font-size: 0.75rem;
+  font-size: 0.5rem;
 }
 
 .filled-rating {

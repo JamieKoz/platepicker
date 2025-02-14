@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import axios from 'axios';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
 import {
@@ -111,7 +111,7 @@ const restaurantStore = useRestaurantStore();
 const searchQuery = ref('');
 const addressSuggestions = ref<any[]>([]);
 const hasLocation = ref(false);
-const loading = ref(false);
+const loading = computed(() => restaurantStore.isLoading);
 const loadError = ref(false);
 const restaurant1 = ref<any>(null);
 const restaurant2 = ref<any>(null);
@@ -241,8 +241,8 @@ const selectAddress = async (suggestion: any) => {
     loading.value = false;
   }
 };
+
 const handleSearchBlur = () => {
-  // Small delay to allow for clicking the location button
   setTimeout(() => {
     searchBarFocused.value = false;
   }, 200);
@@ -262,15 +262,13 @@ const getUserLocation = async () => {
 
     const { latitude, longitude } = position.coords;
     
-    // Get address from coordinates using reverse geocoding
-    const response = await axios.get(`${BASE_URL}/restaurants/reverse-geocode`, {
-      params: { lat: latitude, lng: longitude }
-    });
+    await restaurantStore.fetchRestaurantsByLocation(latitude, longitude);
+    restaurant1.value = restaurantStore.getNewRestaurant();
+    restaurant2.value = restaurantStore.getNewRestaurant();
 
-    if (response.data && response.data.place_id) {
-      await selectAddress(response.data);
-      searchQuery.value = response.data.description || 'Current Location';
-    }
+    hasLocation.value = true;
+    searchQuery.value = 'Current Location';
+    addressSuggestions.value = [];
 
   } catch (error) {
     console.error('Error getting location:', error);
@@ -284,8 +282,7 @@ const getUserLocation = async () => {
   } finally {
     loading.value = false;
   }
-};
-</script>
+};</script>
 
 <style scoped>
 .restaurant-row {
