@@ -13,6 +13,13 @@
 
     <ion-content class="ion-padding">
       <div class="max-w-md mx-auto">
+        <div class="mb-6">
+          <h2 class="text-lg font-medium mb-4">We'd love your feedback!</h2>
+          <ion-item>
+            <ion-button @click="navigateTo('/feedback')">Submit your feedback</ion-button>
+          </ion-item>
+        </div>
+
         <form @submit.prevent="updateProfile" class="space-y-4">
           <!-- Profile Section -->
           <div class="mb-6">
@@ -213,6 +220,14 @@ const updateProfile = async () => {
     await showToast('Failed to update profile', 'danger');
   } finally {
     isLoading.value = false;
+  }
+};
+
+const navigateTo = async (path: string) => {
+  try {
+    await router.push(path);
+  } catch (error) {
+    console.error('Navigation error:', error);
   }
 };
 
