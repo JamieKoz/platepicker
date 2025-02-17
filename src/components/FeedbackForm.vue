@@ -44,16 +44,6 @@
           ></textarea>
         </div>
 
-        <div class="form-group">
-          <label for="userEmail">Your Email (optional)</label>
-          <input
-            type="email"
-            v-model="feedback.email"
-            id="userEmail"
-            placeholder="email@example.com"
-          >
-        </div>
-
         <div class="form-actions">
           <button type="submit" :disabled="isSubmitting">
             {{ isSubmitting ? 'Sending...' : 'Submit Feedback' }}

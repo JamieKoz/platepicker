@@ -14,32 +14,32 @@
     <ion-content class="ion-padding">
       <div class="max-w-md mx-auto">
         <div class="mb-6">
-          <h2 class="text-lg font-medium mb-4">We'd love your feedback!</h2>
+          <h2 class="font-bold text-lg font-medium mb-4">We'd love your feedback!</h2>
           <ion-item>
-            <ion-button @click="navigateTo('/feedback')">Submit your feedback</ion-button>
+            <ion-button class="p-2 w-full text-lg" @click="navigateTo('/feedback')">Submit your feedback</ion-button>
           </ion-item>
         </div>
 
         <form @submit.prevent="updateProfile" class="space-y-4">
           <!-- Profile Section -->
           <div class="mb-6">
-            <h2 class="text-lg font-medium mb-4">Profile Details</h2>
+            <h2 class="font-bold text-lg font-medium mb-4">Profile Details</h2>
 
             <ion-item>
-              <ion-label position="stacked">Username</ion-label>
+              <ion-label position="stacked" class="font-bold">Username</ion-label>
               <ion-input v-model="formData.username" type="text" required
                 @input="e => formData.username = capitalizeFirstLetter(e.target.value)" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked">First Name</ion-label>
+              <ion-label position="stacked" class="font-bold">First Name</ion-label>
               <ion-input v-model="formData.firstName" type="text" required :value="user?.firstName || ''" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked">Last Name</ion-label>
+              <ion-label position="stacked" class="font-bold">Last Name</ion-label>
               <ion-input v-model="formData.lastName" type="text" required :value="user?.lastName || ''" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked">Email</ion-label>
+              <ion-label position="stacked" class="font-bold">Email</ion-label>
               <ion-input v-model="formData.email" type="email" required
                 :value="user?.primaryEmailAddress?.emailAddress || ''" />
             </ion-item>
@@ -47,17 +47,17 @@
 
           <!-- Password Section -->
           <div class="mb-6">
-            <h2 class="text-lg font-medium mb-4">Change Password</h2>
+            <h2 class="text-lg font-medium mb-4 font-bold">Change Password</h2>
             <ion-item>
-              <ion-label position="stacked">Current Password</ion-label>
+              <ion-label position="stacked" class="font-bold">Current Password</ion-label>
               <ion-input v-model="passwordData.currentPassword" type="password" :clear-input="true" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked">New Password</ion-label>
+              <ion-label position="stacked" class="font-bold">New Password</ion-label>
               <ion-input v-model="passwordData.newPassword" type="password" :clear-input="true" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked">Confirm New Password</ion-label>
+              <ion-label position="stacked" class="font-bold">Confirm New Password</ion-label>
               <ion-input v-model="passwordData.confirmPassword" type="password" :clear-input="true" />
             </ion-item>
             <div v-if="passwordError" class="text-red-500 text-sm mt-2">

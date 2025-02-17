@@ -1,16 +1,28 @@
 # RestaurantCard.vue
 <template>
- <div v-if="restaurantData" class="ion-activatable ripple-parent rectangle meal-card"
-    @click="handleCardClick">
+  <div v-if="!restaurantData" class="restaurant-card-placeholder">
+    <ion-card class="card-content my-2 mx-2 skeleton-loader">
+      <div class="skeleton-image-container">
+        <div class="skeleton-image" />
+      </div>
+
+      <div class="card-title-section">
+        <div class="skeleton-text-container">
+          <div class="skeleton-title"></div>
+          <div class="flex justify-between mt-4">
+            <div class="skeleton-subtitle" style="width: 40%"></div>
+            <div class="skeleton-subtitle" style="width: 20%"></div>
+          </div>
+          <div class="skeleton-details mt-2"></div>
+        </div>
+      </div>
+    </ion-card>
+  </div>
+  <div v-else class="ion-activatable ripple-parent rectangle meal-card" @click="handleCardClick">
     <ion-card class="card-content my-2 mx-2">
       <div class="meal-image-container">
-        <vue-swiper 
-          :modules="swiperModules" 
-          :navigation="true"
-          :slides-per-view="1" 
-          :space-between="0"
-          @swiper="setSwiper"
-        >
+        <vue-swiper :modules="swiperModules" :navigation="true" :slides-per-view="1" :space-between="0"
+          @swiper="setSwiper">
           <template v-if="restaurantData.photos && restaurantData.photos.length > 0">
             <vue-swiper-slide v-for="(photo, index) in restaurantData.photos" :key="index">
               <img :src="getPhotoUrl(photo.photo_reference)" :alt="`${restaurantData.name} photo ${index + 1}`"
@@ -23,7 +35,7 @@
             </vue-swiper-slide>
           </template>
         </vue-swiper>
-        
+
         <!-- Only show navigation if we have multiple photos -->
         <div class="navigation-buttons" v-if="restaurantData.photos && restaurantData.photos.length > 1">
           <button class="nav-button prev" @click.stop="navigatePrev">
@@ -60,30 +72,13 @@
     </ion-card>
   </div>
 
-  <div v-else class="restaurant-card-placeholder">
-  <ion-card class="card-content my-2 mx-2 skeleton-loader">
-    <div class="skeleton-image-container">
-      <div class="skeleton-image" />
-    </div>
-    
-    <div class="card-title-section">
-      <div class="">
-        <div class="skeleton-title"></div>
-        <div class="flex justify-between mt-4">
-          <div class="skeleton-subtitle" style="width: 40%"></div>
-          <div class="skeleton-subtitle" style="width: 20%"></div>
-        </div>
-        <div class="skeleton-details mt-2"></div>
-      </div>
-    </div>
-  </ion-card>
-</div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonSpinner, IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
+import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
 import type { Restaurant } from '@/types/restaurant';
+import type { Swiper } from 'swiper';
 import { Swiper as VueSwiper, SwiperSlide as VueSwiperSlide } from 'swiper/vue';
 import { chevronBack, chevronForward } from 'ionicons/icons';
 import { Pagination } from 'swiper/modules';
@@ -91,10 +86,10 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import placeholderImage from '@/assets/meal-placeholder.png';
 
-const swiper = ref(null);
+const swiper = ref<Swiper | null>(null);
 const swiperModules = [Pagination];
 const props = defineProps<{
-  restaurantData: Restaurant;
+  restaurantData?: Restaurant | null;
 }>();
 
 const emit = defineEmits<{
@@ -102,7 +97,7 @@ const emit = defineEmits<{
 }>();
 
 const handleCardClick = (event: MouseEvent) => {
-  if (!(event.target as HTMLElement).closest('.nav-button')) {
+  if (!(event.target as HTMLElement).closest('.nav-button') && props.restaurantData) {
     emit('chooseRestaurant', props.restaurantData);
   }
 };
@@ -194,6 +189,7 @@ const navigateNext = () => {
   align-items: center;
   justify-content: center;
 }
+
 .location-text {
   font-size: 0.5rem;
 }
@@ -236,7 +232,8 @@ const navigateNext = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  pointer-events: none; /* Allow clicks to pass through to the card */
+  pointer-events: none;
+  /* Allow clicks to pass through to the card */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -244,7 +241,8 @@ const navigateNext = () => {
 }
 
 .nav-button {
-  pointer-events: auto; /* Make buttons clickable */
+  pointer-events: auto;
+  /* Make buttons clickable */
   background: rgba(0, 0, 0, 0.3);
   color: white;
   border: none;
@@ -273,6 +271,7 @@ const navigateNext = () => {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
@@ -288,12 +287,10 @@ const navigateNext = () => {
 .skeleton-image {
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%);
   background-size: 1000px 100%;
   animation: shimmer 4s infinite linear;
 }
@@ -309,12 +306,10 @@ const navigateNext = () => {
 .skeleton-title {
   height: 24px;
   margin: 0 auto;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%);
   background-size: 1000px 100%;
   animation: shimmer 2s infinite linear;
   border-radius: 4px;
@@ -322,12 +317,10 @@ const navigateNext = () => {
 
 .skeleton-subtitle {
   height: 16px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%);
   animation: shimmer 15s infinite linear;
   border-radius: 4px;
 }
@@ -335,12 +328,10 @@ const navigateNext = () => {
 .skeleton-details {
   height: 16px;
   width: 60%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%);
   animation: shimmer 10s infinite linear;
   border-radius: 4px;
 }

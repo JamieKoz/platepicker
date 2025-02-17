@@ -1,6 +1,6 @@
 # RestaurantChooser.vue
 <template>
-   <ion-page>
+  <ion-page>
     <ion-header class="ion-no-border">
       <div class="search-section">
         <div class="search-container">
@@ -39,20 +39,23 @@
         <RetryConnection v-if="loadError" message="Unable to load restaurants. Please check your connection."
           @retry="handleRetry" />
 
-        <div v-else-if="loading" class="flex justify-center items-center h-full">
-          <ion-spinner></ion-spinner>
-        </div>
 
         <template v-else>
           <!-- Competition View -->
-          <ion-row v-if="!winner" class="h-full flex justify-between items-center restaurant-row">
-            <ion-col class="flex justify-center items-center">
-              <RestaurantCard :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" />
-            </ion-col>
-            <ion-col class="flex justify-center items-center">
-              <RestaurantCard :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" />
-            </ion-col>
-          </ion-row>
+          <template v-if="!winner">
+            <ion-row class="h-full flex justify-between items-center restaurant-row">
+              <ion-col class="flex justify-center items-center">
+                <!-- Show skeleton while loading first restaurant -->
+                <RestaurantCard v-if="loading" />
+                <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" />
+              </ion-col>
+              <ion-col class="flex justify-center items-center">
+                <!-- Show skeleton while loading second restaurant -->
+                <RestaurantCard v-if="loading" />
+                <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" />
+              </ion-col>
+            </ion-row>
+          </template>
 
           <!-- Winner View -->
           <ion-row v-else class="h-full flex justify-center items-start">
@@ -94,7 +97,7 @@ import { useRestaurantStore } from '@/store/useRestaurantStore';
 import {
   IonPage, IonContent, IonGrid, IonRow, IonCol, IonHeader, IonToolbar,
   IonTitle, IonButton, IonIcon, IonSearchbar, IonList, IonItem, IonLabel,
-  IonSpinner, toastController, actionSheetController
+   toastController, actionSheetController
 } from '@ionic/vue';
 import { 
   share, 
@@ -226,19 +229,21 @@ const handleSearchInput = debounce(async (event: CustomEvent) => {
 
 const selectAddress = async (suggestion: any) => {
   try {
-    loading.value = true;
-    await restaurantStore.fetchRestaurantsByAddress(suggestion.place_id);
+    searchQuery.value = suggestion.description;
+    searchBarFocused.value = false;
+    addressSuggestions.value = [];
+    hasLocation.value = true;
 
+    restaurant1.value = null;
+    restaurant2.value = null;
+
+    await restaurantStore.fetchRestaurantsByAddress(suggestion.place_id);
+    
     restaurant1.value = restaurantStore.getNewRestaurant();
     restaurant2.value = restaurantStore.getNewRestaurant();
-
-    hasLocation.value = true;
-    addressSuggestions.value = [];
   } catch (error) {
     console.error('Error loading restaurants:', error);
     loadError.value = true;
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -250,8 +255,6 @@ const handleSearchBlur = () => {
 
 const getUserLocation = async () => {
   try {
-    loading.value = true;
-    
     const position: GeolocationPosition = await new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(resolve, reject, {
         enableHighAccuracy: true,
@@ -265,11 +268,9 @@ const getUserLocation = async () => {
     await restaurantStore.fetchRestaurantsByLocation(latitude, longitude);
     restaurant1.value = restaurantStore.getNewRestaurant();
     restaurant2.value = restaurantStore.getNewRestaurant();
-
     hasLocation.value = true;
     searchQuery.value = 'Current Location';
     addressSuggestions.value = [];
-
   } catch (error) {
     console.error('Error getting location:', error);
     const toast = await toastController.create({
@@ -279,11 +280,10 @@ const getUserLocation = async () => {
       color: 'danger'
     });
     await toast.present();
-  } finally {
-    loading.value = false;
   }
-};</script>
+};
 
+</script>
 <style scoped>
 .restaurant-row {
   height: 50vh;

@@ -28,7 +28,7 @@
       :arrow="false"
       dismiss-on-select="true"
     >
-      <ion-content class="ion-no-padding">
+      <ion-content class="ion-no-padding" :scroll-y="false">
         <ion-list>
           <template v-if="isSignedIn">
 
