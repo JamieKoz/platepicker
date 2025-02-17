@@ -59,11 +59,25 @@
       </ion-card-title>
     </ion-card>
   </div>
+
   <div v-else class="restaurant-card-placeholder">
-    <div class="flex items-center justify-center h-full">
-      <ion-spinner></ion-spinner>
+  <ion-card class="card-content my-2 mx-2 skeleton-loader">
+    <div class="skeleton-image-container">
+      <div class="skeleton-image" />
     </div>
-  </div>
+    
+    <div class="card-title-section">
+      <div class="">
+        <div class="skeleton-title"></div>
+        <div class="flex justify-between mt-4">
+          <div class="skeleton-subtitle" style="width: 40%"></div>
+          <div class="skeleton-subtitle" style="width: 20%"></div>
+        </div>
+        <div class="skeleton-details mt-2"></div>
+      </div>
+    </div>
+  </ion-card>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -136,7 +150,7 @@ const navigateNext = () => {
 }
 
 .card-content {
-  height: 100%;
+  height: 95%;
   display: flex;
   flex-direction: column;
 }
@@ -253,5 +267,81 @@ const navigateNext = () => {
 :deep(.swiper-button-next),
 :deep(.swiper-button-prev) {
   display: none;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-loader {
+  background: #2a2a2a;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  height: 95%;
+}
+
+.skeleton-image {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 4s infinite linear;
+}
+
+.skeleton-image-container {
+  height: 40vh;
+  width: 90vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeleton-title {
+  height: 24px;
+  margin: 0 auto;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-subtitle {
+  height: 16px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  animation: shimmer 15s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-details {
+  height: 16px;
+  width: 60%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  animation: shimmer 10s infinite linear;
+  border-radius: 4px;
 }
 </style>
