@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import MainLayout from '../views/MainLayout.vue';
+import MainLayout from '../views/layout/MainLayout.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -14,58 +14,54 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: '/sign-in',
         name: 'SignIn',
-        component: () => import('@/views/SignIn.vue'),
+        component: () => import('@/views/auth/SignIn.vue'),
         meta: { requiresAuth: false },
         children: [
           {
             path: 'factor-one',
-            component: () => import('@/views/SignIn.vue')
+            component: () => import('@/views/auth/SignIn.vue')
           },
           {
             path: 'factor-two',
-            component: () => import('@/views/SignIn.vue')
+            component: () => import('@/views/auth/SignIn.vue')
           }
         ]
       },
       {
         path: '/sign-up',
         name: 'SignUp',
-        component: () => import('@/views/SignUp.vue'),
+        component: () => import('@/views/auth/SignUp.vue'),
         meta: { requiresAuth: false }
       },
 
       {
         path: 'home',
-        component: () => import('@/views/Home.vue')
+        component: () => import('@/views/choosers/BuyOrCookChooser.vue')
       },
       {
         path: 'meal-chooser',
-        component: () => import('@/views/MealChooser.vue')
+        component: () => import('@/views/choosers/MealChooser.vue')
       },
       {
         path: 'list',
-        component: () => import('@/views/List.vue')
+        component: () => import('@/views/profile/List.vue')
       },
       {
         path: 'favourites',
-        component: () => import('@/views/Favourites.vue')
-      },
-      {
-        path: 'buy-options',
-        component: () => import('@/views/BuyOptions.vue')
+        component: () => import('@/views/profile/Favourites.vue')
       },
       {
         path: 'restaurant-chooser/:mode',
-        component: () => import('@/views/RestaurantChooser.vue')
+        component: () => import('@/views/choosers/RestaurantChooser.vue')
       },
       {
         path: 'profile',
-        component: () => import('@/views/Profile.vue'),
+        component: () => import('@/views/profile/Profile.vue'),
         meta: { requiresAuth: true }
       },
       {
         path: 'feedback',
-        component: () => import('@/views/Feedback.vue')
+        component: () => import('@/views/profile/Feedback.vue')
       },
     ]
   }

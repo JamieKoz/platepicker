@@ -20,6 +20,6 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const handleBuy = () => router.push('/buy-options');
+const handleBuy = () => router.push('/restaurant-chooser/dine-in');
 const handleCook = () => router.push('/meal-chooser');
 </script>
