@@ -97,15 +97,10 @@ import { useRestaurantStore } from '@/store/useRestaurantStore';
 import {
   IonPage, IonContent, IonGrid, IonRow, IonCol, IonHeader, IonToolbar,
   IonTitle, IonButton, IonIcon, IonSearchbar, IonList, IonItem, IonLabel,
-   toastController, actionSheetController
+  toastController, actionSheetController
 } from '@ionic/vue';
-import { 
-  share, 
-  clipboardOutline, 
-  mailOutline, 
-  navigateOutline,
-  locationOutline 
-} from 'ionicons/icons';
+
+import { share, clipboardOutline, mailOutline, navigateOutline, locationOutline } from 'ionicons/icons';
 import RestaurantCard from '@/components/RestaurantCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 
@@ -119,6 +114,8 @@ const loadError = ref(false);
 const restaurant1 = ref<any>(null);
 const restaurant2 = ref<any>(null);
 const winner = ref<any>(null);
+const lastPlaceId = ref<string | null>(null);
+const lastCoords = ref<{ latitude: number; longitude: number } | null>(null);
 const searchBarFocused = ref(false);
 const BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -203,12 +200,70 @@ function debounce(func: Function, wait: number) {
   };
 }
 
-
 async function handleRetry() {
-  console.log('hello');
-  // await fetchInitialRestaurants();
-}
+  loadError.value = false;
 
+  if (searchQuery.value === 'Current Location') {
+    try {
+      restaurant1.value = null;
+      restaurant2.value = null;
+
+      // Try geolocation again (timeout built in)
+      const position = await getGeolocationWithTimeout();
+      const { latitude, longitude } = position.coords;
+      lastCoords.value = { latitude, longitude };
+
+      // Store handles timeout
+      await restaurantStore.fetchRestaurantsByLocation(latitude, longitude);
+
+      const newRestaurant1 = restaurantStore.getNewRestaurant();
+      const newRestaurant2 = restaurantStore.getNewRestaurant();
+
+      if (!newRestaurant1 || !newRestaurant2) {
+        throw new Error('No restaurants received');
+      }
+
+      restaurant1.value = newRestaurant1;
+      restaurant2.value = newRestaurant2;
+    } catch (error) {
+      console.error('Error retrying geolocation or fetch:', error);
+      restaurant1.value = null;
+      restaurant2.value = null;
+      loadError.value = true;
+    }
+  } else if (lastPlaceId.value) {
+    try {
+      restaurant1.value = null;
+      restaurant2.value = null;
+
+      // Store handles timeout
+      await restaurantStore.fetchRestaurantsByAddress(lastPlaceId.value);
+
+      const newRestaurant1 = restaurantStore.getNewRestaurant();
+      const newRestaurant2 = restaurantStore.getNewRestaurant();
+
+      if (!newRestaurant1 || !newRestaurant2) {
+        throw new Error('No restaurants received');
+      }
+
+      restaurant1.value = newRestaurant1;
+      restaurant2.value = newRestaurant2;
+    } catch (error) {
+      console.error('Error retrying address fetch:', error);
+      restaurant1.value = null;
+      restaurant2.value = null;
+      loadError.value = true;
+    }
+  } else {
+    const toast = await toastController.create({
+      message: 'Please enter a location to search',
+      duration: 2000,
+      position: 'bottom',
+      color: 'danger'
+    });
+    await toast.present();
+  }
+}
 const handleSearchInput = debounce(async (event: CustomEvent) => {
   const query = event.detail.value?.trim();
   if (!query) {
@@ -233,17 +288,35 @@ const selectAddress = async (suggestion: any) => {
     searchBarFocused.value = false;
     addressSuggestions.value = [];
     hasLocation.value = true;
+    lastPlaceId.value = suggestion.place_id;
 
     restaurant1.value = null;
     restaurant2.value = null;
+    loadError.value = false;
 
-    await restaurantStore.fetchRestaurantsByAddress(suggestion.place_id);
-    
-    restaurant1.value = restaurantStore.getNewRestaurant();
-    restaurant2.value = restaurantStore.getNewRestaurant();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timed out')), 5000);
+    });
+
+    await Promise.race([
+      restaurantStore.fetchRestaurantsByAddress(suggestion.place_id),
+      timeoutPromise
+    ]);
+
+    const newRestaurant1 = restaurantStore.getNewRestaurant();
+    const newRestaurant2 = restaurantStore.getNewRestaurant();
+
+    if (!newRestaurant1 || !newRestaurant2) {
+      throw new Error('No restaurants received');
+    }
+
+    restaurant1.value = newRestaurant1;
+    restaurant2.value = newRestaurant2;
   } catch (error) {
     console.error('Error loading restaurants:', error);
     loadError.value = true;
+    restaurant1.value = null;
+    restaurant2.value = null;
   }
 };
 
@@ -255,26 +328,38 @@ const handleSearchBlur = () => {
 
 const getUserLocation = async () => {
   try {
-    const position: GeolocationPosition = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      });
-    });
-
-    const { latitude, longitude } = position.coords;
-    
-    await restaurantStore.fetchRestaurantsByLocation(latitude, longitude);
-    restaurant1.value = restaurantStore.getNewRestaurant();
-    restaurant2.value = restaurantStore.getNewRestaurant();
+    restaurant1.value = null;
+    restaurant2.value = null;
     hasLocation.value = true;
+    loadError.value = false;
+
+    // Get user location with timeout (built into the geolocation API)
+    const position = await getGeolocationWithTimeout();
+    const { latitude, longitude } = position.coords;
+    lastCoords.value = { latitude, longitude };
+
+    // Store already handles timeouts
+    await restaurantStore.fetchRestaurantsByLocation(latitude, longitude);
+
+    const newRestaurant1 = restaurantStore.getNewRestaurant();
+    const newRestaurant2 = restaurantStore.getNewRestaurant();
+
+    if (!newRestaurant1 || !newRestaurant2) {
+      throw new Error('No restaurants received');
+    }
+
+    restaurant1.value = newRestaurant1;
+    restaurant2.value = newRestaurant2;
     searchQuery.value = 'Current Location';
     addressSuggestions.value = [];
   } catch (error) {
-    console.error('Error getting location:', error);
+    console.error('Error in getUserLocation:', error);
+    restaurant1.value = null;
+    restaurant2.value = null;
+    loadError.value = true;
+
     const toast = await toastController.create({
-      message: 'Unable to get your location. Please enter it manually.',
+      message: 'Unable to get your location. Please try again or enter manually.',
       duration: 3000,
       position: 'bottom',
       color: 'danger'
@@ -282,7 +367,15 @@ const getUserLocation = async () => {
     await toast.present();
   }
 };
-
+const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationPosition> => {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: timeoutMs,
+      maximumAge: 0
+    });
+  });
+};
 </script>
 <style scoped>
 .restaurant-row {
