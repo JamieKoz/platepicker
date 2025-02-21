@@ -1,4 +1,3 @@
-# RestaurantCard.vue
 <template>
   <div v-if="!restaurantData" class="restaurant-card-placeholder">
     <ion-card class="card-content my-2 mx-2 skeleton-loader">
@@ -21,23 +20,34 @@
   <div v-else class="ion-activatable ripple-parent rectangle meal-card" @click="handleCardClick">
     <ion-card class="card-content my-2 mx-2">
       <div class="meal-image-container">
-        <vue-swiper :modules="swiperModules" :navigation="true" :slides-per-view="1" :space-between="0"
-          @swiper="setSwiper">
-          <template v-if="restaurantData.photos && restaurantData.photos.length > 0">
-            <vue-swiper-slide v-for="(photo, index) in restaurantData.photos" :key="index">
-              <img :src="getPhotoUrl(photo.photo_reference)" :alt="`${restaurantData.name} photo ${index + 1}`"
-                class="meal-image" @error="handleImageError" />
+        <!-- Key the swiper instance to force re-rendering when photos change -->
+        <vue-swiper :key="swiperKey" :modules="swiperModules" :pagination="{ clickable: true }" :slides-per-view="1"
+          :space-between="0" @swiper="setSwiper">
+          <div class="debug-photo-count">{{ currentSlideIndex !== undefined ? `${currentSlideIndex +
+            1}/${allPhotos.length}` : `${allPhotos.length}` }}</div>
+
+
+          <template v-if="allPhotos.length > 0">
+            <vue-swiper-slide v-for="(photo, index) in allPhotos" :key="'photo-' + Math.random()">
+              <img :src="getPhotoUrl(photo)" :alt="`${restaurantData.name} photo ${index + 1}`" class="meal-image"
+                @error="handleImageError" @load="handleImageLoad(index)" />
             </vue-swiper-slide>
           </template>
           <template v-else>
             <vue-swiper-slide>
+              <div class="debug-photo-info">No photos available</div>
               <img :src="placeholderImage" :alt="restaurantData.name" class="meal-image" />
             </vue-swiper-slide>
           </template>
         </vue-swiper>
 
-        <!-- Only show navigation if we have multiple photos -->
-        <div class="navigation-buttons" v-if="restaurantData.photos && restaurantData.photos.length > 1">
+        <!-- Photo loading indicator -->
+        <div class="photo-loading-indicator" v-if="isLoadingMorePhotos">
+          <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Custom navigation buttons outside Swiper -->
+        <div class="navigation-buttons" v-if="allPhotos.length > 1">
           <button class="nav-button prev" @click.stop="navigatePrev">
             <ion-icon :icon="chevronBack"></ion-icon>
           </button>
@@ -71,23 +81,29 @@
       </ion-card-title>
     </ion-card>
   </div>
-
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
 import type { Restaurant } from '@/types/restaurant';
 import type { Swiper } from 'swiper';
 import { Swiper as VueSwiper, SwiperSlide as VueSwiperSlide } from 'swiper/vue';
 import { chevronBack, chevronForward } from 'ionicons/icons';
-import { Pagination } from 'swiper/modules';
+import { Pagination, Navigation } from 'swiper/modules';
 import 'swiper/css';
+import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import placeholderImage from '@/assets/meal-placeholder.png';
+import { useRestaurantStore } from '@/store/useRestaurantStore';
 
 const swiper = ref<Swiper | null>(null);
-const swiperModules = [Pagination];
+const swiperModules = [Pagination, Navigation];
+const isLoadingMorePhotos = ref(false);
+const swiperKey = ref(0); // Key to force swiper re-rendering
+const currentSlideIndex = ref(0); 
+const loadedImages = ref(new Set()); // Track loaded images
+const BASE_URL = 'http://127.0.0.1:8000/api';
 const props = defineProps<{
   restaurantData?: Restaurant | null;
 }>();
@@ -96,23 +112,78 @@ const emit = defineEmits<{
   (e: 'chooseRestaurant', restaurant: Restaurant): void;
 }>();
 
+const allPhotos = computed(() => {
+  const results = [];
+  
+  try {
+    let total = 0;
+    
+    if (props.restaurantData?.primary_photo?.photo_reference) {
+      results.push(props.restaurantData.primary_photo);
+      total++;
+    }
+    
+    // Add additional photos if available
+    if (props.restaurantData?.photos && Array.isArray(props.restaurantData.photos)) {
+      // Make sure we're only adding valid photo objects
+      props.restaurantData.photos.forEach(photo => {
+        if (photo && typeof photo === 'object' && photo.photo_reference) {
+          results.push(photo);
+          total++;
+        }
+      });
+    }
+    
+    if (results.length > 0) {
+      results.slice(0, 3).forEach((photo, i) => {
+      });
+    }
+    
+    return results;
+  } catch (error) {
+    console.error("Error in allPhotos computed property:", error);
+    return [];
+  }
+});
+
 const handleCardClick = (event: MouseEvent) => {
   if (!(event.target as HTMLElement).closest('.nav-button') && props.restaurantData) {
     emit('chooseRestaurant', props.restaurantData);
   }
 };
+
 function setSwiper(swiperInstance: any) {
   swiper.value = swiperInstance;
+  
+  // Add event listener to track current slide
+  swiperInstance.on('slideChange', () => {
+    currentSlideIndex.value = swiperInstance.activeIndex;
+  });
 }
 
-function getPhotoUrl(photoReference?: string) {
-  if (!photoReference) {
+function handleImageLoad(index: number) {
+  loadedImages.value.add(index);
+}
+
+function getPhotoUrl(photo: any): string {
+  if (!photo) {
     return placeholderImage;
   }
-  return `https://maps.googleapis.com/maps/api/place/photo?height=500&maxwidth=800&photo_reference=${photoReference}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&t=${Date.now()}`;
+  
+  const photoRef = photo.photo_reference;
+  if (!photoRef) {
+    return placeholderImage;
+  }
+  
+  if (photoRef.startsWith('http')) {
+    return photoRef;
+  }
+  
+  return `https://maps.googleapis.com/maps/api/place/photo?height=400&maxwidth=600&photo_reference=${photoRef}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
 }
 
 function handleImageError(event: Event) {
+  console.log("Image failed to load, using placeholder");
   const img = event.target as HTMLImageElement;
   img.src = placeholderImage;
 }
@@ -120,15 +191,97 @@ function handleImageError(event: Event) {
 const navigatePrev = () => {
   if (swiper.value) {
     swiper.value.slidePrev();
-  }
+  } 
 };
 
 const navigateNext = () => {
   if (swiper.value) {
     swiper.value.slideNext();
+  } 
+};
+
+function updateSwiper() {
+  swiperKey.value++;
+  
+  setTimeout(() => {
+    if (swiper.value) {
+      swiper.value.update();
+    }
+  }, 200);
+}
+
+const loadAdditionalPhotos = async () => {
+  if (!props.restaurantData || !props.restaurantData.place_id) {
+    console.error("No restaurant data available");
+    return;
+  }
+
+  const hasMultiplePhotos = allPhotos.value.length > 1;
+  if (hasMultiplePhotos) {
+    console.log("Already has multiple photos, skipping");
+    return;
+  }
+
+  const placeId = props.restaurantData.place_id;
+  
+  isLoadingMorePhotos.value = true;
+  
+  try {
+    const response = await fetch(`${BASE_URL}/restaurants/photos/${placeId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!props.restaurantData.photos) {
+      props.restaurantData.photos = [];
+    }
+    
+    if (data.photos && data.photos.length > 0) {
+      const photosToAdd = data.photos.slice(1, 5);
+      
+      for (const photo of photosToAdd) {
+        if (photo && photo.url) {
+          props.restaurantData.photos.push({
+            photo_reference: photo.url,
+            width: photo.width || 400,
+            height: photo.height || 300
+          });
+        }
+      }
+      
+      updateSwiper();
+    }
+  } catch (error) {
+    console.error("Error fetching photos:", error);
+  } finally {
+    isLoadingMorePhotos.value = false;
   }
 };
 
+
+onMounted(() => {
+  if (props.restaurantData) {
+    loadAdditionalPhotos();
+  }
+});
+
+// Watch for restaurant data changes to load photos for new restaurants
+watch(() => props.restaurantData?.place_id, (newPlaceId) => {
+  if (newPlaceId) {
+    loadAdditionalPhotos();
+  }
+});
+
+// Watch for changes in photo arrays
+watch(() => [
+  props.restaurantData?.photos?.length,
+  props.restaurantData?.primary_photo
+], () => {
+  updateSwiper();
+}, { deep: true });
 </script>
 
 <style scoped>
@@ -334,5 +487,32 @@ const navigateNext = () => {
       rgba(255, 255, 255, 0.05) 75%);
   animation: shimmer 10s infinite linear;
   border-radius: 4px;
+}
+.debug-photo-count {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px;
+  font-size: 12px;
+  z-index: 100;
+  border-radius: 4px;
+}
+
+.debug-photo-info {
+  position: absolute;
+  top: 30px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px;
+  font-size: 12px;
+  z-index: 100;
+  border-radius: 4px;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

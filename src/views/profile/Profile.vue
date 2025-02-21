@@ -23,7 +23,7 @@
         <form @submit.prevent="updateProfile" class="space-y-4">
           <!-- Profile Section -->
           <div class="mb-6">
-            <h2 class="font-bold text-lg font-medium mb-4">Profile Details</h2>
+            <h2 class="font-bold text-lg text-gray-600 font-medium mb-4">Profile Details</h2>
 
             <ion-item>
               <ion-label position="stacked" class="font-bold">Username</ion-label>
@@ -47,7 +47,7 @@
 
           <!-- Password Section -->
           <div class="mb-6">
-            <h2 class="text-lg font-medium mb-4 font-bold">Change Password</h2>
+            <h2 class="text-lg font-medium text-gray-600 mb-4 font-bold">Change Password</h2>
             <ion-item>
               <ion-label position="stacked" class="font-bold">Current Password</ion-label>
               <ion-input v-model="passwordData.currentPassword" type="password" :clear-input="true" />

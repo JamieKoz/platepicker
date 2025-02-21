@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
 import {
@@ -122,6 +122,13 @@ const BASE_URL = 'http://127.0.0.1:8000/api';
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
   if (restaurantStore.restaurantCounter === 0) {
     winner.value = chosenRestaurant;
+    
+    // When we have a winner, ensure we load all its photos if any are missing
+    if (winner.value.has_additional_photos) {
+      // Force refresh photos for the winner to ensure we show all available photos
+      await restaurantStore.getRestaurantPhotos(winner.value.place_id, true);
+    }
+    
     restaurant1.value = null;
     restaurant2.value = null;
   } else {
@@ -132,6 +139,12 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
       restaurant2.value = nextRestaurant;
     } else {
       restaurant1.value = nextRestaurant;
+    }
+    
+    // Start preloading photos for the next restaurant that will be shown
+    if (nextRestaurant.has_additional_photos) {
+      // Don't await, let it load in the background
+      restaurantStore.fetchAdditionalPhotos(nextRestaurant.place_id);
     }
   }
 };
@@ -376,8 +389,7 @@ const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationP
     });
   });
 };
-</script>
-<style scoped>
+</script><style scoped>
 .restaurant-row {
   height: 50vh;
 }
