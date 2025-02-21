@@ -88,73 +88,46 @@ export const useRestaurantStore = defineStore('restaurant', () => {
     return null;
   };
   
-  /**
-   * Preload photos for upcoming restaurants to improve perceived performance
-   */
   const preloadPhotosForUpcomingRestaurants = (count = 1) => {
-    // Only preload for the very next restaurant to avoid rate limiting
     const restaurantsToPreload = restaurants.value.slice(0, count);
     
-    // Only preload one restaurant at a time to avoid rate limiting
     if (restaurantsToPreload.length > 0) {
       const restaurant = restaurantsToPreload[0];
       if (!photoCache.value[restaurant.place_id]) {
-        // Don't await - let it load in the background
         fetchAdditionalPhotos(restaurant.place_id);
       }
     }
   };
   
-  /**
-   * Fetch additional photos for a restaurant with throttling
-   * Important: This now returns the photos directly without modifying the restaurant
-   */
   const fetchAdditionalPhotos = async (placeId?: string): Promise<PhotoReference[]> => {
-    // Safety check for undefined placeId
     if (!placeId) {
       console.error("Attempted to fetch photos with undefined place_id");
       return [];
     }
     
-    // Return cached photos if available
     if (photoCache.value[placeId]) {
       console.log("Returning cached photos for", placeId);
       return photoCache.value[placeId];
     }
     
-    // Skip if already loading additional photos for another restaurant
     if (isLoadingAdditionalPhotos.value) {
       console.log("Already loading photos for another restaurant, skipping");
       return [];
     }
     
     isLoadingAdditionalPhotos.value = true;
-    console.log("Starting photo fetch for", placeId);
-    
     try {
-      // Add a small delay to avoid hitting rate limits
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Use a variable for the API endpoint for easier debugging
       const photoEndpoint = `${BASE_URL}/restaurants/photos/${placeId}`;
-      console.log("Fetching from endpoint:", photoEndpoint);
       
       const response = await axios.get(photoEndpoint, {
-        timeout: 15000 // Increased timeout for slower connections
+        timeout: 15000
       });
       
-      console.log("Response received:", response.status);
-      
       if (response.data && response.data.photos && response.data.photos.length > 0) {
-        // Get up to 3 photos to reduce API load
         const limitedPhotos = response.data.photos.slice(0, 3);
-        
-        // Cache the photos
         photoCache.value[placeId] = limitedPhotos;
-        console.log(`Cached ${limitedPhotos.length} photos for ${placeId}`);
-        
-        // IMPORTANT: Now just return the photos directly
-        // The component will handle updating the restaurant object
         return limitedPhotos;
       }
       
@@ -163,12 +136,9 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       console.error('Error fetching additional photos:', error);
       return [];
     } finally {
-      console.log("Photo fetch completed for", placeId);
       isLoadingAdditionalPhotos.value = false;
       
-      // Add additional delay after finishing to help with rate limiting
       setTimeout(() => {
-        console.log("Post-fetch cooldown completed");
       }, 1500);
     }
   };

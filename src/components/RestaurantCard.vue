@@ -1,6 +1,6 @@
 <template>
-  <div v-if="!restaurantData" class="restaurant-card-placeholder">
-    <ion-card class="card-content my-2 mx-2 skeleton-loader">
+  <div v-if="!restaurantData" class="restaurant-card-placeholder flex items-center justify-center rounded-xl border-solid border-2 border-gray-500">
+    <ion-card class="card-content flex flex-col my-2 mx-2 skeleton-loader">
       <div class="skeleton-image-container">
         <div class="skeleton-image" />
       </div>
@@ -9,34 +9,33 @@
         <div class="skeleton-text-container">
           <div class="skeleton-title"></div>
           <div class="flex justify-between mt-4">
-            <div class="skeleton-subtitle" style="width: 40%"></div>
-            <div class="skeleton-subtitle" style="width: 20%"></div>
+            <div class="skeleton-subtitle w-2/5"></div>
+            <div class="skeleton-subtitle w-1/5"></div>
           </div>
           <div class="skeleton-details mt-2"></div>
         </div>
       </div>
     </ion-card>
   </div>
-  <div v-else class="ion-activatable ripple-parent rectangle meal-card" @click="handleCardClick">
-    <ion-card class="card-content my-2 mx-2">
-      <div class="meal-image-container">
-        <!-- Key the swiper instance to force re-rendering when photos change -->
+  <div v-else class="ion-activatable relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col meal-card" @click="handleCardClick">
+    <ion-card class="flex flex-col justify-between h-full my-2 mx-2">
+      <div class="meal-image-container overflow-hidden relative">
         <vue-swiper :key="swiperKey" :modules="swiperModules" :pagination="{ clickable: true }" :slides-per-view="1"
           :space-between="0" @swiper="setSwiper">
-          <div class="debug-photo-count">{{ currentSlideIndex !== undefined ? `${currentSlideIndex +
+          <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs bg-gray-900 opacity-70">{{ currentSlideIndex !== undefined ? `${currentSlideIndex +
             1}/${allPhotos.length}` : `${allPhotos.length}` }}</div>
 
 
           <template v-if="allPhotos.length > 0">
             <vue-swiper-slide v-for="(photo, index) in allPhotos" :key="'photo-' + Math.random()">
-              <img :src="getPhotoUrl(photo)" :alt="`${restaurantData.name} photo ${index + 1}`" class="meal-image"
+              <img :src="getPhotoUrl(photo)" :alt="`${restaurantData.name} photo ${index + 1}`" class="w-full h-full object-cover object-center"
                 @error="handleImageError" @load="handleImageLoad(index)" />
             </vue-swiper-slide>
           </template>
           <template v-else>
             <vue-swiper-slide>
-              <div class="debug-photo-info">No photos available</div>
-              <img :src="placeholderImage" :alt="restaurantData.name" class="meal-image" />
+              <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs max-w-4/5 bg-gray-900 opacity-70 text-nowrap overflow-hidden">No photos available</div>
+              <img :src="placeholderImage" :alt="restaurantData.name" class="w-full h-full object-cover object-center" />
             </vue-swiper-slide>
           </template>
         </vue-swiper>
@@ -47,22 +46,22 @@
         </div>
 
         <!-- Custom navigation buttons outside Swiper -->
-        <div class="navigation-buttons" v-if="allPhotos.length > 1">
-          <button class="nav-button prev" @click.stop="navigatePrev">
+        <div class="absolute top-0 left-0 right-0 bottom-0 flex justify-between items-center px-1" v-if="allPhotos.length > 1">
+          <button class="nav-button prev text-white border-none flex items-center justify-center cursor-pointer z-10" @click.stop="navigatePrev">
             <ion-icon :icon="chevronBack"></ion-icon>
           </button>
-          <button class="nav-button next" @click.stop="navigateNext">
+          <button class="nav-button next text-white border-none flex items-center justify-center cursor-pointer z-10" @click.stop="navigateNext">
             <ion-icon :icon="chevronForward"></ion-icon>
           </button>
         </div>
       </div>
-      <ion-card-title class="card-title-section">
+      <ion-card-title class="flec flex-col overflow-hidden p-4 card-title-section">
         <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
-        <ion-card-content class="card-details">
+        <ion-card-content class="p-2 overflow-y-auto">
           <div class="flex justify-between">
             <span>
-              <span class="filled-rating">{{ '★'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
-              <span class="empty-rating">{{ '★'.repeat(5 - Math.min(Math.round(restaurantData.rating || 0), 5))
+              <span class="text-yellow-300">{{ '★'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
+              <span class="text-gray-200">{{ '★'.repeat(5 - Math.min(Math.round(restaurantData.rating || 0), 5))
                 }}</span>
               <span class="ml-1 text-xs">({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})</span>
             </span>
@@ -70,9 +69,9 @@
             <span class="">
             </span>
             <p v-if="restaurantData.price_level" class="">
-              <span class="filled-rating">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4))
+              <span class="text-yellow-300">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4))
                 }}</span>
-              <span class="empty-rating">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4))
+              <span class="text-gray-200">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4))
                 }}</span>
             </p>
           </div>
@@ -285,12 +284,6 @@ watch(() => [
 </script>
 
 <style scoped>
-.ripple-parent {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid #ddd;
-  border-radius: 0.75rem;
-}
 
 .meal-card {
   width: 90vw;
@@ -299,60 +292,27 @@ watch(() => [
 
 .card-content {
   height: 95%;
-  display: flex;
-  flex-direction: column;
 }
 
 .meal-image-container {
   height: 70%;
   min-height: 70%;
   max-height: 70%;
-  overflow: hidden;
-  position: relative;
-}
-
-.meal-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
 }
 
 .card-title-section {
   height: 30%;
   min-height: 30%;
   max-height: 30%;
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.card-details {
-  padding: 0.5rem;
-  overflow-y: auto;
 }
 
 .restaurant-card-placeholder {
   width: 90vw;
   height: 40vh;
-  border: 1px solid #ddd;
-  border-radius: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .location-text {
   font-size: 0.5rem;
-}
-
-.filled-rating {
-  color: gold;
-}
-
-.empty-rating {
-  color: #666;
 }
 
 :deep(.swiper) {
@@ -379,35 +339,14 @@ watch(() => [
   justify-content: center;
 }
 
-.navigation-buttons {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  /* Allow clicks to pass through to the card */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 10px;
-}
 
 .nav-button {
   pointer-events: auto;
-  /* Make buttons clickable */
   background: rgba(0, 0, 0, 0.3);
-  color: white;
-  border: none;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   transition: background-color 0.2s;
-  z-index: 10;
 }
 
 .nav-button:hover {
@@ -488,31 +427,5 @@ watch(() => [
   animation: shimmer 10s infinite linear;
   border-radius: 4px;
 }
-.debug-photo-count {
-  position: absolute;
-  top: 5px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 5px;
-  font-size: 12px;
-  z-index: 100;
-  border-radius: 4px;
-}
 
-.debug-photo-info {
-  position: absolute;
-  top: 30px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 5px;
-  font-size: 12px;
-  z-index: 100;
-  border-radius: 4px;
-  max-width: 80%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 </style>

@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import { IonPage, IonContent } from '@ionic/vue';
+import OptionSelector from '@/components/OptionSelector.vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();

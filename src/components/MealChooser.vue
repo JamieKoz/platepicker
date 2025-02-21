@@ -43,7 +43,7 @@
 
 
           <div class="mt-4 mb-16">
-            <div class="ingredients-section">
+            <div class="rounded-md mb-6">
               <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
               <ul class="ingredient-list">
                 <li v-for="(ingredient, index) in formattedIngredients" :key="index" class="ingredient-item">
@@ -52,9 +52,9 @@
               </ul>
             </div>
 
-            <div class="instructions-section">
+            <div class="rounded-md mb-6">
               <h3 class="text-xl font-semibold mb-4">Instructions</h3>
-              <div class="instructions-text">
+              <div class="whitespace-pre-wrap">
                 {{ winner.instructions }}
               </div>
             </div>
@@ -261,29 +261,11 @@ const handleShare = async () => {
 
 <style scoped>
 .meal-row {
-  /* Cards take 50% of the viewport height */
   height: 50vh;
 }
 
 .winner-meal {
   width: 100vw;
-}
-
-.winner-row {
-  width: 100vw;
-  height: 80vh;
-  /* Winner section takes up 80% of the viewport height */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.meal-image {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  height: 70%;
 }
 
 .transparent-toolbar {
@@ -294,11 +276,6 @@ const handleShare = async () => {
 
 :global(.header-md::after) {
   background-image: none;
-}
-
-.ingredients-section {
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
 }
 
 .ingredient-list {
@@ -316,16 +293,6 @@ const handleShare = async () => {
   position: absolute;
   left: 0.5rem;
   color: #666;
-}
-
-.instructions-section {
-  padding: 0 1rem;
-  overflow-y: auto;
-}
-
-.instructions-text {
-  line-height: 1.6;
-  white-space: pre-wrap;
 }
 
 :global(.custom-action-sheet .custom-button) {

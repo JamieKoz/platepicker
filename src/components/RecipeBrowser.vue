@@ -32,7 +32,7 @@
         </ion-item>
       </ion-list>
 
-      <div class="pagination-controls">
+      <div class="mb-8 p-2">
         <ion-toolbar class="flex justify-between">
           <ion-button @click="fetchRecipes(meta.current_page - 1)" :disabled="!links.prev" fill="clear" size="small">
             Previous
@@ -115,7 +115,6 @@ function openCreateModal() {
 
 async function fetchRecipes(page = 1) {
   try {
-    console.log('Fetching recipes...', { page, searchTerm: searchTerm.value });
     const params = {
       page,
       q: searchTerm.value
@@ -164,10 +163,3 @@ onMounted(() => {
   }
 });
 </script>
-
-<style scoped>
-.pagination-controls {
-  margin-bottom: 2.5rem;
-  padding: 1rem;
-}
-</style>

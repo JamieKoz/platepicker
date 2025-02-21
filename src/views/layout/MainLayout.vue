@@ -122,7 +122,6 @@ watch(user, (newUser) => {
 });
 
 const navigateTo = async (path: string) => {
-  console.log('Navigating to:', path);
   try {
     await router.push(path);
     isUserMenuOpen.value = false;

@@ -2,10 +2,10 @@
   <ion-grid class="flex items-center justify-center">
     <ion-row class="flex justify-between items-center meal-row">
       <ion-col class="flex justify-center items-center flex-1">
-        <ion-card class="meal-card" @click="$emit('option1Click')">
+        <ion-card class="meal-card flex items-center justify-center" @click="$emit('option1Click')">
           <ion-ripple-effect></ion-ripple-effect>
-          <div class="card-content">
-            <div class="icon-container" v-html="optionIcons[option1Icon]"></div>
+          <div class="w-full p-2 flex flex-col items-center justify-center">
+            <div class="mb-4" v-html="optionIcons[option1Icon]"></div>
             <ion-card-title class="text-center">
               {{ option1Title }}
             </ion-card-title>
@@ -13,10 +13,10 @@
         </ion-card>
       </ion-col>
       <ion-col class="flex justify-center items-center flex-1">
-        <ion-card class="meal-card" @click="$emit('option2Click')">
+        <ion-card class="meal-card flex items-center justify-center" @click="$emit('option2Click')">
           <ion-ripple-effect></ion-ripple-effect>
-          <div class="card-content">
-            <div class="icon-container" v-html="optionIcons[option2Icon]"></div>
+          <div class="w-full p-2 flex flex-col items-center justify-center">
+            <div class="mb-4" v-html="optionIcons[option2Icon]"></div>
             <ion-card-title class="text-center">
               {{ option2Title }}
             </ion-card-title>
@@ -48,23 +48,8 @@ defineEmits<{
 .meal-card {
   width: 90vw;
   height: 40vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.card-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 1rem;
-}
-
-.icon-container {
-  margin-bottom: 1rem;
-}
 
 :deep(svg) {
   width: 64px;

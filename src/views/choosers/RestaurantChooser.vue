@@ -10,7 +10,7 @@
           </ion-searchbar>
 
           <!-- Counter below searchbar -->
-          <div class="counter-display">
+          <div class="text-center">
             <span class="justify-center text-white text-xl">{{ restaurantStore.restaurantCounter }}</span>
           </div>
 
@@ -72,7 +72,7 @@
 
               <RestaurantCard :restaurantData="winner" class="winner-card" />
 
-              <div class="mt-4 restaurant-details">
+              <div class="mt-4 w-full p-2">
                 <div class="details-section">
                   <h3 class="text-xl font-semibold mb-4">Details</h3>
                   <p><strong>Address:</strong> {{ winner.vicinity }}</p>
@@ -419,10 +419,6 @@ const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationP
   --border-color: transparent;
 }
 
-.restaurant-details {
-  width: 100%;
-  padding: 1rem;
-}
 
 .details-section {
   background: rgba(255, 255, 255, 0.1);
@@ -459,10 +455,6 @@ const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationP
   right: 0;
   z-index: 1000;
   background: transparent;
-}
-
-.counter-display {
-  text-align: center;
 }
 
 /* Update dropdown positions relative to new structure */
