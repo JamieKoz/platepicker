@@ -4,25 +4,20 @@
     <ion-header class="ion-no-border">
       <div class="search-section">
         <div class="search-container">
-          <!-- Searchbar -->
           <ion-searchbar v-model="searchQuery" placeholder="Search address" @ionInput="handleSearchInput"
             @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur" class="address-searchbar">
           </ion-searchbar>
 
-          <!-- Counter below searchbar -->
           <div class="text-center">
             <span class="justify-center text-white text-xl">{{ restaurantStore.restaurantCounter }}</span>
           </div>
 
-          <!-- Dropdown container for suggestions and location button -->
           <div v-if="searchBarFocused || addressSuggestions.length > 0" class="dropdown-container">
-            <!-- Location button -->
             <ion-list class="use-location-button mx-auto" @click="getUserLocation">
               <ion-icon :icon="locationOutline" class="location-icon"></ion-icon>
               <span>Use current location</span>
             </ion-list>
 
-            <!-- Address suggestions -->
             <ion-list v-if="addressSuggestions.length > 0" class="address-suggestions">
               <ion-item v-for="suggestion in addressSuggestions" :key="suggestion.place_id" button
                 @click="selectAddress(suggestion)">
@@ -33,7 +28,6 @@
         </div>
       </div>
     </ion-header>
-    <!-- Restaurant Competition View -->
     <ion-content v-if="hasLocation" class="main-content">
       <ion-grid class="h-full">
         <RetryConnection v-if="loadError" message="Unable to load restaurants. Please check your connection."
@@ -61,17 +55,15 @@
           <ion-row v-else class="h-full flex justify-center items-start">
             <ion-col class="flex flex-col items-center">
               <div class="w-full flex justify-between items-center mb-4">
-                <div class="flex-1"></div>
                 <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
-                <div class="flex-1 flex justify-end">
-                  <ion-button fill="clear" @click="handleShare">
-                    <ion-icon :icon="share" class="text-white" />
-                  </ion-button>
-                </div>
               </div>
 
               <RestaurantCard :restaurantData="winner" class="winner-card" />
-
+              <div class="flex-1 flex justify-end">
+                <ion-button fill="clear" @click="handleShare">
+                  <ion-icon :icon="shareOutline" class="bg-gray-800 rounded-xl p-2 text-white" />
+                </ion-button>
+              </div>
               <div class="mt-4 w-full p-2">
                 <div class="details-section">
                   <h3 class="text-xl font-semibold mb-4">Details</h3>
@@ -100,7 +92,7 @@ import {
   toastController, actionSheetController
 } from '@ionic/vue';
 
-import { share, clipboardOutline, mailOutline, navigateOutline, locationOutline } from 'ionicons/icons';
+import { clipboardOutline, mailOutline, navigateOutline, locationOutline, shareOutline } from 'ionicons/icons';
 import RestaurantCard from '@/components/RestaurantCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 
@@ -123,10 +115,8 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
   if (restaurantStore.restaurantCounter === 0) {
     winner.value = chosenRestaurant;
     
-    // When we have a winner, ensure we load all its photos if any are missing
     if (winner.value.has_additional_photos) {
-      // Force refresh photos for the winner to ensure we show all available photos
-      await restaurantStore.getRestaurantPhotos(winner.value.place_id, true);
+      await restaurantStore.getRestaurantPhotos(winner.value.place_id);
     }
     
     restaurant1.value = null;
@@ -141,9 +131,7 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
       restaurant1.value = nextRestaurant;
     }
     
-    // Start preloading photos for the next restaurant that will be shown
     if (nextRestaurant.has_additional_photos) {
-      // Don't await, let it load in the background
       restaurantStore.fetchAdditionalPhotos(nextRestaurant.place_id);
     }
   }

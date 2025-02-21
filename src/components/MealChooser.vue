@@ -13,7 +13,7 @@
   <RetryConnection v-if="loadError" message="Unable to load meals. Please check your connection."
     @retry="handleRetry" />
 
-  <ion-content v-else class="ion-padding">
+  <ion-content v-else class="">
     <ion-grid class="h-full">
       <!-- Competition View -->
       <ion-row v-if="!winner" class="h-full flex justify-between items-center meal-row">
@@ -29,19 +29,18 @@
       <ion-row v-else class="h-full flex justify-center items-start">
         <ion-col class="flex flex-col items-center">
           <div class="w-full flex justify-between items-center mb-4">
-            <div class="flex-1"></div> <!-- Empty div for spacing -->
             <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
-            <div class="flex-1 flex justify-end">
-              <ion-button fill="clear" @click="handleShare">
-                <ion-icon :icon="share" class="text-white" />
-              </ion-button>
-            </div>
+
           </div>
-          <div class="winner-container">
-            <MealCard :mealData="winner" class="winner-card" />
+          <div>
+            <MealCard :mealData="winner" />
           </div>
 
-
+          <div class="flex-1 flex justify-end">
+            <ion-button fill="clear" @click="handleShare">
+              <ion-icon :icon="shareOutline" class="bg-gray-800 rounded-xl p-2 text-white" />
+            </ion-button>
+          </div>
           <div class="mt-4 mb-16">
             <div class="rounded-md mb-6">
               <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
@@ -68,7 +67,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import api from '@/api/axios';
-import { refresh, share, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline } from 'ionicons/icons';
+import { refresh, share, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline, shareOutline } from 'ionicons/icons';
 import { useMealStore } from '@/store/useMealStore';
 import MealCard from '@/components/MealCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';

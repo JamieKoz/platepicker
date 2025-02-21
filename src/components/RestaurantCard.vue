@@ -55,7 +55,7 @@
           </button>
         </div>
       </div>
-      <ion-card-title class="flec flex-col overflow-hidden p-4 card-title-section">
+      <ion-card-title class="flex flex-col overflow-hidden p-4 card-title-section">
         <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
         <ion-card-content class="p-2 overflow-y-auto">
           <div class="flex justify-between">
@@ -315,22 +315,6 @@ watch(() => [
   font-size: 0.5rem;
 }
 
-:deep(.swiper) {
-  width: 100%;
-  height: 100%;
-}
-
-:deep(.swiper-pagination-bullet) {
-  background: white;
-  opacity: 0.7;
-}
-
-:deep(.swiper-pagination-bullet-active) {
-  background: white;
-  opacity: 1;
-}
-
-
 .meal-image-container :deep(.swiper-slide) {
   height: 100%;
   width: 100%;
@@ -338,7 +322,6 @@ watch(() => [
   align-items: center;
   justify-content: center;
 }
-
 
 .nav-button {
   pointer-events: auto;
