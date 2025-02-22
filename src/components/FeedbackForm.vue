@@ -1,15 +1,15 @@
 <!-- FeedbackForm.vue -->
 <template>
-  <div class="feedback-modal">
-    <div class="modal-content">
-      <div class="modal-header">
+  <div class="w-full flex items-center justify-center">
+    <div class="p-4 rounded-md w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto modal-content">
+      <div class="flex justify-between items-center mb-4">
         <h2>Share Your Feedback</h2>
       </div>
 
-      <form @submit.prevent="submitFeedback" class="feedback-form">
-        <div class="form-group">
+      <form @submit.prevent="submitFeedback" class="flex flex-col gap-3">
+        <div class="flex flex-col gap-2">
           <label>Rating</label>
-          <div class="star-rating">
+          <div class="flex gap-2">
             <button 
               v-for="star in 5" 
               :key="star"
@@ -23,9 +23,9 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="flex flex-col gap-2">
           <label for="feedbackType">Type of Feedback</label>
-          <select v-model="feedback.type" id="feedbackType" required>
+          <select v-model="feedback.type" id="feedbackType" class="p-2 border-solid border-1 border-white rounded-lg" required>
             <option value="suggestion">Suggestion</option>
             <option value="bug">Bug Report</option>
             <option value="compliment">Compliment</option>
@@ -33,7 +33,7 @@
           </select>
         </div>
 
-        <div class="form-group">
+        <div class="flex flex-col gap-2">
           <label for="feedbackMessage">Your Feedback</label>
           <textarea
             v-model="feedback.message"
@@ -41,10 +41,11 @@
             rows="5"
             required
             placeholder="Tell us what you think..."
+            class="resize-y p-2 border-solid border-1 border-white rounded-lg"
           ></textarea>
         </div>
 
-        <div class="form-actions">
+        <div> 
           <button type="submit" :disabled="isSubmitting">
             {{ isSubmitting ? 'Sending...' : 'Submit Feedback' }}
           </button>
@@ -130,55 +131,6 @@ const submitFeedback = async () => {
 </script>
 
 <style scoped>
-.feedback-modal {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  padding: 2rem;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.feedback-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-label {
-  font-weight: 600;
-}
-
-input, select, textarea {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-textarea {
-  resize: vertical;
-}
 
 button[type="submit"] {
   background-color: #4CAF50;
@@ -206,11 +158,6 @@ button[type="submit"]:disabled {
 
 .status-message.error {
   color: #c62828;
-}
-
-.star-rating {
-  display: flex;
-  gap: 0.5rem;
 }
 
 .star-button {

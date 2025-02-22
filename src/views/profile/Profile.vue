@@ -23,23 +23,23 @@
         <form @submit.prevent="updateProfile" class="space-y-4">
           <!-- Profile Section -->
           <div class="mb-6">
-            <h2 class="font-bold text-lg text-gray-600 font-medium mb-4">Profile Details</h2>
+            <h2 class="font-bold text-lg opacity-60 font-medium mb-4">Profile Details</h2>
 
             <ion-item>
-              <ion-label position="stacked" class="font-bold">Username</ion-label>
+              <ion-label position="stacked" class="font-bold opacity-40">Username</ion-label>
               <ion-input v-model="formData.username" type="text" required
                 @input="e => formData.username = capitalizeFirstLetter(e.target.value)" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked" class="font-bold">First Name</ion-label>
+              <ion-label position="stacked" class="font-bold opacity-40">First Name</ion-label>
               <ion-input v-model="formData.firstName" type="text" required :value="user?.firstName || ''" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked" class="font-bold">Last Name</ion-label>
+              <ion-label position="stacked" class="font-bold opacity-40">Last Name</ion-label>
               <ion-input v-model="formData.lastName" type="text" required :value="user?.lastName || ''" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked" class="font-bold">Email</ion-label>
+              <ion-label position="stacked" class="font-bold opacity-40">Email</ion-label>
               <ion-input v-model="formData.email" type="email" required
                 :value="user?.primaryEmailAddress?.emailAddress || ''" />
             </ion-item>
@@ -47,17 +47,17 @@
 
           <!-- Password Section -->
           <div class="mb-6">
-            <h2 class="text-lg font-medium text-gray-600 mb-4 font-bold">Change Password</h2>
+            <h2 class="text-lg font-medium opacity-60 mb-4 font-bold">Change Password</h2>
             <ion-item>
-              <ion-label position="stacked" class="font-bold">Current Password</ion-label>
+              <ion-label position="stacked" class="font-bold opacity-40">Current Password</ion-label>
               <ion-input v-model="passwordData.currentPassword" type="password" :clear-input="true" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked" class="font-bold">New Password</ion-label>
+              <ion-label position="stacked" class="font-bold opacity-40">New Password</ion-label>
               <ion-input v-model="passwordData.newPassword" type="password" :clear-input="true" />
             </ion-item>
             <ion-item>
-              <ion-label position="stacked" class="font-bold">Confirm New Password</ion-label>
+              <ion-label position="stacked" class="font-bold opacity-40">Confirm New Password</ion-label>
               <ion-input v-model="passwordData.confirmPassword" type="password" :clear-input="true" />
             </ion-item>
             <div v-if="passwordError" class="text-red-500 text-sm mt-2">

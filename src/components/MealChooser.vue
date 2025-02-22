@@ -19,12 +19,12 @@
       <ion-row v-if="!winner" class="h-full flex justify-between items-center meal-row">
         <ion-col class="flex justify-center items-center">
           <div :class="{'slide-out-right': animateMeal1, 'slide-in-left': newMealAnimation1}" class="meal-container">
-            <MealCard :mealData="meal1" @replaceMeal="handleMeal1Selected" />
+            <MealCard :mealData="meal1" @replaceMeal="handleMealSelected" />
           </div>
         </ion-col>
         <ion-col class="flex justify-center items-center">
           <div :class="{'slide-out-right': animateMeal2, 'slide-in-left': newMealAnimation2}" class="meal-container">
-            <MealCard :mealData="meal2" @replaceMeal="handleMeal2Selected" />
+            <MealCard :mealData="meal2" @replaceMeal="handleMealSelected" />
           </div>
         </ion-col>
       </ion-row>
@@ -119,8 +119,7 @@ async function trackMealSelection(mealId: number) {
   }
 }
 
-// Handle when Meal 1 is selected (animate Meal 2 out)
-const handleMeal1Selected = async (clickedMeal: Meal) => {
+const handleMealSelected = async (clickedMeal: Meal) => {
   if (mealStore.mealCounter === 0) {
     winner.value = clickedMeal;
     meal1.value = null;
@@ -128,13 +127,18 @@ const handleMeal1Selected = async (clickedMeal: Meal) => {
     return;
   }
 
-  // Track the meal selection
   if (clickedMeal.recipe_id != null) {
     await trackMealSelection(clickedMeal.recipe_id);
   }
 
-  // Animate the other meal (meal2) sliding out
-  animateMeal2.value = true;
+  // Determine which meal was clicked and which needs to be replaced
+  const isMeal1Clicked = clickedMeal.id === meal1.value?.id;
+  const mealToAnimate = isMeal1Clicked ? animateMeal2 : animateMeal1;
+  const newMealAnimation = isMeal1Clicked ? newMealAnimation2 : newMealAnimation1;
+  const mealToReplace = isMeal1Clicked ? meal2 : meal1;
+  
+  // Animate the other meal sliding out
+  mealToAnimate.value = true;
   
   // After animation completes, replace the meal and animate in
   setTimeout(async () => {
@@ -143,68 +147,24 @@ const handleMeal1Selected = async (clickedMeal: Meal) => {
       if (!newMeal) return;
       
       // Reset animation state
-      animateMeal2.value = false;
+      mealToAnimate.value = false;
       
       // Replace the meal
-      meal2.value = newMeal;
+      mealToReplace.value = newMeal;
       
       // Animate the new meal sliding in
-      newMealAnimation2.value = true;
+      newMealAnimation.value = true;
       
       // Remove the slide-in class after animation completes
       setTimeout(() => {
-        newMealAnimation2.value = false;
+        newMealAnimation.value = false;
       }, 500);
       
     } catch (error) {
       console.error('Error replacing meal:', error);
       loadError.value = true;
     }
-  }, 400); // Match this with your animation duration
-};
-
-// Handle when Meal 2 is selected (animate Meal 1 out)
-const handleMeal2Selected = async (clickedMeal: Meal) => {
-  if (mealStore.mealCounter === 0) {
-    winner.value = clickedMeal;
-    meal1.value = null;
-    meal2.value = null;
-    return;
-  }
-
-  // Track the meal selection
-  if (clickedMeal.recipe_id != null) {
-    await trackMealSelection(clickedMeal.recipe_id);
-  }
-
-  // Animate the other meal (meal1) sliding out
-  animateMeal1.value = true;
-  
-  // After animation completes, replace the meal and animate in
-  setTimeout(async () => {
-    try {
-      const newMeal = mealStore.getNewMeal();
-      if (!newMeal) return;
-      
-      // Reset animation state
-      animateMeal1.value = false;
-      
-      // Replace the meal
-      meal1.value = newMeal;
-      
-      // Animate the new meal sliding in
-      newMealAnimation1.value = true;
-      
-      // Remove the slide-in class after animation completes
-      setTimeout(() => {
-        newMealAnimation1.value = false;
-      }, 500);
-      
-    } catch (error) {
-      console.error('Error replacing meal:', error);
-      loadError.value = true;
-    }
-  }, 400); // Match this with your animation duration
+  }, 400);
 };
 
 const formattedIngredients = computed(() => {

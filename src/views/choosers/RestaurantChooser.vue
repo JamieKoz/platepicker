@@ -40,13 +40,19 @@
             <ion-row class="h-full flex justify-between items-center restaurant-row">
               <ion-col class="flex justify-center items-center">
                 <!-- Show skeleton while loading first restaurant -->
-                <RestaurantCard v-if="loading" />
-                <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" />
+                <div :class="{'slide-out-right': animateRestaurant1, 'slide-in-left': newRestaurantAnimation1}"
+                  class="restaurant-container">
+                  <RestaurantCard v-if="loading" />
+                  <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" />
+                </div>
               </ion-col>
               <ion-col class="flex justify-center items-center">
                 <!-- Show skeleton while loading second restaurant -->
-                <RestaurantCard v-if="loading" />
-                <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" />
+                <div :class="{ 'slide-out-right': animateRestaurant2, 'slide-in-left': newRestaurantAnimation2 }"
+                  class="restaurant-container">
+                  <RestaurantCard v-if="loading" />
+                  <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" />
+                </div>
               </ion-col>
             </ion-row>
           </template>
@@ -83,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import axios from 'axios';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
 import {
@@ -111,6 +117,11 @@ const lastCoords = ref<{ latitude: number; longitude: number } | null>(null);
 const searchBarFocused = ref(false);
 const BASE_URL = 'http://127.0.0.1:8000/api';
 
+const animateRestaurant1 = ref(false);
+const animateRestaurant2 = ref(false);
+const newRestaurantAnimation1 = ref(false);
+const newRestaurantAnimation2 = ref(false);
+
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
   if (restaurantStore.restaurantCounter === 0) {
     winner.value = chosenRestaurant;
@@ -121,21 +132,43 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
     
     restaurant1.value = null;
     restaurant2.value = null;
-  } else {
-    const nextRestaurant = restaurantStore.getNewRestaurant();
-    if (!nextRestaurant) return;
-
-    if (chosenRestaurant.place_id === restaurant1.value?.place_id) {
-      restaurant2.value = nextRestaurant;
-    } else {
-      restaurant1.value = nextRestaurant;
-    }
-    
-    if (nextRestaurant.has_additional_photos) {
-      restaurantStore.fetchAdditionalPhotos(nextRestaurant.place_id);
-    }
+    return;
   }
+
+  const isRestaurant1Clicked = chosenRestaurant.place_id === restaurant1.value?.place_id;
+  const restaurantToAnimate = isRestaurant1Clicked ? animateRestaurant2 : animateRestaurant1;
+  const newRestaurantAnimation = isRestaurant1Clicked ? newRestaurantAnimation2 : newRestaurantAnimation1;
+  const restaurantToReplace = isRestaurant1Clicked ? restaurant2 : restaurant1;
+
+  // Wait for next tick before starting animation
+  await nextTick();
+  restaurantToAnimate.value = true;
+
+  setTimeout(async () => {
+    try {
+      const nextRestaurant = restaurantStore.getNewRestaurant();
+      if (!nextRestaurant) return;
+
+      restaurantToAnimate.value = false;
+      
+      await nextTick();
+      restaurantToReplace.value = nextRestaurant;
+      
+      // Wait for next render before starting slide-in
+      await nextTick();
+      newRestaurantAnimation.value = true;
+
+      setTimeout(() => {
+        newRestaurantAnimation.value = false;
+      }, 300); // Match animation duration
+
+    } catch (error) {
+      console.error('Error replacing restaurant:', error);
+      loadError.value = true;
+    }
+  }, 300); // Match animation duration
 };
+
 
 const handleShare = async () => {
   if (!winner.value) return;
@@ -377,7 +410,9 @@ const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationP
     });
   });
 };
-</script><style scoped>
+</script>
+
+<style scoped>
 .restaurant-row {
   height: 50vh;
 }
@@ -476,5 +511,29 @@ const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationP
 
 .main-content {
   --padding-top: 35%;
+}
+
+.restaurant-container {
+  transform: translateX(0);
+  transition: transform 0.3s ease-out;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.slide-out-right {
+  transform: translateX(100vw);
+}
+
+.slide-in-left {
+  animation: slideInFromLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideInFromLeft {
+  0% {
+    transform: translateX(-100vw);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 </style>

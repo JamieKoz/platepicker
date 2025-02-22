@@ -38,8 +38,8 @@
 
             <ion-card-title class="p-4 background-gray ">
               <h2 class="text-xl text-white font-semibold mb-2">{{ favourite.meal.title }}</h2>
-              <div class="flex justify-between items-center text-sm text-gray-600">
-                <ion-card-subtitle class="text-gray-500">
+              <div class="flex justify-between items-center text-sm opacity-60">
+                <ion-card-subtitle class="opacity-60">
                   Selected {{ favourite.tally }} times
                 </ion-card-subtitle>
               </div>
@@ -61,7 +61,9 @@ import {
   IonBadge, 
   IonSpinner, 
   IonText,
-  IonButton 
+  IonButton,
+  IonCardTitle,
+  IonCardSubtitle
 } from '@ionic/vue';
 import api from '@/api/axios';
 import type { Favourite } from '@/types/favourite';
