@@ -11,14 +11,12 @@
       <ion-card-title class="py-3 overflow-hidden font-bold p-2 text-lg break-word white-space">
         <ion-card-subtitle class="text-white text-center">{{ mealData.title }}</ion-card-subtitle>
         <ion-card-content class="p-2 overflow-y-auto">
-
           <div class="flex flex-col">
             <div class="flex justify-between w-full">
               <span class="text-xs inline-flex items-center bg-blue-400 rounded-lg p-1">
                 <ion-icon :icon="alarmSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
                 {{ mealData.cooking_time ?? 'Under 30 mins' }}
               </span>
-
               <span class="text-xs inline-flex items-center bg-green-400 rounded-lg p-1">
                 <ion-icon :icon="restaurantSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
                 {{ mealData.serves ?? 'Serves 5' }}
@@ -31,7 +29,6 @@
               </span>
             </div>
           </div>
-
         </ion-card-content>
       </ion-card-title>
     </ion-card>
@@ -39,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonCard, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle, IonCardContent } from '@ionic/vue';
+import { IonCard, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
 import { alarmSharp, pizzaSharp, restaurantSharp } from 'ionicons/icons';
 import type { Meal } from '@/types/meal';
 
@@ -55,4 +52,3 @@ const chooseMeal = (meal: Meal) => {
   emit('replaceMeal', meal);
 };
 </script>
-

@@ -18,10 +18,14 @@
       <!-- Competition View -->
       <ion-row v-if="!winner" class="h-full flex justify-between items-center meal-row">
         <ion-col class="flex justify-center items-center">
-          <MealCard :mealData="meal1" @replaceMeal="replaceMeal" />
+          <div :class="{'slide-out-right': animateMeal1, 'slide-in-left': newMealAnimation1}" class="meal-container">
+            <MealCard :mealData="meal1" @replaceMeal="handleMeal1Selected" />
+          </div>
         </ion-col>
         <ion-col class="flex justify-center items-center">
-          <MealCard :mealData="meal2" @replaceMeal="replaceMeal" />
+          <div :class="{'slide-out-right': animateMeal2, 'slide-in-left': newMealAnimation2}" class="meal-container">
+            <MealCard :mealData="meal2" @replaceMeal="handleMeal2Selected" />
+          </div>
         </ion-col>
       </ion-row>
 
@@ -80,6 +84,12 @@ let meal2 = ref<Meal | null>(null);
 const winner = ref<Meal | null>(null);
 const loadError = ref(false);
 
+// Animation states
+const animateMeal1 = ref(false);
+const animateMeal2 = ref(false);
+const newMealAnimation1 = ref(false);
+const newMealAnimation2 = ref(false);
+
 // Fetch initial meals on mount
 onMounted(() => fetchInitialMeals());
 
@@ -109,31 +119,92 @@ async function trackMealSelection(mealId: number) {
   }
 }
 
-// Replace meal handler
-const replaceMeal = async (clickedMeal: Meal) => {
-  try {
-    if (mealStore.mealCounter === 0) {
-      winner.value = clickedMeal;
-      meal1.value = null;
-      meal2.value = null;
-    } else {
+// Handle when Meal 1 is selected (animate Meal 2 out)
+const handleMeal1Selected = async (clickedMeal: Meal) => {
+  if (mealStore.mealCounter === 0) {
+    winner.value = clickedMeal;
+    meal1.value = null;
+    meal2.value = null;
+    return;
+  }
+
+  // Track the meal selection
+  if (clickedMeal.recipe_id != null) {
+    await trackMealSelection(clickedMeal.recipe_id);
+  }
+
+  // Animate the other meal (meal2) sliding out
+  animateMeal2.value = true;
+  
+  // After animation completes, replace the meal and animate in
+  setTimeout(async () => {
+    try {
       const newMeal = mealStore.getNewMeal();
       if (!newMeal) return;
-
-      if (clickedMeal.recipe_id != null) {
-        await trackMealSelection(clickedMeal.recipe_id);
-      }
-
-      if (clickedMeal.id === meal1.value?.id) {
-        meal2.value = newMeal;
-      } else if (clickedMeal.id === meal2.value?.id) {
-        meal1.value = newMeal;
-      }
+      
+      // Reset animation state
+      animateMeal2.value = false;
+      
+      // Replace the meal
+      meal2.value = newMeal;
+      
+      // Animate the new meal sliding in
+      newMealAnimation2.value = true;
+      
+      // Remove the slide-in class after animation completes
+      setTimeout(() => {
+        newMealAnimation2.value = false;
+      }, 500);
+      
+    } catch (error) {
+      console.error('Error replacing meal:', error);
+      loadError.value = true;
     }
-  } catch (error) {
-    console.error('Error replacing meal:', error);
-    loadError.value = true;
+  }, 400); // Match this with your animation duration
+};
+
+// Handle when Meal 2 is selected (animate Meal 1 out)
+const handleMeal2Selected = async (clickedMeal: Meal) => {
+  if (mealStore.mealCounter === 0) {
+    winner.value = clickedMeal;
+    meal1.value = null;
+    meal2.value = null;
+    return;
   }
+
+  // Track the meal selection
+  if (clickedMeal.recipe_id != null) {
+    await trackMealSelection(clickedMeal.recipe_id);
+  }
+
+  // Animate the other meal (meal1) sliding out
+  animateMeal1.value = true;
+  
+  // After animation completes, replace the meal and animate in
+  setTimeout(async () => {
+    try {
+      const newMeal = mealStore.getNewMeal();
+      if (!newMeal) return;
+      
+      // Reset animation state
+      animateMeal1.value = false;
+      
+      // Replace the meal
+      meal1.value = newMeal;
+      
+      // Animate the new meal sliding in
+      newMealAnimation1.value = true;
+      
+      // Remove the slide-in class after animation completes
+      setTimeout(() => {
+        newMealAnimation1.value = false;
+      }, 500);
+      
+    } catch (error) {
+      console.error('Error replacing meal:', error);
+      loadError.value = true;
+    }
+  }, 400); // Match this with your animation duration
 };
 
 const formattedIngredients = computed(() => {
@@ -162,7 +233,6 @@ const formattedIngredients = computed(() => {
     return [];
   }
 });
-
 const showRefreshButton = computed(() => {
   return mealStore.mealCounter === 0 && winner.value !== null;
 });
@@ -255,7 +325,6 @@ const handleShare = async () => {
 
   await actionSheet.present();
 };
-
 </script>
 
 <style scoped>
@@ -271,6 +340,27 @@ const handleShare = async () => {
   --background: transparent;
   --border-width: 0;
   --border-color: transparent;
+}
+
+.meal-container {
+  transition: transform 0.3s ease-out;
+}
+
+.slide-out-right {
+  transform: translateX(100vw);
+}
+
+.slide-in-left {
+  animation: slideInFromLeft 0.3s forwards;
+}
+
+@keyframes slideInFromLeft {
+  0% {
+    transform: translateX(-100vw);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 :global(.header-md::after) {
