@@ -90,8 +90,8 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
-import axios from 'axios';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
+import api from '@/api/axios';
 import {
   IonPage, IonContent, IonGrid, IonRow, IonCol, IonHeader, IonToolbar,
   IonTitle, IonButton, IonIcon, IonSearchbar, IonList, IonItem, IonLabel,
@@ -115,8 +115,6 @@ const winner = ref<any>(null);
 const lastPlaceId = ref<string | null>(null);
 const lastCoords = ref<{ latitude: number; longitude: number } | null>(null);
 const searchBarFocused = ref(false);
-const BASE_URL = 'http://127.0.0.1:8000/api';
-
 const animateRestaurant1 = ref(false);
 const animateRestaurant2 = ref(false);
 const newRestaurantAnimation1 = ref(false);
@@ -306,7 +304,7 @@ const handleSearchInput = debounce(async (event: CustomEvent) => {
   }
 
   try {
-    const response = await axios.get(`${BASE_URL}/restaurants/address-suggestions`, {
+    const response = await api.get('/restaurants/address-suggestions', {
       params: { input: query }
     });
 

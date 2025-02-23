@@ -95,6 +95,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import placeholderImage from '@/assets/meal-placeholder.png';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
+import api from '@/api/axios';
 
 const swiper = ref<Swiper | null>(null);
 const swiperModules = [Pagination, Navigation];
@@ -102,7 +103,6 @@ const isLoadingMorePhotos = ref(false);
 const swiperKey = ref(0); // Key to force swiper re-rendering
 const currentSlideIndex = ref(0); 
 const loadedImages = ref(new Set()); // Track loaded images
-const BASE_URL = 'http://127.0.0.1:8000/api';
 const props = defineProps<{
   restaurantData?: Restaurant | null;
 }>();
@@ -226,20 +226,14 @@ const loadAdditionalPhotos = async () => {
   isLoadingMorePhotos.value = true;
   
   try {
-    const response = await fetch(`${BASE_URL}/restaurants/photos/${placeId}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
+    const response = await api.get('/restaurants/photos/${placeId}');
     
     if (!props.restaurantData.photos) {
       props.restaurantData.photos = [];
     }
     
-    if (data.photos && data.photos.length > 0) {
-      const photosToAdd = data.photos.slice(1, 5);
+    if (response.data.photos && response.data.photos.length > 0) {
+      const photosToAdd = response.data.photos.slice(1, 5);
       
       for (const photo of photosToAdd) {
         if (photo && photo.url) {

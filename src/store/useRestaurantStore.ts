@@ -1,13 +1,12 @@
 // useRestaurantStore.ts with direct photo return
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import axios from 'axios';
+import api from '@/api/axios';
 import type { Restaurant, PhotoReference } from '@/types/restaurant';
 
 export const useRestaurantStore = defineStore('restaurant', () => {
   const restaurants = ref<Restaurant[]>([]);
   const photoCache = ref<Record<string, PhotoReference[]>>({});
-  const BASE_URL = 'http://127.0.0.1:8000/api';
   const isLoading = ref(false);
   const isLoadingAdditionalPhotos = ref(false);
   
@@ -17,7 +16,7 @@ export const useRestaurantStore = defineStore('restaurant', () => {
   const fetchRestaurantsByAddress = async (placeId: string) => {
     isLoading.value = true;
     try {
-      const response = await axios.get(`${BASE_URL}/restaurants/nearby`, {
+      const response = await api.get('/restaurants/nearby', {
         params: {
           place_id: placeId
         },
@@ -48,7 +47,7 @@ export const useRestaurantStore = defineStore('restaurant', () => {
   const fetchRestaurantsByLocation = async (lat: number, lng: number) => {
     isLoading.value = true;
     try {
-      const response = await axios.get(`${BASE_URL}/restaurants/reverse-geocode`, {
+      const response = await api.get('/restaurants/reverse-geocode', {
         params: { lat, lng },
         timeout: 15000
       });
@@ -119,9 +118,9 @@ export const useRestaurantStore = defineStore('restaurant', () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      const photoEndpoint = `${BASE_URL}/restaurants/photos/${placeId}`;
+      const photoEndpoint = '/restaurants/photos/${placeId}';
       
-      const response = await axios.get(photoEndpoint, {
+      const response = await api.get(photoEndpoint, {
         timeout: 15000
       });
       

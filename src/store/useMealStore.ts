@@ -1,16 +1,15 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import axios from 'axios';
+import api from '@/api/axios';
 import type { Meal } from '@/types/meal';
 
 export const useMealStore = defineStore('mealStore', () => {
   const meals = ref<Meal[]>([]);
-  const BASE_URL = 'http://127.0.0.1:8000/api';
 
   // Fetch meals from API
   const fetchMeals = async () => {
     try {
-      const response = await axios.get<Meal[]>(`${BASE_URL}/recipe`);
+      const response = await api.get<Meal[]>('/recipe');
       if (!response.data) {
         throw new Error('No data received');
       }

@@ -33,9 +33,14 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/auth/SignUp.vue'),
         meta: { requiresAuth: false }
       },
-
+      // src/router/index.ts
       {
-        path: 'home',
+        path: '/home',
+        name: 'Dashboard',
+        component: () => import('@/views/Dashboard.vue')
+      },
+      {
+        path: 'buy-or-cook',
         component: () => import('@/views/choosers/BuyOrCookChooser.vue')
       },
       {
