@@ -115,8 +115,9 @@ async function handleRetry() {
   await fetchInitialMeals();
 }
 
-async function trackMealSelection(mealId: number) {
+async function trackMealSelection(meal: Meal) {
   try {
+    const mealId = meal.recipe_id || meal.id;
     await api.post(`/user-meals/${mealId}/increment-tally`);
   } catch (error) {
     console.error('Error tracking meal selection:', error);
@@ -132,7 +133,7 @@ const handleMealSelected = async (clickedMeal: Meal) => {
   }
 
   if (clickedMeal.recipe_id != null) {
-    await trackMealSelection(clickedMeal.recipe_id);
+    await trackMealSelection(clickedMeal);
   }
 
   // Determine which meal was clicked and which needs to be replaced

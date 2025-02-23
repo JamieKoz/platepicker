@@ -13,22 +13,48 @@
       <form @submit.prevent="saveMeal">
         <ion-item>
           <ion-label position="stacked">Title</ion-label>
-          <ion-input v-model="mealForm.title" required></ion-input>
+          <ion-input v-model="mealForm.title" required placeholder="Pasta Bolognese"></ion-input>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Ingredients</ion-label>
-          <ion-textarea v-model="mealForm.ingredients" class="min-h-[150px]"></ion-textarea>
+          <ion-textarea v-model="mealForm.ingredients" class="min-h-[150px]" placeholder="- 2 eggs,
+- 500g Salt"></ion-textarea>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Instructions</ion-label>
-          <ion-textarea v-model="mealForm.instructions" class="min-h-[150px]"></ion-textarea>
+          <ion-textarea v-model="mealForm.instructions" class="min-h-[150px]" placeholder="Stir for 20 mins"></ion-textarea>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Image</ion-label>
           <input type="file" @change="handleImageChange" accept="image/*" class="py-4">
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Cooking Time</ion-label>
+          <ion-input v-model="mealForm.cooking_time" placeholder="time in minutes eg. 30"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Serves</ion-label>
+          <ion-input v-model="mealForm.serves" placeholder="no. of servings e.g. 4"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Dietary Requirements</ion-label>
+          <ion-select v-model="mealForm.dietary" :multiple="true" placeholder="Select dietary requirements">
+            <ion-select-option value="gluten-free">Gluten Free</ion-select-option>
+            <ion-select-option value="dairy-free">Dairy Free</ion-select-option>
+            <ion-select-option value="egg-free">Egg Free</ion-select-option>
+            <ion-select-option value="nut-free">Nut Free</ion-select-option>
+            <ion-select-option value="vegetarian">Vegetarian</ion-select-option>
+            <ion-select-option value="vegan">Vegan</ion-select-option>
+            <ion-select-option value="pescatarian">Pescatarian</ion-select-option>
+            <ion-select-option value="keto">Keto</ion-select-option>
+            <ion-select-option value="paleo">Paleo</ion-select-option>
+          </ion-select>
         </ion-item>
 
         <ion-item>
@@ -47,11 +73,8 @@
       </form>
     </ion-content>
 
-    <ion-alert 
-      :is-open="showDeleteConfirm" 
-      header="Confirm Delete" 
-      message="Are you sure you want to remove this meal from your list?"
-      :buttons="[
+    <ion-alert :is-open="showDeleteConfirm" header="Confirm Delete"
+      message="Are you sure you want to remove this meal from your list?" :buttons="[
         {
           text: 'Cancel',
           role: 'cancel',
@@ -62,8 +85,7 @@
           role: 'confirm',
           handler: () => { deleteMeal() }
         }
-      ]"
-    ></ion-alert>
+      ]"></ion-alert>
   </ion-modal>
 </template>
 
@@ -83,7 +105,9 @@ import {
   IonInput,
   IonTextarea,
   IonToggle,
-  IonAlert
+  IonAlert,
+  IonSelect,
+  IonSelectOption
 } from '@ionic/vue';
 import api from '@/api/axios';
 
@@ -102,11 +126,13 @@ const mealForm = ref({
   title: '',
   ingredients: '',
   instructions: '',
+  cooking_time: '',
+  serves: '',
+  dietary: [] as string[],
   image: null as File | null,
   active: true
 });
 
-// Watch for changes in editingMeal to update form
 watch(
   () => props.editingMeal,
   (meal) => {
@@ -115,6 +141,9 @@ watch(
         title: meal.title,
         ingredients: meal.ingredients || '',
         instructions: meal.instructions || '',
+        cooking_time: meal.cooking_time || '',
+        serves: meal.serves || '',
+        dietary: typeof meal.dietary === 'string' ? meal.dietary.split(',') : (meal.dietary || []),
         image: null,
         active: meal.active
       };
@@ -123,6 +152,9 @@ watch(
         title: '',
         ingredients: '',
         instructions: '',
+        cooking_time: '',
+        serves: '',
+        dietary: [],
         image: null,
         active: true
       };
@@ -166,11 +198,13 @@ async function saveMeal() {
     formData.append('title', mealForm.value.title);
     formData.append('ingredients', mealForm.value.ingredients);
     formData.append('instructions', mealForm.value.instructions);
+    formData.append('cooking_time', mealForm.value.cooking_time);
+    formData.append('serves', mealForm.value.serves);
+    formData.append('dietary', mealForm.value.dietary.join(','));
     if (mealForm.value.image) {
       formData.append('image', mealForm.value.image);
     }
     formData.append('active', mealForm.value.active ? '1' : '0');
-
     if (props.editingMeal) {
       await api.post(`/user-meals/${props.editingMeal.id}`, formData);
     } else {
@@ -182,5 +216,4 @@ async function saveMeal() {
   } catch (error) {
     console.error("Error saving meal:", error);
   }
-}
-</script>
+}</script>

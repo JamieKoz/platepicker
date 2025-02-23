@@ -7,9 +7,9 @@ export interface Meal {
   instructions: string | null;
   image_name: string | null;
   cleaned_ingredients: string | null;
-  cooking_time: string | null;
-  serves: string | null;
-  dietary: string[] | null;
+  cooking_time?: string;
+  serves?: string;
+  dietary?: string | string[];
   active: boolean;
   created_at: string;
   updated_at: string;

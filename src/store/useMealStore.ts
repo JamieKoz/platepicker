@@ -2,23 +2,29 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/api/axios';
 import type { Meal } from '@/types/meal';
-
+import { useUser } from '@clerk/vue';
 export const useMealStore = defineStore('mealStore', () => {
   const meals = ref<Meal[]>([]);
-
+  const { user } = useUser();
   // Fetch meals from API
-  const fetchMeals = async () => {
-    try {
-      const response = await api.get<Meal[]>('/recipe');
-      if (!response.data) {
-        throw new Error('No data received');
-      }
-      meals.value = response.data;
-    } catch (error) {
-      console.error('Error fetching meals:', error);
-      throw error;
+const fetchMeals = async () => {
+  try {
+   const headers: { [key: string]: string } = {};
+    if (user.value?.id) {
+      headers['X-User-ID'] = user.value.id;
     }
-  };
+
+    const response = await api.get<Meal[]>('/recipe', { headers });
+
+    if (!response.data) {
+      throw new Error('No data received');
+    }
+    meals.value = response.data;
+  } catch (error) {
+    console.error('Error fetching meals:', error);
+    throw error;
+  }
+};
 
   // Get a new meal and remove it from the array
   const getNewMeal = (): Meal | null => {

@@ -15,17 +15,17 @@
             <div class="flex justify-between w-full">
               <span class="text-xs inline-flex items-center bg-blue-400 rounded-lg p-1">
                 <ion-icon :icon="alarmSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
-                {{ mealData.cooking_time ?? 'Under 30 mins' }}
+                  {{ mealData.cooking_time ? `Under ${mealData.cooking_time} minutes` : 'N/A' }}
               </span>
-              <span class="text-xs inline-flex items-center bg-green-400 rounded-lg p-1">
+              <span class="text-xs inline-flex items-center bg-purple-900 rounded-lg p-1">
                 <ion-icon :icon="restaurantSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
-                {{ mealData.serves ?? 'Serves 5' }}
+                Serves {{ mealData.serves ?? '2+' }}
               </span>
             </div>
             <div class="mt-1">
-              <span class="text-xs inline-flex items-center bg-yellow-900 rounded-lg p-1">
-                <ion-icon :icon="pizzaSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
-                {{ mealData.dietary ?? 'Gluten free | Nut free'}}
+              <span class="text-xs inline-flex items-center bg-green-500 rounded-lg p-1">
+                <ion-icon :icon="leafSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
+                  {{ formatDietary(mealData.dietary) }}
               </span>
             </div>
           </div>
@@ -37,7 +37,7 @@
 
 <script setup lang="ts">
 import { IonCard, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
-import { alarmSharp, pizzaSharp, restaurantSharp } from 'ionicons/icons';
+import { alarmSharp, leafSharp, restaurantSharp } from 'ionicons/icons';
 import type { Meal } from '@/types/meal';
 
 defineProps<{
@@ -50,5 +50,14 @@ const emit = defineEmits<{
 
 const chooseMeal = (meal: Meal) => {
   emit('replaceMeal', meal);
+};
+
+const formatDietary = (dietary: string | string[] | null | undefined): string => {
+  if (!dietary) return 'N/A';
+  
+  const dietaryArray = Array.isArray(dietary) ? dietary : dietary.split(',');
+  return dietaryArray
+    .map(item => item.trim().charAt(0).toUpperCase() + item.trim().slice(1))
+    .join(' | ');
 };
 </script>
