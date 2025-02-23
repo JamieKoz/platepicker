@@ -149,9 +149,9 @@ async function fetchMealList(page = 1) {
     };
 
     if (currentSearch.value) {
-      response = await api.get('/user-meals/search', { params: { ...params, q: currentSearch.value } });
+      response = await api.get(`/user-meals/search`, { params: { ...params, q: currentSearch.value } });
     } else {
-      response = await api.get('/user-meals/list', { params });
+      response = await api.get(`/user-meals/list`, { params });
     }
 
     meals.value = response.data.data;

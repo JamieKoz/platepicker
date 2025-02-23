@@ -5,7 +5,7 @@
       <div class="p-4">
         <!-- Welcome Section -->
         <div class="mt-12">
-          <h1 class="text-2xl font-bold mb-2">Welcome{{user ? ', ' + user?.firstName : ''}}!</h1>
+          <h1 class="text-2xl font-bold mb-2">Welcome{{user ? ' back, ' + user?.firstName : ''}}!</h1>
         </div>
 
         <!-- Quick Actions -->
@@ -29,43 +29,40 @@
 
         <!-- Top Meal Section -->
         <div class="mb-8">
-          <h2 class="text-xl font-semibold mb-4">Top Meal Right Now</h2>
+          <h2 class="text-xl font-semibold mb-4">Top Meals right now</h2>
           <div v-if="loadingTopMeal" class="flex justify-center">
             <ion-spinner></ion-spinner>
           </div>
-          <ion-card v-else-if="topMeal" class="top-meal-card">
-            <img :src="topMeal.imageUrl" :alt="topMeal.name" class="w-full h-48 object-cover">
-            <ion-card-content>
-              <h3 class="text-lg font-semibold mb-2">{{ topMeal.name }}</h3>
-              <div class="flex items-center mb-2">
-                <ion-icon :icon="starOutline" class="text-yellow-400 mr-1"></ion-icon>
-                <span>{{ topMeal.rating }} ({{ topMeal.ratingCount }} ratings)</span>
-              </div>
-              <p class="text-sm text-gray-400">{{ topMeal.description }}</p>
-            </ion-card-content>
-          </ion-card>
+          <div v-else-if="topMeals.length > 0" class="space-y-4">
+            <ion-card v-for="(topMeal, index) in topMeals" :key="topMeal.meal.id" class="top-meal-card">
+              <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
+                :alt="topMeal.meal.title" class="w-full h-48 object-cover">
+              <ion-card-content>
+                <div class="flex justify-between items-center mb-2">
+                  <h3 class="text-lg text-white font-semibold">{{ topMeal.meal.title }}</h3>
+                  <div class="text-sm text-gray-400">
+                    {{ topMeal.total_tally }} picks
+                  </div>
+                </div>
+                <p class="text-sm text-gray-400 line-clamp-2">{{ topMeal.meal.instructions }}</p>
+              </ion-card-content>
+            </ion-card>
+          </div>
           <div v-else class="text-center text-gray-400">
-            No top meal data available
+            No top meals data available
           </div>
         </div>
 
         <!-- Recent Activity or Stats -->
-        <div>
-          <h2 class="text-xl font-semibold mb-4">Your Stats</h2>
-          <ion-card>
-            <ion-card-content>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="text-center">
-                  <p class="text-2xl font-bold">{{ userStats.mealsChosen || 0 }}</p>
-                  <p class="text-sm text-gray-400">Meals Chosen</p>
-                </div>
-                <div class="text-center">
-                  <p class="text-2xl font-bold">{{ userStats.restaurantsVisited || 0 }}</p>
-                  <p class="text-sm text-gray-400">Restaurants Visited</p>
-                </div>
-              </div>
-            </ion-card-content>
-          </ion-card>
+        <div class="mb-8">
+          <h2 class="text-xl font-semibold mb-4">Explore Meals</h2>
+          <!-- <ion-card> -->
+          <!--<ion-card-content> -->
+          <ion-button @click="navigateTo('/list')">Check out the meal list
+            <ion-icon :icon="arrowForward" class="ml-2" />
+          </ion-button>
+          <!-- </ion-card-content> -->
+          <!-- </ion-card> -->
         </div>
       </div>
     </ion-content>
@@ -75,7 +72,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import api from '@/api/axios';
 import { useUser, useAuth } from '@clerk/vue';
+
+import { arrowForward } from 'ionicons/icons';
 import {
   IonPage,
   IonContent,
@@ -93,30 +93,30 @@ const { user } = useUser();
 
 const router = useRouter();
 const loadingTopMeal = ref(true);
-const topMeal = ref<any>(null);
 const userStats = ref({
   mealsChosen: 0,
   restaurantsVisited: 0
 });
 
+interface TopMeal {
+  total_tally: number;
+  meal: {
+  id: number;
+  title: string;
+  image_name: string;
+  instructions: string;
+  }
+};
 // Fetch top meal data
+const topMeals = ref<TopMeal[]>([]);
+
 const fetchTopMeal = async () => {
   try {
     loadingTopMeal.value = true;
-    // Replace with your actual API call
-    // const response = await api.get('/top-meal');
-    // topMeal.value = response.data;
-    
-    // Mockup data for now
-    topMeal.value = {
-      name: "Spicy Thai Curry",
-      imageUrl: "https://via.placeholder.com/400x300",
-      rating: 4.8,
-      ratingCount: 245,
-      description: "A delicious Thai curry with coconut milk and fresh vegetables"
-    };
+    const response = await api.get('user-meals/top-meals');
+    topMeals.value = response.data;
   } catch (error) {
-    console.error('Error fetching top meal:', error);
+    console.error('Error fetching top meals:', error);
   } finally {
     loadingTopMeal.value = false;
   }
@@ -136,6 +136,14 @@ const fetchUserStats = async () => {
     };
   } catch (error) {
     console.error('Error fetching user stats:', error);
+  }
+};
+
+const navigateTo = async (path: string) => {
+  try {
+    await router.push(path);
+  } catch (error) {
+    console.error('Navigation error:', error);
   }
 };
 

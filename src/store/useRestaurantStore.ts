@@ -118,7 +118,7 @@ export const useRestaurantStore = defineStore('restaurant', () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      const photoEndpoint = '/restaurants/photos/${placeId}';
+      const photoEndpoint = `/restaurants/photos/${placeId}`;
       
       const response = await api.get(photoEndpoint, {
         timeout: 15000
@@ -145,13 +145,23 @@ export const useRestaurantStore = defineStore('restaurant', () => {
   /**
    * Get all photos for a restaurant (from cache or fetch new)
    */
-  const getRestaurantPhotos = async (placeId: string): Promise<PhotoReference[]> => {
-    if (photoCache.value[placeId]) {
-      return photoCache.value[placeId];
+const getRestaurantPhotos = async (placeId: string): Promise<PhotoReference[]> => {
+    try {
+        if (!placeId) {
+            console.warn('Attempted to get photos without a placeId');
+            return [];
+        }
+        
+        if (photoCache.value[placeId]) {
+            return photoCache.value[placeId];
+        }
+        
+        return await fetchAdditionalPhotos(placeId);
+    } catch (error) {
+        console.error('Error in getRestaurantPhotos:', error);
+        return [];
     }
-    
-    return await fetchAdditionalPhotos(placeId);
-  };
+};
   
   const restaurantCounter = computed(() => restaurants.value.length);
   

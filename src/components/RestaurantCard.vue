@@ -226,7 +226,7 @@ const loadAdditionalPhotos = async () => {
   isLoadingMorePhotos.value = true;
   
   try {
-    const response = await api.get('/restaurants/photos/${placeId}');
+    const response = await api.get(`/restaurants/photos/${placeId}`);
     
     if (!props.restaurantData.photos) {
       props.restaurantData.photos = [];

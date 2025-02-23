@@ -304,7 +304,7 @@ const handleSearchInput = debounce(async (event: CustomEvent) => {
   }
 
   try {
-    const response = await api.get('/restaurants/address-suggestions', {
+    const response = await api.get(`/restaurants/address-suggestions`, {
       params: { input: query }
     });
 
