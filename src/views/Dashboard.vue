@@ -11,17 +11,19 @@
         <!-- Quick Actions -->
         <div class="mb-8">
           <div class="grid grid-cols-2 gap-4">
-            <ion-card class="action-card" @click="router.push('/buy-or-cook')">
+            <ion-card class="min-height-[120px] border-solid border-1 border-yellow-500"
+              @click="router.push('/buy-or-cook')">
               <ion-card-content class="flex flex-col items-center justify-center p-4">
-                <ion-icon :icon="restaurantOutline" class="text-4xl mb-2"></ion-icon>
-                <h2 class="text-lg font-semibold">Find Food</h2>
+                <ion-icon :icon="restaurantOutline" class="text-4xl mb-2 text-yellow-500"></ion-icon>
+                <h2 class="text-lg font-semibold text-yellow-500">Find Food</h2>
               </ion-card-content>
             </ion-card>
 
-            <ion-card class="action-card" @click="router.push('/profile')">
+            <ion-card class="min-height-[120px] border-solid border-1 border-blue-500"
+              @click="user ? router.push('/profile') : router.push('/sign-in')">
               <ion-card-content class="flex flex-col items-center justify-center p-4">
-                <ion-icon :icon="personOutline" class="text-4xl mb-2"></ion-icon>
-                <h2 class="text-lg font-semibold">Profile</h2>
+                <ion-icon :icon="personOutline" class="text-4xl mb-2 text-blue-500"></ion-icon>
+                <h2 class="text-lg font-semibold text-blue-500">{{user ? 'Profile' : 'Sign In'}}</h2>
               </ion-card-content>
             </ion-card>
           </div>
@@ -34,7 +36,7 @@
             <ion-spinner></ion-spinner>
           </div>
           <div v-else-if="topMeals.length > 0" class="space-y-4">
-            <ion-card v-for="(topMeal, index) in topMeals" :key="topMeal.meal.id" class="top-meal-card">
+            <ion-card v-for="(topMeal, index) in topMeals" :key="topMeal.meal.id" class="overflow-hidden">
               <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
                 :alt="topMeal.meal.title" class="w-full h-48 object-cover">
               <ion-card-content>
@@ -44,7 +46,12 @@
                     {{ topMeal.total_tally }} picks
                   </div>
                 </div>
-                <p class="text-sm text-gray-400 line-clamp-2">{{ topMeal.meal.instructions }}</p>
+                <p class="text-sm text-gray-400" :class="{ 'line-clamp-2': !isExpanded }">
+                  {{ topMeal.meal.instructions }}
+                </p>
+                <button @click="isExpanded = !isExpanded" class="text-sm text-blue-500 hover:text-blue-600 mt-1">
+                  {{ isExpanded ? 'Show less' : 'Show more' }}
+                </button>
               </ion-card-content>
             </ion-card>
           </div>
@@ -53,16 +60,23 @@
           </div>
         </div>
 
-        <!-- Recent Activity or Stats -->
+        <h2 class="text-xl font-semibold mb-4">Enjoying the app?</h2>
+        <ion-card class="min-height-[120px] border-solid border-1 border-green-500" @click="router.push('/feedback')">
+          <ion-card-content class="flex flex-col items-center justify-center p-4">
+            <ion-icon :icon="thumbsUpOutline" class="text-4xl mb-2 text-green-500"></ion-icon>
+            <h2 class="text-lg font-semibold text-green-500">Leave a review</h2>
+          </ion-card-content>
+        </ion-card>
+
         <div class="mb-8">
           <h2 class="text-xl font-semibold mb-4">Explore Meals</h2>
-          <!-- <ion-card> -->
-          <!--<ion-card-content> -->
-          <ion-button @click="navigateTo('/list')">Check out the meal list
-            <ion-icon :icon="arrowForward" class="ml-2" />
-          </ion-button>
-          <!-- </ion-card-content> -->
-          <!-- </ion-card> -->
+          <ion-card class="min-height-[120px] border-solid border-1 border-purple-500"
+            @click="user ? navigateTo('/list') : navigateTo('sign-in')">
+            <ion-card-content class="flex flex-col items-center justify-center p-4">
+              <ion-icon :icon="user ? listOutline : personOutline" class="text-4xl mb-2 text-purple-500"></ion-icon>
+              <h2 class="text-lg font-semibold text-purple-500">{{ user ? 'Configure your meal list' : 'Sign In for more features' }}</h2>
+            </ion-card-content>
+          </ion-card>
         </div>
       </div>
     </ion-content>
@@ -73,30 +87,15 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
-import { useUser, useAuth } from '@clerk/vue';
+import { useUser } from '@clerk/vue';
 
-import { arrowForward } from 'ionicons/icons';
-import {
-  IonPage,
-  IonContent,
-  IonCard,
-  IonCardContent,
-  IonIcon,
-  IonSpinner
-} from '@ionic/vue';
+import { IonPage, IonContent, IonCard, IonCardContent, IonIcon, IonSpinner } from '@ionic/vue';
 import {
   restaurantOutline,
   personOutline,
-  starOutline
+  listOutline,
+  thumbsUpOutline,
 } from 'ionicons/icons';
-const { user } = useUser();
-
-const router = useRouter();
-const loadingTopMeal = ref(true);
-const userStats = ref({
-  mealsChosen: 0,
-  restaurantsVisited: 0
-});
 
 interface TopMeal {
   total_tally: number;
@@ -107,13 +106,17 @@ interface TopMeal {
   instructions: string;
   }
 };
-// Fetch top meal data
+const { user } = useUser();
+const router = useRouter();
+const loadingTopMeal = ref(true);
 const topMeals = ref<TopMeal[]>([]);
+const isExpanded = ref(false);
 
 const fetchTopMeal = async () => {
+
   try {
     loadingTopMeal.value = true;
-    const response = await api.get('user-meals/top-meals');
+    const response = await api.get('/user-meals/top-meals');
     topMeals.value = response.data;
   } catch (error) {
     console.error('Error fetching top meals:', error);
@@ -122,22 +125,6 @@ const fetchTopMeal = async () => {
   }
 };
 
-// Fetch user stats
-const fetchUserStats = async () => {
-  try {
-    // Replace with your actual API call
-    // const response = await api.get('/user-stats');
-    // userStats.value = response.data;
-    
-    // Mockup data for now
-    userStats.value = {
-      mealsChosen: 15,
-      restaurantsVisited: 8
-    };
-  } catch (error) {
-    console.error('Error fetching user stats:', error);
-  }
-};
 
 const navigateTo = async (path: string) => {
   try {
@@ -149,16 +136,10 @@ const navigateTo = async (path: string) => {
 
 onMounted(() => {
   fetchTopMeal();
-  fetchUserStats();
 });
+
 </script>
 
 <style scoped>
-.action-card {
-  min-height: 120px;
-}
 
-.top-meal-card {
-  overflow: hidden;
-}
 </style>

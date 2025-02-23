@@ -42,7 +42,7 @@
 
           <div class="flex-1 flex justify-end">
             <ion-button fill="clear" @click="handleShare">
-              <ion-icon :icon="shareOutline" class="bg-gray-800 rounded-xl p-2 text-white" />
+              <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
             </ion-button>
           </div>
           <div class="mt-4 mb-16">
@@ -71,8 +71,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import api from '@/api/axios';
-import { refresh, share, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline, shareOutline } from 'ionicons/icons';
+import { refresh, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline, shareOutline } from 'ionicons/icons';
 import { useMealStore } from '@/store/useMealStore';
+import { useUser } from '@clerk/vue';
+import { useRouter } from 'vue-router';
 import MealCard from '@/components/MealCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, toastController, actionSheetController, IonActionSheet } from '@ionic/vue';
@@ -89,6 +91,8 @@ const animateMeal1 = ref(false);
 const animateMeal2 = ref(false);
 const newMealAnimation1 = ref(false);
 const newMealAnimation2 = ref(false);
+const { user } = useUser();
+const router = useRouter();
 
 // Fetch initial meals on mount
 onMounted(() => fetchInitialMeals());
@@ -199,6 +203,15 @@ const showRefreshButton = computed(() => {
 
 const handleRefresh = async () => {
   winner.value = null;
+
+  try {
+    if (!user.value) {
+      await router.push('/sign-in');
+      return;
+    }
+  } catch (error) {
+    console.error("Error during refresh: ", error);
+  }
   await fetchInitialMeals();
 };
 

@@ -8,8 +8,17 @@
             @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur" class="address-searchbar">
           </ion-searchbar>
 
-          <div class="text-center">
-            <span class="justify-center text-white text-xl">{{ restaurantStore.restaurantCounter }}</span>
+          <div class="flex items-center justify-between w-full px-4">
+            <div class="w-10"></div>
+            <span class="text-white text-xl">
+              {{ !winner ? restaurantStore.restaurantCounter : '' }}
+            </span>
+            <ion-buttons>
+              <ion-button @click="handleRefresh" :disabled="!showRefreshButton"
+                :class="{ 'opacity-0': !showRefreshButton }">
+                <ion-icon :icon="refresh" />
+              </ion-button>
+            </ion-buttons>
           </div>
 
           <div v-if="searchBarFocused || addressSuggestions.length > 0" class="dropdown-container">
@@ -30,9 +39,9 @@
     </ion-header>
     <ion-content v-if="hasLocation" class="main-content">
       <ion-grid class="h-full">
+
         <RetryConnection v-if="loadError" message="Unable to load restaurants. Please check your connection."
           @retry="handleRetry" />
-
 
         <template v-else>
           <!-- Competition View -->
@@ -67,7 +76,7 @@
               <RestaurantCard :restaurantData="winner" class="winner-card" />
               <div class="flex-1 flex justify-end">
                 <ion-button fill="clear" @click="handleShare">
-                  <ion-icon :icon="shareOutline" class="bg-gray-800 rounded-xl p-2 text-white" />
+                  <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
                 </ion-button>
               </div>
               <div class="mt-4 w-full p-2">
@@ -95,12 +104,14 @@ import api from '@/api/axios';
 import {
   IonPage, IonContent, IonGrid, IonRow, IonCol, IonHeader, IonToolbar,
   IonTitle, IonButton, IonIcon, IonSearchbar, IonList, IonItem, IonLabel,
-  toastController, actionSheetController
+  IonButtons, toastController, actionSheetController
 } from '@ionic/vue';
 
-import { clipboardOutline, mailOutline, navigateOutline, locationOutline, shareOutline } from 'ionicons/icons';
+import { refresh, clipboardOutline, mailOutline, navigateOutline, locationOutline, shareOutline } from 'ionicons/icons';
 import RestaurantCard from '@/components/RestaurantCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
+import { useUser } from '@clerk/vue';
+import { useRouter } from 'vue-router';
 
 // Initialize store and refs
 const restaurantStore = useRestaurantStore();
@@ -119,6 +130,8 @@ const animateRestaurant1 = ref(false);
 const animateRestaurant2 = ref(false);
 const newRestaurantAnimation1 = ref(false);
 const newRestaurantAnimation2 = ref(false);
+const router = useRouter()
+const { user } = useUser();
 
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
   if (restaurantStore.restaurantCounter === 0) {
@@ -407,6 +420,26 @@ const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationP
       maximumAge: 0
     });
   });
+};
+
+
+const showRefreshButton = computed(() => {
+  return restaurantStore.restaurantCounter === 0 && winner.value !== null;
+});
+
+const handleRefresh = async () => {
+
+  try {
+    if (!user.value) {
+      await router.push('/sign-in');
+      return;
+    }
+  } catch (error) {
+    console.error("Error during refresh: ", error);
+  }
+
+  winner.value = null;
+  await handleRetry();
 };
 </script>
 

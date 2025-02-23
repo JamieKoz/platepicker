@@ -49,7 +49,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'list',
-        component: () => import('@/views/profile/List.vue')
+        component: () => import('@/views/profile/List.vue'),
       },
       {
         path: 'favourites',
