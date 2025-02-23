@@ -60,8 +60,8 @@
           </div>
         </div>
 
-        <h2 class="text-xl font-semibold mb-4">Enjoying the app?</h2>
-        <ion-card class="min-height-[120px] border-solid border-1 border-green-500" @click="router.push('/feedback')">
+        <h2 class="text-xl font-semibold mb-4">We'd love your feedback!</h2>
+        <ion-card class="min-height-[120px] border-solid border-1 border-green-500" @click="navigateTo('/feedback')">
           <ion-card-content class="flex flex-col items-center justify-center p-4">
             <ion-icon :icon="thumbsUpOutline" class="text-4xl mb-2 text-green-500"></ion-icon>
             <h2 class="text-lg font-semibold text-green-500">Leave a review</h2>

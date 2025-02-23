@@ -18,22 +18,22 @@
 
         <ion-item>
           <ion-label position="stacked">Ingredients</ion-label>
-          <ion-textarea v-model="mealForm.ingredients"></ion-textarea>
+          <ion-textarea v-model="mealForm.ingredients" class="min-h-[150px]"></ion-textarea>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Instructions</ion-label>
-          <ion-textarea v-model="mealForm.instructions"></ion-textarea>
+          <ion-textarea v-model="mealForm.instructions" class="min-h-[150px]"></ion-textarea>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Image</ion-label>
-          <input type="file" @change="handleImageChange" accept="image/*">
+          <input type="file" @change="handleImageChange" accept="image/*" class="py-4">
         </ion-item>
 
         <ion-item>
           <ion-label>Active</ion-label>
-          <ion-toggle v-model="mealForm.active"></ion-toggle>
+          <ion-toggle v-model="mealForm.active" class="py-4"></ion-toggle>
         </ion-item>
 
         <div class="ion-padding">
