@@ -83,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
 import type { Restaurant } from '@/types/restaurant';
 import type { Swiper } from 'swiper';
@@ -106,7 +106,18 @@ const loadedImages = ref(new Set()); // Track loaded images
 const props = defineProps<{
   restaurantData?: Restaurant | null;
 }>();
+const imageCache = ref(new Map<string, string>());
+const loadingImages = ref(new Set<string>());
+const imageLoadQueue = ref<QueueItem[]>([]);
+const isProcessingQueue = ref(false);
+const backoffTime = ref(500); // Starting delay in ms
+const consecutiveErrors = ref(0);
+const maxConsecutiveErrors = 3;
 
+interface QueueItem {
+  ref: string;
+  url: string;
+}
 const emit = defineEmits<{
   (e: 'chooseRestaurant', restaurant: Restaurant): void;
 }>();
@@ -157,28 +168,222 @@ function setSwiper(swiperInstance: any) {
   // Add event listener to track current slide
   swiperInstance.on('slideChange', () => {
     currentSlideIndex.value = swiperInstance.activeIndex;
+    
+    // Preload adjacent slides when the slide changes
+    preloadAdjacentSlides();
   });
+  
+  // Also preload on initial setup after a small delay to let the component settle
+  setTimeout(() => {
+    preloadAdjacentSlides();
+  }, 1000);
 }
 
 function handleImageLoad(index: number) {
   loadedImages.value.add(index);
+  
+  // Force swiper update after successful load
+  if (swiper.value) {
+    swiper.value.update();
+  }
 }
 
 function getPhotoUrl(photo: any): string {
   if (!photo) {
     return placeholderImage;
   }
-  
+
   const photoRef = photo.photo_reference;
   if (!photoRef) {
     return placeholderImage;
   }
-  
+
+  // Check if photoRef is suspiciously long (Google photo refs are typically <100 chars)
+  if (photoRef.length > 500 && !photoRef.startsWith('http')) {
+    console.warn('Suspiciously long photo reference detected, skipping:',
+      photoRef.substring(0, 50) + '...');
+    return placeholderImage;
+  }
+
+  // Check if this is already in the cache
+  const cachedUrl = imageCache.value.get(photoRef);
+  if (cachedUrl) {
+    return cachedUrl === 'error' ? placeholderImage : cachedUrl;
+  }
+
+  // Handle different URL formats
+  // Case 1: Already a full URL from Google Photos
   if (photoRef.startsWith('http')) {
-    return photoRef;
+    // Check if it's a Google Photos URL with dimensions parameter
+    if (photoRef.includes('lh3.googleusercontent.com/places/')) {
+      // It's a Google Photos URL that might have dimension issues
+      try {
+        // Parse the URL to fix potential formatting issues
+        const baseUrl = photoRef.split('=')[0]; // Remove any dimension parameters
+
+        // Queue this for loading
+        if (!loadingImages.value.has(photoRef)) {
+          // Use maxheight instead of height and properly encode the photo reference
+          const url = `https://maps.googleapis.com/maps/api/place/photo?` +
+            `maxheight=400&` +
+            `maxwidth=600&` +
+            `photoreference=${encodeURIComponent(photoRef)}&` +
+            `key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+          queueImageForLoading(photoRef, url);
+        }
+
+        return placeholderImage; // Show placeholder while loading
+      } catch (e) {
+        console.error("Error parsing photo URL:", e);
+        return placeholderImage;
+      }
+    } else {
+      // It's a regular full URL, queue it for loading
+      if (!loadingImages.value.has(photoRef)) {
+        queueImageForLoading(photoRef, photoRef);
+      }
+      return placeholderImage;
+    }
+  }
+
+  // Case 2: It's a Google Places API photo reference
+  // Queue this image for loading if not already loading
+  if (!loadingImages.value.has(photoRef)) {
+    const url = `https://maps.googleapis.com/maps/api/place/photo?height=400&maxwidth=600&photo_reference=${photoRef}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+    queueImageForLoading(photoRef, url);
+  }
+
+  // Return placeholder while loading
+  return placeholderImage;
+}
+
+function queueImageForLoading(photoRef: string, url: string) {
+  if (loadingImages.value.has(photoRef) || imageCache.value.has(photoRef)) {
+    return;
   }
   
-  return `https://maps.googleapis.com/maps/api/place/photo?height=400&maxwidth=600&photo_reference=${photoRef}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+  // Store the URL with the reference
+  imageLoadQueue.value.push({ ref: photoRef, url });
+  loadingImages.value.add(photoRef);
+  
+  if (!isProcessingQueue.value) {
+    processImageQueue();
+  }
+}
+
+// Updated processImageQueue to handle the new queue format and implement rate limiting
+async function processImageQueue() {
+  if (imageLoadQueue.value.length === 0) {
+    isProcessingQueue.value = false;
+    return;
+  }
+  
+  isProcessingQueue.value = true;
+  
+  // Get the next item from the queue
+  const queueItem = imageLoadQueue.value.shift();
+  if (!queueItem) {
+    isProcessingQueue.value = false;
+    return;
+  }
+  
+  const { ref: photoRef, url } = queueItem;
+  
+  // If we've had too many consecutive errors, wait longer
+  if (consecutiveErrors.value >= maxConsecutiveErrors) {
+    console.log(`Too many consecutive errors (${consecutiveErrors.value}), waiting longer...`);
+    setTimeout(() => {
+      // Put this item back at the front of the queue
+      imageLoadQueue.value.unshift(queueItem);
+      consecutiveErrors.value = Math.max(0, consecutiveErrors.value - 1);
+      processImageQueue();
+    }, 5000); // Wait 5 seconds before trying again
+    return;
+  }
+  
+  try {
+    // Create a new image to preload
+    const img = new Image();
+    
+    // Set up promise to handle load/error
+    await new Promise<void>((resolve) => {
+      img.onload = () => {
+        imageCache.value.set(photoRef, url);
+        consecutiveErrors.value = 0; // Reset error counter on success
+        backoffTime.value = Math.max(300, backoffTime.value * 0.8); // Reduce backoff on success
+        resolve();
+      };
+      
+      img.onerror = () => {
+        // Simpler error handling
+        console.error(`Image load failed for URL: ${url}`);
+        imageCache.value.set(photoRef, 'error');
+        consecutiveErrors.value++; // Increment error counter
+        backoffTime.value = Math.min(backoffTime.value * 1.5, 5000); // Increase backoff on error
+        resolve(); // Resolve anyway to continue the queue
+      };
+      
+      // Set the src to start loading
+      img.src = url;
+      
+      // Set a timeout to prevent hanging
+      setTimeout(() => {
+        if (!imageCache.value.has(photoRef)) {
+          console.warn("Image load timed out:", url);
+          imageCache.value.set(photoRef, 'error');
+          consecutiveErrors.value++;
+          resolve();
+        }
+      }, 5000);
+    });
+  } catch (error) {
+    console.error("Error in image loading process:", error);
+    imageCache.value.set(photoRef, 'error');
+    consecutiveErrors.value++;
+  } finally {
+    loadingImages.value.delete(photoRef);
+    
+    // Use the current backoff time
+    setTimeout(() => {
+      processImageQueue();
+    }, backoffTime.value);
+  }
+}
+// Cleanup function for component unmount
+function cleanup() {
+  // Clear the queue when component unmounts
+  imageLoadQueue.value = [];
+  isProcessingQueue.value = false;
+}
+
+
+function preloadAdjacentSlides() {
+  if (!props.restaurantData || allPhotos.value.length <= 1) return;
+  
+  // Get current index
+  const current = currentSlideIndex.value;
+  const total = allPhotos.value.length;
+  
+  // Determine which slides to preload (next and previous)
+  const nextIndex = (current + 1) % total;
+  const prevIndex = (current - 1 + total) % total;
+  
+  // Preload next and previous images if they exist
+  if (nextIndex !== current && allPhotos.value[nextIndex]) {
+    const nextPhoto = allPhotos.value[nextIndex];
+    if (nextPhoto && nextPhoto.photo_reference) {
+      // Just trigger the getPhotoUrl to queue it, but don't use the result
+      getPhotoUrl(nextPhoto);
+    }
+  }
+  
+  if (prevIndex !== current && allPhotos.value[prevIndex]) {
+    const prevPhoto = allPhotos.value[prevIndex];
+    if (prevPhoto && prevPhoto.photo_reference) {
+      // Just trigger the getPhotoUrl to queue it, but don't use the result
+      getPhotoUrl(prevPhoto);
+    }
+  }
 }
 
 function handleImageError(event: Event) {
@@ -187,17 +392,19 @@ function handleImageError(event: Event) {
   img.src = placeholderImage;
 }
 
-const navigatePrev = () => {
+const navigatePrev = (event: Event) => {
+  event.stopPropagation(); // Stop event propagation
   if (swiper.value) {
     swiper.value.slidePrev();
-  } 
-};
+  }
+}
 
-const navigateNext = () => {
+const navigateNext = (event: Event) => {
+  event.stopPropagation(); // Stop event propagation  
   if (swiper.value) {
     swiper.value.slideNext();
-  } 
-};
+  }
+}
 
 function updateSwiper() {
   swiperKey.value++;
@@ -226,6 +433,9 @@ const loadAdditionalPhotos = async () => {
   isLoadingMorePhotos.value = true;
   
   try {
+    // Add a slight delay before loading additional photos
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     const response = await api.get(`/restaurants/photos/${placeId}`);
     
     if (!props.restaurantData.photos) {
@@ -233,15 +443,23 @@ const loadAdditionalPhotos = async () => {
     }
     
     if (response.data.photos && response.data.photos.length > 0) {
-      const photosToAdd = response.data.photos.slice(1, 5);
+      // Only take up to 3 photos to avoid overloading the API
+      const photosToAdd = response.data.photos.slice(1, 4);
       
       for (const photo of photosToAdd) {
         if (photo && photo.url) {
-          props.restaurantData.photos.push({
-            photo_reference: photo.url,
-            width: photo.width || 400,
-            height: photo.height || 300
-          });
+          // Check if this is a duplicate of an existing photo
+          const isDuplicate = props.restaurantData.photos.some(
+            existingPhoto => existingPhoto.photo_reference === photo.url
+          );
+          
+          if (!isDuplicate) {
+            props.restaurantData.photos.push({
+              photo_reference: photo.url,
+              width: photo.width || 400,
+              height: photo.height || 300
+            });
+          }
         }
       }
       
@@ -261,6 +479,9 @@ onMounted(() => {
   }
 });
 
+onBeforeUnmount(() => {
+  cleanup();
+});
 // Watch for restaurant data changes to load photos for new restaurants
 watch(() => props.restaurantData?.place_id, (newPlaceId) => {
   if (newPlaceId) {
