@@ -51,16 +51,16 @@
                 <!-- Show skeleton while loading first restaurant -->
                 <div :class="{'slide-out-right': animateRestaurant1, 'slide-in-left': newRestaurantAnimation1}"
                   class="restaurant-container">
-                  <RestaurantCard v-if="loading" />
-                  <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" />
+                  <RestaurantCard v-if="loading" key="loading-card-1" />
+                  <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" :key="`restaurant-1-${restaurant1?.place_id || 'empty'}`"  />
                 </div>
               </ion-col>
               <ion-col class="flex justify-center items-center">
                 <!-- Show skeleton while loading second restaurant -->
                 <div :class="{ 'slide-out-right': animateRestaurant2, 'slide-in-left': newRestaurantAnimation2 }"
                   class="restaurant-container">
-                  <RestaurantCard v-if="loading" />
-                  <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" />
+                  <RestaurantCard v-if="loading" key="loading-card-2"/>
+                  <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" :key="`restaurant-2-${restaurant2?.place_id || 'empty'}`" />
                 </div>
               </ion-col>
             </ion-row>
@@ -73,7 +73,7 @@
                 <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
               </div>
 
-              <RestaurantCard :restaurantData="winner" class="winner-card" />
+              <RestaurantCard :restaurantData="winner" class="winner-card" :key="`winner-${winner?.place_id || 'empty'}`" />
               <div class="flex-1 flex justify-end">
                 <ion-button fill="clear" @click="handleShare">
                   <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />

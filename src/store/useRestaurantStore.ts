@@ -110,7 +110,7 @@ export const useRestaurantStore = defineStore('restaurant', () => {
     }
     
     if (isLoadingAdditionalPhotos.value) {
-      console.log("Already loading photos for another restaurant, skipping");
+      // console.log("Already loading photos for another restaurant, skipping");
       return [];
     }
     
