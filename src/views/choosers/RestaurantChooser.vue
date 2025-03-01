@@ -8,17 +8,10 @@
             @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur" class="address-searchbar">
           </ion-searchbar>
 
-          <div class="flex items-center justify-between w-full px-4">
-            <div class="w-10"></div>
+          <div class="flex items-center justify-center w-full px-4">
             <span class="text-white text-xl">
               {{ !winner ? restaurantStore.restaurantCounter : '' }}
             </span>
-            <ion-buttons>
-              <ion-button @click="handleRefresh" :disabled="!showRefreshButton"
-                :class="{ 'opacity-0': !showRefreshButton }">
-                <ion-icon :icon="refresh" />
-              </ion-button>
-            </ion-buttons>
           </div>
 
           <div v-if="searchBarFocused || addressSuggestions.length > 0" class="dropdown-container">
@@ -78,6 +71,11 @@
                 <ion-button fill="clear" @click="handleShare">
                   <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
                 </ion-button>
+
+                <ion-button @click="handleRefresh" :disabled="!showRefreshButton"
+                  :class="{ 'opacity-0': !showRefreshButton }" fill="clear">
+                  <ion-icon :icon="refresh" class="bg-gray-900 rounded-xl p-2 text-white"/>
+                </ion-button>
               </div>
               <div class="mt-4 w-full p-2">
                 <div class="details-section">
@@ -86,7 +84,7 @@
                   <p><strong>Rating:</strong> {{ winner.rating }} ⭐️ ({{ winner.user_ratings_total }} reviews)</p>
                   <p v-if="winner.opening_hours"><strong>Open now:</strong> {{ winner.opening_hours.open_now ? 'Yes' :
                     'No' }}</p>
-                  <p v-if="winner.price_level"><strong>Price:</strong> {{ '💰'.repeat(winner.price_level) }}</p>
+                  <p v-if="winner.price_level"><strong>Price:</strong> {{ '$'.repeat(winner.price_level) }}</p>
                 </div>
               </div>
             </ion-col>
@@ -113,9 +111,9 @@ import RetryConnection from '@/components/RetryConnection.vue';
 import { useUser } from '@clerk/vue';
 import { useRouter } from 'vue-router';
 
-// Initialize store and refs
 const restaurantStore = useRestaurantStore();
 const searchQuery = ref('');
+const searchedValue = ref<string | null>(null);
 const addressSuggestions = ref<any[]>([]);
 const hasLocation = ref(false);
 const loading = computed(() => restaurantStore.isLoading);
@@ -130,6 +128,8 @@ const animateRestaurant1 = ref(false);
 const animateRestaurant2 = ref(false);
 const newRestaurantAnimation1 = ref(false);
 const newRestaurantAnimation2 = ref(false);
+const lastRetryAttempt = ref(0);
+const RETRY_COOLDOWN_MS = 5000;
 const router = useRouter()
 const { user } = useUser();
 
@@ -246,58 +246,137 @@ function debounce(func: Function, wait: number) {
 }
 
 async function handleRetry() {
+  const now = Date.now();
+  if (now - lastRetryAttempt.value < RETRY_COOLDOWN_MS) {
+    const remainingCooldown = Math.ceil((RETRY_COOLDOWN_MS - (now - lastRetryAttempt.value)) / 1000);
+    
+    const toast = await toastController.create({
+      message: `Please wait ${remainingCooldown} seconds before retrying again.`,
+      duration: 2000,
+      position: 'bottom',
+      color: 'warning'
+    });
+    await toast.present();
+    return;
+  }
+  
+  // Update the last retry timestamp
+  lastRetryAttempt.value = now;
+  
   loadError.value = false;
-
-  if (searchQuery.value === 'Current Location') {
+  
+  if (searchedValue.value === 'Current Location') {
     try {
       restaurant1.value = null;
       restaurant2.value = null;
-
+      
       // Try geolocation again (timeout built in)
-      const position = await getGeolocationWithTimeout();
+      const position = await getGeolocationWithTimeout(10000);
       const { latitude, longitude } = position.coords;
       lastCoords.value = { latitude, longitude };
-
-      // Store handles timeout
-      await restaurantStore.fetchRestaurantsByLocation(latitude, longitude);
-
+      
+      // Create a timeout promise for the restaurant fetch
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Restaurant fetch timed out')), 10000);
+      });
+      
+      // Use Promise.race for better timeout handling
+      await Promise.race([
+        restaurantStore.fetchRestaurantsByLocation(latitude, longitude),
+        timeoutPromise
+      ]);
+      
       const newRestaurant1 = restaurantStore.getNewRestaurant();
       const newRestaurant2 = restaurantStore.getNewRestaurant();
-
+      
       if (!newRestaurant1 || !newRestaurant2) {
-        throw new Error('No restaurants received');
+        throw new Error('No restaurants received from the store');
       }
-
+      
       restaurant1.value = newRestaurant1;
       restaurant2.value = newRestaurant2;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error retrying geolocation or fetch:', error);
       restaurant1.value = null;
       restaurant2.value = null;
       loadError.value = true;
+      let errorMessage = 'Unable to load restaurants. Please try again later.';
+      
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+        
+        if (error.message.includes('timed out')) {
+          errorMessage = 'Request timed out. Please check your internet connection and try again.';
+        }
+      }
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 429) {
+          errorMessage = 'Too many requests. Please try again in a moment.';
+        }
+      }
+        
+      const toast = await toastController.create({
+        message: errorMessage,
+        duration: 3000,
+        position: 'bottom',
+        color: 'danger'
+      });
+      await toast.present();
     }
-  } else if (lastPlaceId.value) {
+  } else if (lastPlaceId.value && searchedValue.value) {
     try {
       restaurant1.value = null;
       restaurant2.value = null;
-
-      // Store handles timeout
-      await restaurantStore.fetchRestaurantsByAddress(lastPlaceId.value);
-
+      
+      // Create a timeout promise for better error handling
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Restaurant fetch timed out')), 10000);
+      });
+      
+      await Promise.race([
+        restaurantStore.fetchRestaurantsByAddress(lastPlaceId.value),
+        timeoutPromise
+      ]);
+      
       const newRestaurant1 = restaurantStore.getNewRestaurant();
       const newRestaurant2 = restaurantStore.getNewRestaurant();
-
+      
       if (!newRestaurant1 || !newRestaurant2) {
-        throw new Error('No restaurants received');
+        throw new Error('No restaurants received from the store');
       }
-
+      
       restaurant1.value = newRestaurant1;
       restaurant2.value = newRestaurant2;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error retrying address fetch:', error);
       restaurant1.value = null;
       restaurant2.value = null;
       loadError.value = true;
+      let errorMessage = 'Unable to load restaurants for this location. Please try a different address.';
+      
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+        
+        if (error.message.includes('timed out')) {
+          errorMessage = 'Request timed out. Please check your internet connection and try again.';
+        }
+      }
+      
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 429) {
+          errorMessage = 'Too many requests. Please try again in a moment.';
+        }
+      }
+        
+      const toast = await toastController.create({
+        message: errorMessage,
+        duration: 3000,
+        position: 'bottom',
+        color: 'danger'
+      });
+      await toast.present();
     }
   } else {
     const toast = await toastController.create({
@@ -330,6 +409,7 @@ const handleSearchInput = debounce(async (event: CustomEvent) => {
 const selectAddress = async (suggestion: any) => {
   try {
     searchQuery.value = suggestion.description;
+    searchedValue.value = suggestion.description;
     searchBarFocused.value = false;
     addressSuggestions.value = [];
     hasLocation.value = true;
@@ -377,6 +457,7 @@ const getUserLocation = async () => {
     restaurant2.value = null;
     hasLocation.value = true;
     loadError.value = false;
+    searchedValue.value = "Current Location";
 
     // Get user location with timeout (built into the geolocation API)
     const position = await getGeolocationWithTimeout();
@@ -395,7 +476,7 @@ const getUserLocation = async () => {
 
     restaurant1.value = newRestaurant1;
     restaurant2.value = newRestaurant2;
-    searchQuery.value = 'Current Location';
+    searchQuery.value = '';
     addressSuggestions.value = [];
   } catch (error) {
     console.error('Error in getUserLocation:', error);
@@ -445,7 +526,9 @@ const handleRefresh = async () => {
 
 <style scoped>
 .restaurant-row {
-  height: 50vh;
+  height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
 }
 
 .address-searchbar {

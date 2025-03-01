@@ -1,25 +1,27 @@
+# RestaurantCard.vue
 <template>
   <div v-if="!restaurantData" class="w-[90vw] h-[40vh] flex items-center justify-center rounded-xl border-solid border-2 border-gray-500">
-    <ion-card :key="`skeleton-${uniqueComponentId}`" class="h-[95%] flex flex-col my-2 mx-2 skeleton-loader">
-      <div class="skeleton-image-container">
-        <div class="skeleton-image" />
+    <ion-card :key="`skeleton-${uniqueComponentId}`" class="h-[95%] flex flex-col my-2 mx-2 bg-[#2a2a2a] rounded-xl overflow-hidden">
+      <div class="h-[40vh] w-[90vw] flex items-center justify-center">
+        <div class="w-full h-full bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] bg-[length:1000px_100%] animate-shimmer-slow"></div>
       </div>
 
-      <div class="card-title-section">
+      <div class="h-[30%] min-h-[30%] max-h-[30%]">
         <div class="skeleton-text-container">
-          <div class="skeleton-title"></div>
+          <div class="h-6 mx-auto bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] bg-[length:1000px_100%] animate-shimmer-medium rounded"></div>
           <div class="flex justify-between mt-4">
-            <div class="skeleton-subtitle w-2/5"></div>
-            <div class="skeleton-subtitle w-1/5"></div>
+            <div class="h-4 w-2/5 bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] animate-shimmer-slow rounded"></div>
+            <div class="h-4 w-1/5 bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] animate-shimmer-slow rounded"></div>
           </div>
-          <div class="skeleton-details mt-2"></div>
+          <div class="h-4 w-3/5 mt-2 bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] animate-shimmer-medium rounded"></div>
         </div>
       </div>
     </ion-card>
   </div>
+
   <div v-else class="ion-activatable relative overflow-hidden border-solid border-2 border-yellow-500 rounded-xl flex flex-col w-[90vw] h-[40vh]" @click="handleCardClick">
     <ion-card :key="`card-${uniqueComponentId}-${restaurantData.place_id}`" class="flex flex-col justify-between h-full my-2 mx-2">
-      <div class="meal-image-container overflow-hidden relative">
+      <div class="flex flex-1 overflow-hidden ">
         <vue-swiper :key="`swiper-${swiperKey}-${uniqueComponentId}`" :modules="swiperModules" :pagination="{ clickable: true }" :slides-per-view="1"
           :space-between="0" :preload-images="true" :lazy="true" @swiper="setSwiper">
           <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs bg-gray-900 opacity-70">
@@ -30,18 +32,19 @@
             <vue-swiper-slide 
               v-for="(photo, index) in visiblePhotos" 
               :key="`slide-${uniqueComponentId}-${index}`"
+              class="h-full w-full flex items-center justify-center"
             >
               <img 
                 :src="getPhotoUrl(photo)" 
                 :alt="`${restaurantData.name} photo ${index + 1}`" 
-                class="w-full h-full object-cover object-center min-h-[200px] min-w-[200px]"
+                class="w-full h-full object-cover object-center"
                 @error="handleImageError($event, index)" 
                 loading="lazy" 
               />
             </vue-swiper-slide>
           </template>
           <template v-else>
-            <vue-swiper-slide :key="`no-photos-${uniqueComponentId}`">
+            <vue-swiper-slide :key="`no-photos-${uniqueComponentId}`" class="h-full w-full flex items-center justify-center">
               <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs max-w-4/5 bg-gray-900 opacity-70 text-nowrap overflow-hidden">No photos available</div>
               <img :src="placeholderImage" :alt="restaurantData.name" class="w-full h-full object-cover object-center" />
             </vue-swiper-slide>
@@ -55,18 +58,18 @@
 
         <!-- Custom navigation buttons outside Swiper -->
         <div class="absolute top-0 left-0 right-0 bottom-0 flex justify-between items-center px-1" v-if="visiblePhotos.length > 1">
-          <button class="nav-button prev text-white border-none flex items-center justify-center cursor-pointer z-10" @click.stop="navigatePrev">
+          <button class="pointer-events-auto bg-black opacity-30 w-10 h-10 rounded-full transition-colors duration-200 hover:bg-black/50 flex items-center justify-center cursor-pointer z-10 text-white border-none" @click.stop="navigatePrev">
             <ion-icon :icon="chevronBack"></ion-icon>
           </button>
-          <button class="nav-button next text-white border-none flex items-center justify-center cursor-pointer z-10" @click.stop="navigateNext">
+          <button class="pointer-events-auto bg-black opacity-30 w-10 h-10 rounded-full transition-colors duration-200 hover:bg-black/50 flex items-center justify-center cursor-pointer z-10 text-white border-none" @click.stop="navigateNext">
             <ion-icon :icon="chevronForward"></ion-icon>
           </button>
         </div>
       </div>
-      <ion-card-title class="flex flex-col overflow-hidden p-4 card-title-section">
+      <ion-card-title class="py-2 overflow-hidden font-bold p-2 text-lg break-word white-space">
         <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
-        <ion-card-content class="p-2 overflow-y-auto">
-          <div class="flex justify-between">
+        <ion-card-content class="p-2">
+          <div class="flex justify-between w-full">
             <span>
               <span class="text-yellow-300">{{ '★'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
               <span class="text-gray-200">{{ '★'.repeat(5 - Math.min(Math.round(restaurantData.rating || 0), 5))
@@ -82,7 +85,7 @@
                 }}</span>
             </p>
           </div>
-          <p class="mt-1 location-text">{{ restaurantData.vicinity }}</p>
+          <p class="mt-1 !text-[0.5rem]">{{ restaurantData.vicinity }}</p>
         </ion-card-content>
       </ion-card-title>
     </ion-card>
@@ -90,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
 import type { Restaurant } from '@/types/restaurant';
 import type { Swiper } from 'swiper';
@@ -132,9 +135,12 @@ const visiblePhotos = computed(() => {
   
   try {
     if (props.restaurantData.photos && Array.isArray(props.restaurantData.photos)) {
+      results.push(props.restaurantData.primary_photo);
       props.restaurantData.photos.forEach(photo => {
         if (photo && photo.photo_reference && results.length < MAX_PHOTOS) {
-          results.push(photo);
+          if(photo.photo_reference !== props.restaurantData?.primary_photo?.photo_reference){
+            results.push(photo);
+          }
         }
       });
     }
@@ -204,7 +210,7 @@ function getPhotoUrl(photo: any): string {
     return placeholderImage;
   }
   // Return photo URL directly from our proxy endpoint
-  const proxyUrl = `${api.defaults.baseURL}/restaurants/photo-proxy?photo_reference=${encodeURIComponent(actualPhotoRef)}&maxwidth=800&maxheight=450`;
+  const proxyUrl = `${api.defaults.baseURL}/restaurants/photo-proxy?photo_reference=${encodeURIComponent(actualPhotoRef)}&maxwidth=450&maxheight=350`;
   
   // Add to cache to prevent duplicate retrievals
   imageCache.value.set(photoRef, proxyUrl);
@@ -305,14 +311,16 @@ const updateRestaurantPhotos = (photos: any[]) => {
           
       return {
         photo_reference: photoRef,
-        width: photo.width || 800,
-        height: photo.height || 450,
+        width: photo.width || 450,
+        height: photo.height || 350,
         id: Math.random().toString(36).substring(2, 9)
       };
     });
   
-  // Add all new photos to the photos array
-  props.restaurantData.photos = [...newPhotos].slice(0, MAX_PHOTOS);
+  // Preserve the first photo if it exists
+  const existingPhotos = props.restaurantData.photos || [];
+  const firstPhoto = existingPhotos.length > 0 ? [existingPhotos[0]] : [];
+  props.restaurantData.photos = [...firstPhoto, ...newPhotos].slice(1, MAX_PHOTOS);
 };
 
 onMounted(() => {
@@ -331,132 +339,33 @@ watch(() => props.restaurantData?.place_id, (newPlaceId) => {
     loadAdditionalPhotos();
   }
 }, { immediate: true });
-</script><style scoped>
+</script>
 
-.meal-card {
-  width: 90vw;
-  height: 40vh;
-}
-
-.card-content {
-  height: 95%;
-}
-
-.meal-image-container {
-  height: 70%;
-  min-height: 70%;
-  max-height: 70%;
-}
-
-.card-title-section {
-  height: 30%;
-  min-height: 30%;
-  max-height: 30%;
-}
-
-.restaurant-card-placeholder {
-  width: 90vw;
-  height: 40vh;
-}
-
-.location-text {
-  font-size: 0.5rem;
-}
-
-.meal-image-container :deep(.swiper-slide) {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-button {
-  pointer-events: auto;
-  background: rgba(0, 0, 0, 0.3);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  transition: background-color 0.2s;
-}
-
-.nav-button:hover {
-  background: rgba(0, 0, 0, 0.5);
-}
-
-/* Remove Swiper's default buttons */
-:deep(.swiper-button-next),
-:deep(.swiper-button-prev) {
-  display: none;
-}
-
+<style scoped>
 @keyframes shimmer {
   0% {
     background-position: -1000px 0;
   }
-
   100% {
     background-position: 1000px 0;
   }
 }
 
-.skeleton-loader {
-  background: #2a2a2a;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  height: 95%;
+.animate-shimmer-slow {
+  animation: shimmer 8s infinite linear;
 }
 
-.skeleton-image {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0.05) 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.05) 75%);
-  background-size: 1000px 100%;
+.animate-shimmer-medium {
+  animation: shimmer 6s infinite linear;
+}
+
+.animate-shimmer-fast {
   animation: shimmer 4s infinite linear;
 }
 
-.skeleton-image-container {
-  height: 40vh;
-  width: 90vw;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+:deep(.swiper-button-next),
+:deep(.swiper-button-prev), 
+:deep(.swiper-pagination) {
+  display: none;
 }
-
-.skeleton-title {
-  height: 24px;
-  margin: 0 auto;
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0.05) 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.05) 75%);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite linear;
-  border-radius: 4px;
-}
-
-.skeleton-subtitle {
-  height: 16px;
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0.05) 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.05) 75%);
-  animation: shimmer 15s infinite linear;
-  border-radius: 4px;
-}
-
-.skeleton-details {
-  height: 16px;
-  width: 60%;
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0.05) 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.05) 75%);
-  animation: shimmer 10s infinite linear;
-  border-radius: 4px;
-}
-
 </style>

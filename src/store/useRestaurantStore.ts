@@ -42,7 +42,7 @@ export const useRestaurantStore = defineStore('restaurant', () => {
   };
   
   /**
-   * Fetch restaurants by coordinates
+   * Fetch restaurants by coordinates. Used by current location
    */
   const fetchRestaurantsByLocation = async (lat: number, lng: number) => {
     isLoading.value = true;
@@ -116,7 +116,6 @@ export const useRestaurantStore = defineStore('restaurant', () => {
     
     isLoadingAdditionalPhotos.value = true;
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
       
       const photoEndpoint = `/restaurants/photos/${placeId}`;
       
@@ -125,7 +124,7 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       });
       
       if (response.data && response.data.photos && response.data.photos.length > 0) {
-        const limitedPhotos = response.data.photos.slice(0, 3);
+        const limitedPhotos = response.data.photos.slice(0, 4);
         photoCache.value[placeId] = limitedPhotos;
         return limitedPhotos;
       }
@@ -136,9 +135,6 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       return [];
     } finally {
       isLoadingAdditionalPhotos.value = false;
-      
-      setTimeout(() => {
-      }, 1500);
     }
   };
   

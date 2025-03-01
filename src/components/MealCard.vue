@@ -1,14 +1,14 @@
 <template>
   <div v-if="mealData"
-    class="ion-activatable relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col w-[90vw] h-[43vh]"
+    class="relative overflow-hidden border-solid border-2 border-yellow-500 rounded-xl flex flex-col h-full"
     @click="chooseMeal(mealData)">
     <ion-card class="flex flex-col justify-between h-full my-1 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
-      <div class="h-[70%] flex flex-1 items-center justify-center">
+      <div class="flex flex-1 items-center justify-center max-h-[60%]">
         <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${mealData.image_name}.jpg`"
-          class="h-full w-full object-cover object-center max-h-[210px] min-h-[210px]"></ion-img>
+          class="h-full w-full object-cover object-center"></ion-img>
       </div>
-      <ion-card-title class="py-3 overflow-hidden font-bold p-2 text-lg break-word white-space">
+      <ion-card-title class="py-2 overflow-hidden font-bold p-2 text-lg break-word white-space">
         <ion-card-subtitle class="text-white text-center">{{ mealData.title }}</ion-card-subtitle>
         <ion-card-content class="p-2 overflow-y-auto">
           <div class="flex flex-col">

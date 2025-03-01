@@ -2,51 +2,45 @@
   <ion-header class="ion-no-border">
     <ion-toolbar class="transparent-toolbar">
       <ion-title class="text-center">{{ mealStore.mealCounter }}</ion-title>
-      <ion-buttons slot="end" v-if="showRefreshButton">
-        <ion-button @click="handleRefresh">
-          <ion-icon :icon="refresh" />
-        </ion-button>
-      </ion-buttons>
     </ion-toolbar>
   </ion-header>
-
   <RetryConnection v-if="loadError" message="Unable to load meals. Please check your connection."
     @retry="handleRetry" />
-
-  <ion-content v-else class="">
-    <ion-grid class="h-full">
+  <ion-content v-else class="ion-no-padding !overflow-hidden">
+    <ion-grid class="h-full ion-no-padding">
       <!-- Competition View -->
-      <ion-row v-if="!winner" class="h-full flex justify-between items-center meal-row">
-        <ion-col class="flex justify-center items-center">
-          <div :class="{'slide-out-right': animateMeal1, 'slide-in-left': newMealAnimation1}" class="meal-container">
+      <ion-row v-if="!winner" class="competition-row">
+        <ion-col class="flex justify-center items-center h-full p-2">
+          <div :class="{'slide-out-right': animateMeal1, 'slide-in-left': newMealAnimation1}" class="meal-container h-full w-full">
             <MealCard :mealData="meal1" @replaceMeal="handleMealSelected" />
           </div>
         </ion-col>
-        <ion-col class="flex justify-center items-center">
-          <div :class="{'slide-out-right': animateMeal2, 'slide-in-left': newMealAnimation2}" class="meal-container">
+        <ion-col class="flex justify-center items-center h-full p-2">
+          <div :class="{'slide-out-right': animateMeal2, 'slide-in-left': newMealAnimation2}" class="meal-container h-full w-full">
             <MealCard :mealData="meal2" @replaceMeal="handleMealSelected" />
           </div>
         </ion-col>
       </ion-row>
-
       <!-- Winner View -->
       <ion-row v-else class="h-full flex justify-center items-start">
         <ion-col class="flex flex-col items-center">
           <div class="w-full flex justify-between items-center mb-4">
             <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
-
           </div>
           <div>
             <MealCard :mealData="winner" />
           </div>
-
           <div class="flex-1 flex justify-end">
             <ion-button fill="clear" @click="handleShare">
               <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
             </ion-button>
+            <ion-button v-if="showRefreshButton" @click="handleRefresh" fill="clear">
+              <ion-icon :icon="refresh" class="bg-gray-900 rounded-xl p-2 text-white"/>
+            </ion-button>
           </div>
+
           <div class="mt-4 mb-16">
-            <div class="rounded-md mb-6">
+            <div class="rounded-md mb-6 mx-6">
               <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
               <ul class="ingredient-list">
                 <li v-for="(ingredient, index) in formattedIngredients" :key="index" class="ingredient-item">
@@ -54,8 +48,7 @@
                 </li>
               </ul>
             </div>
-
-            <div class="rounded-md mb-6">
+            <div class="rounded-md mb-6 mx-6">
               <h3 class="text-xl font-semibold mb-4">Instructions</h3>
               <div class="whitespace-pre-wrap">
                 {{ winner.instructions }}
@@ -302,12 +295,10 @@ const handleShare = async () => {
 </script>
 
 <style scoped>
-.meal-row {
-  height: 50vh;
-}
-
-.winner-meal {
-  width: 100vw;
+.competition-row {
+  height: calc(100vh - 110px);
+  display: flex;
+  flex-direction: column;
 }
 
 .transparent-toolbar {
@@ -371,5 +362,15 @@ const handleShare = async () => {
 
 :global(.custom-action-sheet .action-sheet-icon) {
   margin: 0;
+}
+
+:global(ion-grid), :global(ion-row), :global(ion-col) {
+  padding: 0;
+}
+
+@media (min-height: 700px) {
+  .competition-row {
+    height: calc(100vh - 110px);
+  }
 }
 </style>
