@@ -216,14 +216,6 @@ const updateProfile = async () => {
   }
 };
 
-const navigateTo = async (path: string) => {
-  try {
-    await router.push(path);
-  } catch (error) {
-    console.error('Navigation error:', error);
-  }
-};
-
 watch(user, (newUser) => {
   if (newUser) {
     const username = newUser.username || '';

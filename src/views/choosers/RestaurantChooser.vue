@@ -2,34 +2,38 @@
 <template>
   <ion-page>
     <ion-header class="ion-no-border">
-      <div class="search-section">
-        <div class="search-container">
+      <div class="fixed top-[5%] left-0 right-0 z-[1000] bg-transparent">
+        <div class="relative">
+          <!-- Search Bar -->
           <ion-searchbar v-model="searchQuery" placeholder="Search address" @ionInput="handleSearchInput"
-            @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur" class="address-searchbar">
+            @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur" class="text-black rounded-xl address-searchbar">
           </ion-searchbar>
-
-          <div class="flex items-center justify-center w-full px-4">
-            <span class="text-white text-xl">
-              {{ !winner ? restaurantStore.restaurantCounter : '' }}
-            </span>
-          </div>
-
-          <div v-if="searchBarFocused || addressSuggestions.length > 0" class="dropdown-container">
-            <ion-list class="use-location-button mx-auto" @click="getUserLocation">
-              <ion-icon :icon="locationOutline" class="location-icon"></ion-icon>
+          
+          <div v-if="searchBarFocused || addressSuggestions.length > 0" class="absolute left-0 right-0 z-[1001]"> 
+            <ion-list class="mx-auto rounded-lg bg-[#1c1c1d] h-10 cursor-pointer w-[95%] shadow-md flex items-center gap-2" 
+                     @click="getUserLocation">
+              <ion-icon :icon="locationOutline" class="text-[20px]"></ion-icon>
               <span>Use current location</span>
             </ion-list>
-
-            <ion-list v-if="addressSuggestions.length > 0" class="address-suggestions">
+            
+            <ion-list v-if="addressSuggestions.length > 0" 
+                     class="absolute rounded-lg shadow-md max-h-[400px] overflow-y-auto top-[45px] left-0 right-0 bg-white">
               <ion-item v-for="suggestion in addressSuggestions" :key="suggestion.place_id" button
                 @click="selectAddress(suggestion)">
                 <ion-label>{{ suggestion.description }}</ion-label>
               </ion-item>
             </ion-list>
           </div>
+          
+          <div class="flex items-center justify-center w-full px-4 mt-3">
+            <span class="text-white text-xl" v-show="searchedValue !== null">
+              {{ !winner ? restaurantStore.restaurantCounter : '' }}
+            </span>
+          </div>
         </div>
       </div>
     </ion-header>
+
     <ion-content v-if="hasLocation" class="main-content">
       <ion-grid class="h-full">
 
@@ -39,11 +43,11 @@
         <template v-else>
           <!-- Competition View -->
           <template v-if="!winner">
-            <ion-row class="h-full flex justify-between items-center restaurant-row">
+            <ion-row class="h-full flex justify-between items-center flex-col restaurant-row">
               <ion-col class="flex justify-center items-center">
                 <!-- Show skeleton while loading first restaurant -->
                 <div :class="{'slide-out-right': animateRestaurant1, 'slide-in-left': newRestaurantAnimation1}"
-                  class="restaurant-container">
+                  class="transform-none transition-transform duration-300 ease-out origin-center will-change-transform ">
                   <RestaurantCard v-if="loading" key="loading-card-1" />
                   <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" :key="`restaurant-1-${restaurant1?.place_id || 'empty'}`"  />
                 </div>
@@ -51,7 +55,7 @@
               <ion-col class="flex justify-center items-center">
                 <!-- Show skeleton while loading second restaurant -->
                 <div :class="{ 'slide-out-right': animateRestaurant2, 'slide-in-left': newRestaurantAnimation2 }"
-                  class="restaurant-container">
+                  class="transform-none transition-transform duration-300 ease-out origin-center will-change-transform ">
                   <RestaurantCard v-if="loading" key="loading-card-2"/>
                   <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" :key="`restaurant-2-${restaurant2?.place_id || 'empty'}`" />
                 </div>
@@ -78,7 +82,7 @@
                 </ion-button>
               </div>
               <div class="mt-4 w-full p-2">
-                <div class="details-section">
+                <div class="bg-white/10 rounded-lg p-4">
                   <h3 class="text-xl font-semibold mb-4">Details</h3>
                   <p><strong>Address:</strong> {{ winner.vicinity }}</p>
                   <p><strong>Rating:</strong> {{ winner.rating }} ⭐️ ({{ winner.user_ratings_total }} reviews)</p>
@@ -527,27 +531,11 @@ const handleRefresh = async () => {
 <style scoped>
 .restaurant-row {
   height: calc(100vh - 160px);
-  display: flex;
-  flex-direction: column;
 }
 
 .address-searchbar {
   --background: white;
-  --color: black;
   --placeholder-color: #666;
-  border-radius: 8px;
-}
-
-.address-suggestions {
-  position: absolute;
-  width: 100%;
-  z-index: 1000;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-height: 300px;
-  overflow-y: auto;
-  bottom: 75%;
-  left: 0;
 }
 
 .transparent-toolbar {
@@ -556,82 +544,8 @@ const handleRefresh = async () => {
   --border-color: transparent;
 }
 
-
-.details-section {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 1rem;
-}
-.use-location-button {
-  position: absolute;
-  bottom: 80%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  background-color: 0 2px 8px rgba(0, 0, 0, 0.1);
-  height: 100%;
-  width: 80%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  color: #666;
-  z-index: 2;
-}
-
-.use-location-button:hover {
-  background-color: black;
-}
-
-.location-icon {
-  font-size: 20px;
-}
-
-.search-section {
-  position: fixed;
-  top: 5%; /* Move higher up */
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: transparent;
-}
-
-/* Update dropdown positions relative to new structure */
-.address-suggestions {
-  position: absolute;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-height: 400px;
-  overflow-y: auto;
-  bottom: -285%; /* Position relative to search container */
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: white;
-  margin-top: 45px; /* Space for the location button */
-}
-
-.use-location-button {
-  border-radius: 8px;
-  background: #141414;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 40px;
-  cursor: pointer;
-  z-index: 1000;
-  width: 95%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-top: 10px; /* Small gap between searchbar and button */
-}
-
 .main-content {
   --padding-top: 35%;
-}
-
-.restaurant-container {
-  transform: translateX(0);
-  transition: transform 0.3s ease-out;
-  transform-origin: center;
-  will-change: transform;
 }
 
 .slide-out-right {

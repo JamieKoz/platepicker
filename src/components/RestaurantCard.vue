@@ -71,9 +71,20 @@
         <ion-card-content class="p-2">
           <div class="flex justify-between w-full">
             <span>
-              <span class="text-yellow-300">{{ '★'.repeat(Math.min(Math.round(restaurantData.rating || 0), 5)) }}</span>
-              <span class="text-gray-200">{{ '★'.repeat(5 - Math.min(Math.round(restaurantData.rating || 0), 5))
-                }}</span>
+              <span class="mr-1 text-xs">{{ restaurantData.rating?.toLocaleString() || 0 }}</span>
+              <!-- Full yellow stars -->
+              <div class="relative inline-block">
+                <!-- Base layer - Gray stars -->
+                <div class="text-gray-200">★★★★★</div>
+                <!-- Overlay - Yellow stars with clipping -->
+                <div class="absolute top-0 left-0 text-yellow-300 overflow-hidden whitespace-nowrap"
+                   :style="{ width: `${calculateYellowWidth(restaurantData.rating || 0)}%` }">★★★★★</div>
+              </div>
+              <!-- Remaining empty stars -->
+              <span class="text-gray-200">
+                {{ '★'.repeat(Math.max(0, 4 - Math.floor(restaurantData.rating || 0))) }}
+              </span>
+              
               <span class="ml-1 text-xs">({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})</span>
             </span>
 
@@ -81,8 +92,7 @@
             <p v-if="restaurantData.price_level" class="">
               <span class="text-yellow-300">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4))
                 }}</span>
-              <span class="text-gray-200">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4))
-                }}</span>
+              <span class="text-gray-200">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
             </p>
           </div>
           <p class="mt-1 !text-[0.5rem]">{{ restaurantData.vicinity }}</p>
@@ -321,6 +331,11 @@ const updateRestaurantPhotos = (photos: any[]) => {
   const existingPhotos = props.restaurantData.photos || [];
   const firstPhoto = existingPhotos.length > 0 ? [existingPhotos[0]] : [];
   props.restaurantData.photos = [...firstPhoto, ...newPhotos].slice(1, MAX_PHOTOS);
+};
+
+const calculateYellowWidth = (rating: number) => {
+  // Convert rating to percentage (e.g., 3.7/5 = 74%)
+  return Math.min(Math.max(Math.floor((rating / 5) * 100), 0), 100);
 };
 
 onMounted(() => {

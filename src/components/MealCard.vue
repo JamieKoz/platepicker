@@ -2,9 +2,9 @@
   <div v-if="mealData"
     class="relative overflow-hidden border-solid border-2 border-yellow-500 rounded-xl flex flex-col h-full"
     @click="chooseMeal(mealData)">
-    <ion-card class="flex flex-col justify-between h-full my-1 mx-2">
+    <ion-card class="flex flex-col justify-between h-full my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
-      <div class="flex flex-1 items-center justify-center max-h-[60%]">
+      <div class="flex flex-1 items-center justify-center max-h-[70%]">
         <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${mealData.image_name}.jpg`"
           class="h-full w-full object-cover object-center"></ion-img>
       </div>

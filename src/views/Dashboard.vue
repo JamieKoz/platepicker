@@ -46,11 +46,11 @@
                     {{ topMeal.total_tally }} picks
                   </div>
                 </div>
-                <p class="text-sm text-gray-400" :class="{ 'line-clamp-2': !isExpanded }">
+                <p class="text-sm text-gray-400" :class="{ 'line-clamp-2': !expandedMeals[topMeal.meal.id] }">
                   {{ topMeal.meal.instructions }}
                 </p>
-                <button @click="isExpanded = !isExpanded" class="text-sm text-blue-500 hover:text-blue-600 mt-1">
-                  {{ isExpanded ? 'Show less' : 'Show more' }}
+                <button @click="toggleExpand(topMeal.meal.id)" class="text-sm text-blue-500 hover:text-blue-600 mt-1">
+                  {{ expandedMeals[topMeal.meal.id] ? 'Show less' : 'Show more' }}
                 </button>
               </ion-card-content>
             </ion-card>
@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
 import { useUser } from '@clerk/vue';
@@ -110,7 +110,7 @@ const { user } = useUser();
 const router = useRouter();
 const loadingTopMeal = ref(true);
 const topMeals = ref<TopMeal[]>([]);
-const isExpanded = ref(false);
+const expandedMeals = reactive<Record<number, boolean>>({});
 
 const fetchTopMeal = async () => {
 
@@ -125,6 +125,9 @@ const fetchTopMeal = async () => {
   }
 };
 
+const toggleExpand = (mealId: number) => {
+  expandedMeals[mealId] = !expandedMeals[mealId];
+};
 
 const navigateTo = async (path: string) => {
   try {
@@ -140,6 +143,4 @@ onMounted(() => {
 
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

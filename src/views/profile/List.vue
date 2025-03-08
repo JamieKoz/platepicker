@@ -37,17 +37,19 @@
         </ion-item>
       </ion-list>
 
-      <div class="pagination-controls">
-        <ion-toolbar class="flex justify-between">
-          <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="clear" size="small">
-            Previous
-          </ion-button>
-          <ion-text class="text-xs text-center items-center">
-            Page {{ meta.current_page }} / {{ meta.last_page }}
-          </ion-text>
-          <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="clear" size="small">
-            Next
-          </ion-button>
+      <div class="my-2 p-2">
+        <ion-toolbar>
+          <div class="flex items-center justify-between">
+            <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="clear" size="small">
+              Previous
+            </ion-button>
+            <ion-text class="text-xs text-center items-center">
+              Page {{ meta.current_page }} / {{ meta.last_page }}
+            </ion-text>
+            <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="clear" size="small">
+              Next
+            </ion-button>
+          </div>
         </ion-toolbar>
       </div>
     </ion-content>
@@ -205,8 +207,4 @@ onMounted(() => fetchMealList(1));
 </script>
 
 <style scoped>
-.pagination-controls {
-  margin-bottom: 2.5rem;
-  padding: 1rem;
-}
 </style>
