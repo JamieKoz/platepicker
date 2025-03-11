@@ -43,6 +43,39 @@
         </ion-item>
 
         <ion-item>
+          <ion-label position="stacked">Category</ion-label>
+          <ion-select v-model="mealForm.category" :multiple="true" placeholder="Select category of meal">
+            <ion-select-option value="breakfast">Breakfast</ion-select-option>
+            <ion-select-option value="lunch">Lunch</ion-select-option>
+            <ion-select-option value="dinner">Dinner</ion-select-option>
+            <ion-select-option value="dessert">Dessert</ion-select-option>
+            <ion-select-option value="snack">Snack</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Cuisine</ion-label>
+          <ion-select v-model="mealForm.cuisine" placeholder="Select cuisine">
+            <ion-select-option value="american">American</ion-select-option>
+            <ion-select-option value="brazilian">Brazilian</ion-select-option>
+            <ion-select-option value="caribbean">Caribbean</ion-select-option>
+            <ion-select-option value="chinese">Chinese</ion-select-option>
+            <ion-select-option value="french">French</ion-select-option>
+            <ion-select-option value="indian">Indian</ion-select-option>
+            <ion-select-option value="italian">Italian</ion-select-option>
+            <ion-select-option value="japanese">Japanese</ion-select-option>
+            <ion-select-option value="korean">Korean</ion-select-option>
+            <ion-select-option value="mediterranean">Mediterranean</ion-select-option>
+            <ion-select-option value="mexican">Mexican</ion-select-option>
+            <ion-select-option value="spanish">Spanish</ion-select-option>
+            <ion-select-option value="thai">Thai</ion-select-option>
+            <ion-select-option value="turkish">Turkish</ion-select-option>
+            <ion-select-option value="vietnamese">Vietnamese</ion-select-option>
+            <ion-select-option value="Snack"></ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
           <ion-label position="stacked">Dietary Requirements</ion-label>
           <ion-select v-model="mealForm.dietary" :multiple="true" placeholder="Select dietary requirements">
             <ion-select-option value="gluten-free">Gluten Free</ion-select-option>
@@ -91,7 +124,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import type { Meal } from '@/types/meal';
+import type { Recipe } from '@/types/recipe';
 import {
   IonModal,
   IonHeader,
@@ -113,7 +146,7 @@ import api from '@/api/axios';
 
 const props = defineProps<{
   isOpen: boolean;
-  editingMeal: Meal | null;
+  editingMeal: Recipe | null;
 }>();
 
 const emit = defineEmits<{
@@ -127,6 +160,8 @@ const mealForm = ref({
   ingredients: '',
   instructions: '',
   cooking_time: '',
+  cuisine: '',
+  category: [] as string[],
   serves: '',
   dietary: [] as string[],
   image: null as File | null,
@@ -143,6 +178,8 @@ watch(
         instructions: meal.instructions || '',
         cooking_time: meal.cooking_time || '',
         serves: meal.serves || '',
+        category: typeof meal.category === 'string' ? meal.category.split(',') : (meal.category || []),
+        cuisine: meal.cuisine || '',
         dietary: typeof meal.dietary === 'string' ? meal.dietary.split(',') : (meal.dietary || []),
         image: null,
         active: meal.active
@@ -152,8 +189,10 @@ watch(
         title: '',
         ingredients: '',
         instructions: '',
-        cooking_time: '',
         serves: '',
+        cooking_time: '',
+        category: [],
+        cuisine: '',
         dietary: [],
         image: null,
         active: true
@@ -200,6 +239,8 @@ async function saveMeal() {
     formData.append('instructions', mealForm.value.instructions);
     formData.append('cooking_time', mealForm.value.cooking_time);
     formData.append('serves', mealForm.value.serves);
+    formData.append('category', mealForm.value.category.join(','));
+    formData.append('cuisine', mealForm.value.cuisine);
     formData.append('dietary', mealForm.value.dietary.join(','));
     if (mealForm.value.image) {
       formData.append('image', mealForm.value.image);

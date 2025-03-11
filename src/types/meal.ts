@@ -9,6 +9,8 @@ export interface Meal {
   cleaned_ingredients: string | null;
   cooking_time?: string;
   serves?: string;
+  cuisine?: string;
+  category?: string;
   dietary?: string | string[];
   active: boolean;
   created_at: string;
