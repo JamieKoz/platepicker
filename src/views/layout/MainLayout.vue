@@ -46,6 +46,11 @@
               <ion-label>Favourites</ion-label>
             </ion-item>
 
+            <ion-item button @click="navigateTo('/recipes-list')" v-show="isUserAdmin">
+              <ion-icon :icon="list" slot="start"></ion-icon>
+              <ion-label>Recipes List</ion-label>
+            </ion-item>
+
             <ion-item button @click="doSignOut">
               <ion-icon :icon="logOut" slot="start"></ion-icon>
               <ion-label>Sign Out</ion-label>
@@ -71,53 +76,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { useUser, useAuth } from '@clerk/vue';
-import { 
-  IonPage, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonButtons, 
-  IonButton, 
-  IonIcon,
-  IonPopover,
-  IonContent,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonRouterOutlet,
-  IonAvatar
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, 
+  IonIcon, IonPopover, IonContent, IonList, IonItem, IonLabel, IonRouterOutlet, IonAvatar
 } from '@ionic/vue';
-import { 
-  personCircle, 
-  list, 
-  home,
-  logOut,
-  logIn,
-  personAdd,
-  trophy
+import { personCircle, list, home,
+  logOut, logIn, personAdd, trophy, person
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { capitalizeFirstLetter } from '@/utils/string-utils';
+import { useUserStore } from '@/store/useUserStore'
 
 const router = useRouter();
 const { user } = useUser();
 const { isSignedIn, signOut } = useAuth();
 const isUserMenuOpen = ref(false);
+const userStore = useUserStore();
+// watch(user, (newUser) => {
+//   if (newUser?.id) {
+//     const userData = {
+//       id: newUser.id,
+//       name: newUser.firstName || newUser.username || newUser.emailAddresses?.[0]?.emailAddress?.split('@')[0],
+//       email: newUser.emailAddresses?.[0]?.emailAddress,
+//       isAdmin: newUser.organizationMemberships[0].role == "org:admin" ? 1 : 0
+//     };
+//     localStorage.setItem('clerkUserId', newUser.id);
+//     localStorage.setItem('clerkUserData', JSON.stringify(userData));
+//   } else {
+//     localStorage.removeItem('clerkUserId');
+//     localStorage.removeItem('clerkUserData');
+//   }
+// });
 
-watch(user, (newUser) => {
-  if (newUser?.id) {
-    const userData = {
-      id: newUser.id,
-      name: newUser.firstName || newUser.username || newUser.emailAddresses?.[0]?.emailAddress?.split('@')[0],
-      email: newUser.emailAddresses?.[0]?.emailAddress
-    };
-    localStorage.setItem('clerkUserId', newUser.id);
-    localStorage.setItem('clerkUserData', JSON.stringify(userData));
-  } else {
-    localStorage.removeItem('clerkUserId');
-    localStorage.removeItem('clerkUserData');
+const isUserAdmin = computed(() => {
+  if (!user.value) return false;
+  
+  if (user.value.organizationMemberships && user.value.organizationMemberships.length > 0) {
+    return user.value.organizationMemberships[0].role === "org:admin";
+  }
+  
+  try {
+    const userData = JSON.parse(localStorage.getItem('clerkUserData') || '{}');
+    return userData.isAdmin === 1;
+  } catch (e) {
+    return false;
   }
 });
 
@@ -140,4 +143,8 @@ const doSignOut = () => {
     });
   }
 };
+
+onMounted(() => {
+  userStore.initializeUser();
+})
 </script>

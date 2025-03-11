@@ -68,6 +68,10 @@ const routes: Array<RouteRecordRaw> = [
         path: 'feedback',
         component: () => import('@/views/profile/Feedback.vue')
       },
+      {
+        path: 'recipes-list',
+        component: () => import('@/views/admin/RecipeList.vue')
+      },
     ]
   }
 ];
