@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { useUser } from '@clerk/vue'
 import { watch } from 'vue'
+import api from '@/api/axios'
 
 // Define the organization member interface
 interface OrgMember {
@@ -27,6 +28,7 @@ interface UserData {
   imageUrl?: string;
   organizationId?: string;
   organizationRole?: string;
+  initialRecipesAssigned?: boolean;
 }
 
 export const useUserStore = defineStore('user', {
@@ -34,7 +36,8 @@ export const useUserStore = defineStore('user', {
     isAdmin: false,
     userData: null as UserData | null,
     organizationData: null as OrganizationData | null,
-    organizationMembers: [] as OrgMember[]
+    organizationMembers: [] as OrgMember[],
+    isNewUser: false
   }),
   
   actions: {
@@ -53,13 +56,36 @@ export const useUserStore = defineStore('user', {
         });
       }
       
+      let isNewUserRegistration = false;
+      
       if (user.value) {
+        // Get previous stored user data if any
+        const previousData = localStorage.getItem('clerkUserData');
+        
         // Set user data from Clerk
         this.userData = {
           id: user.value.id,
           name: user.value.firstName || user.value.username || user.value.emailAddresses?.[0]?.emailAddress?.split('@')[0] || '',
           email: user.value.emailAddresses?.[0]?.emailAddress,
-          imageUrl: user.value.imageUrl
+          imageUrl: user.value.imageUrl,
+          initialRecipesAssigned: false
+        }
+        
+        // Check if this is a new user (no previous data with this ID)
+        if (!previousData || !previousData.includes(user.value.id)) {
+          isNewUserRegistration = true;
+          this.isNewUser = true;
+        } else {
+          // Try to parse previous data
+          try {
+            const parsedData = JSON.parse(previousData);
+            // Preserve the initialRecipesAssigned status if it exists
+            if (parsedData && parsedData.initialRecipesAssigned) {
+              this.userData.initialRecipesAssigned = true;
+            }
+          } catch (e) {
+            console.error('Error parsing previous user data', e);
+          }
         }
         
         // Check admin status and organization info
@@ -81,10 +107,19 @@ export const useUserStore = defineStore('user', {
           };
         }
         
+        // Save user data to localStorage
+        localStorage.setItem('clerkUserData', JSON.stringify(this.userData));
+        
+        // If this is a new user, assign initial recipes
+        if (isNewUserRegistration && !this.userData.initialRecipesAssigned) {
+          this.assignInitialRecipes();
+        }
+        
         return {
           userData: this.userData,
           isAdmin: this.isAdmin,
-          organizationData: this.organizationData
+          organizationData: this.organizationData,
+          isNewUser: isNewUserRegistration
         };
       }
       
@@ -118,8 +153,31 @@ export const useUserStore = defineStore('user', {
       return {
         userData: this.userData,
         isAdmin: this.isAdmin,
-        organizationData: this.organizationData
+        organizationData: this.organizationData,
+        isNewUser: false
       };
+    },
+    
+    async assignInitialRecipes() {
+      if (!this.userData || !this.userData.id) return;
+      
+      try {
+        // Call your backend API
+        const response = await api.post('/users/assign-initial-recipes', {
+          userId: this.userData.id
+        });
+        
+        if (response.status === 200) {
+          // Mark as assigned in userData and save to localStorage
+          if (this.userData) {
+            this.userData.initialRecipesAssigned = true;
+            localStorage.setItem('clerkUserData', JSON.stringify(this.userData));
+          }
+          console.log('Initial recipes assigned successfully');
+        }
+      } catch (error) {
+        console.error('Failed to assign initial recipes:', error);
+      }
     },
     
     // This method should be called from a component, not directly in the store
@@ -146,6 +204,7 @@ export const useUserStore = defineStore('user', {
     isAuthenticated: (state) => !!state.userData,
     isUserAdmin: (state) => state.isAdmin,
     getOrganizationMembers: (state) => state.organizationMembers,
-    getOrganizationId: (state) => state.organizationData?.id || null
+    getOrganizationId: (state) => state.organizationData?.id || null,
+    isNewUserRegistration: (state) => state.isNewUser
   }
 })
