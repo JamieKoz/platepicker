@@ -74,7 +74,7 @@ import api from '@/api/axios';
 import { refresh, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline, shareOutline } from 'ionicons/icons';
 import { useMealStore } from '@/store/useMealStore';
 import { useUser } from '@clerk/vue';
-import { useRouter, useRoute } from 'vue-router'; // <-- Add useRoute
+import { useRouter, useRoute } from 'vue-router';
 import MealCard from '@/components/MealCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, toastController, actionSheetController, IonActionSheet } from '@ionic/vue';
@@ -109,7 +109,11 @@ const getFiltersFromRoute = () => {
   if (route.query.dietary) {
     filters.dietary = route.query.dietary as string;
   }
-  
+
+   if (route.query.cooking_time) {
+    filters.cooking_time = route.query.cooking_time;
+  }
+
   return filters;
 };
 

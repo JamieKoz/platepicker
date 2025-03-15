@@ -13,6 +13,7 @@ export const useMealStore = defineStore('mealStore', () => {
     categories?: string,
     cuisines?: string,
     dietary?: string
+    max_cooking_time?: number | string
   }) => {
     try {
       const headers: { [key: string]: string } = {};

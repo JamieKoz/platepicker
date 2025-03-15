@@ -11,7 +11,7 @@
         </div>
 
         <div class="flex justify-end">
-          <ion-button fill="clear" size="small" color="medium"  @click="resetFilters">
+          <ion-button fill="clear" size="small" color="medium" @click="resetFilters">
             Clear All
           </ion-button>
         </div>
@@ -51,6 +51,19 @@
           </div>
         </div>
 
+        <div class="mb-6">
+          <ion-label class="text-lg font-medium mb-2 block">
+            Cooking Time: {{ cookingTime > 0 ? `${cookingTime} minutes or less` : 'Any time' }}
+          </ion-label>
+          <div class="px-2">
+            <ion-range v-model="cookingTime" :min="0" :max="120" :step="15" :pin="true" :ticks="true" :snaps="true"
+              color="primary">
+              <ion-label slot="start">Any</ion-label>
+              <ion-label slot="end">120 min</ion-label>
+            </ion-range>
+          </div>
+        </div>
+
         <!-- Apply button -->
         <ion-button expand="block" @click="applyFilters" class="mt-6">
           Let's Go
@@ -67,7 +80,8 @@ import {
   IonContent, 
   IonButton, 
   IonIcon,
-  IonLabel 
+  IonLabel,
+  IonRange
 } from '@ionic/vue';
 import { useRouter } from 'vue-router';
 import { arrowBack } from 'ionicons/icons';
@@ -88,6 +102,7 @@ const dietaryRequirements = ref<Dietary[]>([]);
 const selectedCategories = ref<number[]>([]);
 const selectedCuisines = ref<number[]>([]);
 const selectedDietary = ref<number[]>([]);
+const cookingTime = ref(0);
 
 // Toggle selection for categories
 const toggleCategory = (id: number) => {
@@ -125,6 +140,7 @@ const resetFilters = () => {
   selectedCategories.value = [];
   selectedCuisines.value = [];
   selectedDietary.value = [];
+  cookingTime.value = 0;
 };
 
 // Apply filters and navigate
@@ -133,7 +149,8 @@ const applyFilters = () => {
   localStorage.setItem('mealFilters', JSON.stringify({
     categories: selectedCategories.value,
     cuisines: selectedCuisines.value,
-    dietary: selectedDietary.value
+    dietary: selectedDietary.value,
+    cooking_time: cookingTime.value > 0 ? cookingTime.value : null
   }));
   
   // Prepare query parameters
@@ -150,7 +167,11 @@ const applyFilters = () => {
   if (selectedDietary.value.length) {
     query.dietary = selectedDietary.value.join(',');
   }
-  
+
+  if(cookingTime.value > 0){
+    query.cooking_time = cookingTime.value.toString();
+  }
+   
   router.push({
     path: '/meal-chooser',
     query
@@ -178,6 +199,7 @@ onMounted(async () => {
       selectedCategories.value = filters.categories || [];
       selectedCuisines.value = filters.cuisines || [];
       selectedDietary.value = filters.dietary || [];
+      cookingTime.value = filters.cooking_time || 0;
     }
   } catch (error) {
     console.error("Error fetching reference data:", error);
