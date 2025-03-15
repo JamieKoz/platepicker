@@ -19,11 +19,11 @@
         <div class="mb-6">
           <ion-label class="text-lg font-medium mb-2 block">Categories</ion-label>
           <div class="flex flex-wrap gap-2">
-            <ion-chip v-for="category in categories" :key="category.id"
-              :color="selectedCategories.includes(category.id) ? 'primary' : ''" @click="toggleCategory(category.id)"
-              class="m-0 h-8 text-white">
-              {{ category.name }}
-            </ion-chip>
+          <ion-chip v-for="category in categories" :key="category.id"
+            :class="['m-0 h-8 text-white', selectedCategories.includes(category.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
+            @click="toggleCategory(category.id)">
+            {{ category.name }}
+          </ion-chip>
           </div>
         </div>
 
@@ -32,8 +32,8 @@
           <ion-label class="text-lg font-medium mb-2 block">Cuisines</ion-label>
           <div class="flex flex-wrap gap-2">
             <ion-chip v-for="cuisine in cuisines" :key="cuisine.id"
-              :color="selectedCuisines.includes(cuisine.id) ? 'primary' : ''" @click="toggleCuisine(cuisine.id)"
-              class="m-0 h-8 text-white">
+              :class="['m-0 h-8 text-white', selectedCuisines.includes(cuisine.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
+              @click="toggleCuisine(cuisine.id)"> 
               {{ cuisine.name }}
             </ion-chip>
           </div>
@@ -44,8 +44,7 @@
           <ion-label class="text-lg font-medium mb-2 block">Dietary Requirements</ion-label>
           <div class="flex flex-wrap gap-2">
             <ion-chip v-for="dietary in dietaryRequirements" :key="dietary.id"
-              :color="selectedDietary.includes(dietary.id) ? 'primary' : ''" @click="toggleDietary(dietary.id)"
-              class="m-0 h-8 text-white">
+              :class="['m-0 h-8 text-white', selectedDietary.includes(dietary.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']" @click="toggleDietary(dietary.id)">
               {{ dietary.name }}
             </ion-chip>
           </div>

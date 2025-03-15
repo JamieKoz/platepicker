@@ -34,12 +34,12 @@
 
         <ion-item>
           <ion-label position="stacked">Cooking Time</ion-label>
-          <ion-input v-model="mealForm.cooking_time" placeholder="time in minutes eg. 30"></ion-input>
+          <ion-input type="number" step="5" v-model="mealForm.cooking_time" placeholder="time in minutes eg. 30"></ion-input>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Serves</ion-label>
-          <ion-input v-model="mealForm.serves" placeholder="no. of servings e.g. 4"></ion-input>
+          <ion-input type="number" v-model="mealForm.serves" placeholder="no. of servings e.g. 4"></ion-input>
         </ion-item>
 
         <ion-item>
