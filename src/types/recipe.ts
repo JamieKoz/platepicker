@@ -1,3 +1,7 @@
+// types/recipe.ts
+import { Category } from '@/types/category';
+import { Cuisine } from '@/types/cuisine';
+import { Dietary } from '@/types/dietary';
 export interface Recipe {
   id: number;
   title: string;
@@ -13,4 +17,9 @@ export interface Recipe {
   active: boolean;
   created_at: string;
   updated_at: string;
+  
+  // New relational fields
+  categories?: Category[];
+  cuisines?: Cuisine[];
+  dietary_items?: Dietary[];
 }

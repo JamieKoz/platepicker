@@ -44,49 +44,28 @@
 
         <ion-item>
           <ion-label position="stacked">Category</ion-label>
-          <ion-select v-model="mealForm.category" :multiple="true" placeholder="Select category of meal">
-            <ion-select-option value="breakfast">Breakfast</ion-select-option>
-            <ion-select-option value="lunch">Lunch</ion-select-option>
-            <ion-select-option value="dinner">Dinner</ion-select-option>
-            <ion-select-option value="dessert">Dessert</ion-select-option>
-            <ion-select-option value="snack">Snack</ion-select-option>
+          <ion-select v-model="mealForm.categories" :multiple="true" placeholder="Select category of meal">
+            <ion-select-option v-for="category in categories" :key="category.id" :value="category.id">
+              {{ category.name }}
+            </ion-select-option>
           </ion-select>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Cuisine</ion-label>
-          <ion-select v-model="mealForm.cuisine" placeholder="Select cuisine">
-            <ion-select-option value="american">American</ion-select-option>
-            <ion-select-option value="brazilian">Brazilian</ion-select-option>
-            <ion-select-option value="caribbean">Caribbean</ion-select-option>
-            <ion-select-option value="chinese">Chinese</ion-select-option>
-            <ion-select-option value="french">French</ion-select-option>
-            <ion-select-option value="indian">Indian</ion-select-option>
-            <ion-select-option value="italian">Italian</ion-select-option>
-            <ion-select-option value="japanese">Japanese</ion-select-option>
-            <ion-select-option value="korean">Korean</ion-select-option>
-            <ion-select-option value="mediterranean">Mediterranean</ion-select-option>
-            <ion-select-option value="mexican">Mexican</ion-select-option>
-            <ion-select-option value="spanish">Spanish</ion-select-option>
-            <ion-select-option value="thai">Thai</ion-select-option>
-            <ion-select-option value="turkish">Turkish</ion-select-option>
-            <ion-select-option value="vietnamese">Vietnamese</ion-select-option>
-            <ion-select-option value="Snack"></ion-select-option>
+          <ion-select v-model="mealForm.cuisines" :multiple="true" placeholder="Select cuisine">
+            <ion-select-option v-for="cuisine in cuisines" :key="cuisine.id" :value="cuisine.id">
+              {{ cuisine.name }}
+            </ion-select-option>
           </ion-select>
         </ion-item>
 
         <ion-item>
           <ion-label position="stacked">Dietary Requirements</ion-label>
           <ion-select v-model="mealForm.dietary" :multiple="true" placeholder="Select dietary requirements">
-            <ion-select-option value="gluten-free">Gluten Free</ion-select-option>
-            <ion-select-option value="dairy-free">Dairy Free</ion-select-option>
-            <ion-select-option value="egg-free">Egg Free</ion-select-option>
-            <ion-select-option value="nut-free">Nut Free</ion-select-option>
-            <ion-select-option value="vegetarian">Vegetarian</ion-select-option>
-            <ion-select-option value="vegan">Vegan</ion-select-option>
-            <ion-select-option value="pescatarian">Pescatarian</ion-select-option>
-            <ion-select-option value="keto">Keto</ion-select-option>
-            <ion-select-option value="paleo">Paleo</ion-select-option>
+            <ion-select-option v-for="dietary in dietaryRequirements" :key="dietary.id" :value="dietary.id">
+              {{ dietary.name }}
+            </ion-select-option>
           </ion-select>
         </ion-item>
 
@@ -105,7 +84,6 @@
         </div>
       </form>
     </ion-content>
-
     <ion-alert :is-open="showDeleteConfirm" header="Confirm Delete"
       message="Are you sure you want to remove this meal from your list?" :buttons="[
         {
@@ -123,8 +101,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import type { Recipe } from '@/types/recipe';
+import type { Category } from '@/types/category';
+import type { Cuisine } from '@/types/cuisine';
+import type { Dietary } from '@/types/dietary';
 import {
   IonModal,
   IonHeader,
@@ -155,50 +136,132 @@ const emit = defineEmits<{
 }>();
 
 const showDeleteConfirm = ref(false);
+const categories = ref<Category[]>([]);
+const cuisines = ref<Cuisine[]>([]);
+const dietaryRequirements = ref<Dietary[]>([]);
+
 const mealForm = ref({
   title: '',
   ingredients: '',
   instructions: '',
   cooking_time: '',
-  cuisine: '',
-  category: [] as string[],
+  cuisines: [] as number[],
+  categories: [] as number[],
   serves: '',
-  dietary: [] as string[],
+  dietary: [] as number[],
   image: null as File | null,
   active: true
 });
+
+// Fetch reference data (categories, cuisines, dietary requirements)
+onMounted(async () => {
+  try {
+    // You'll need to create these endpoints in your API
+    const [categoriesRes, cuisinesRes, dietaryRes] = await Promise.all([
+      api.get('/categories'),
+      api.get('/cuisines'),
+      api.get('/dietary')
+    ]);
+    
+    categories.value = categoriesRes.data;
+    cuisines.value = cuisinesRes.data;
+    dietaryRequirements.value = dietaryRes.data;
+  } catch (error) {
+    console.error("Error fetching reference data:", error);
+  }
+});
+
+// Helper function to convert category strings to IDs
+const getCategoryIds = (categoryNames: string[]): number[] => {
+  if (!categoryNames || !categoryNames.length) return [];
+  return categories.value
+    .filter(category => categoryNames.includes(category.name))
+    .map(category => category.id);
+};
+
+// Helper function to convert cuisine string to IDs
+const getCuisineIds = (cuisineName: string): number[] => {
+  if (!cuisineName) return [];
+  const cuisine = cuisines.value.find(c => c.name === cuisineName);
+  return cuisine ? [cuisine.id] : [];
+};
+
+// Helper function to convert dietary strings to IDs
+const getDietaryIds = (dietaryNames: string[]): number[] => {
+  if (!dietaryNames || !dietaryNames.length) return [];
+  return dietaryRequirements.value
+    .filter(dietary => dietaryNames.includes(dietary.name))
+    .map(dietary => dietary.id);
+};
 
 watch(
   () => props.editingMeal,
   (meal) => {
     if (meal) {
+      // For existing recipes, handle both the new format (with relationships) and old format
+      let categoryIds: number[] = [];
+      let cuisineIds: number[] = [];
+      let dietaryIds: number[] = [];
+      
+      if (meal.categories) {
+        // New format with relationships
+        categoryIds = meal.categories.map(cat => cat.id);
+      } else if (meal.category) {
+        // Old format with string
+        const categoryNames = typeof meal.category === 'string' 
+          ? meal.category.split(',').map(cat => cat.trim()) 
+          : meal.category;
+        categoryIds = getCategoryIds(categoryNames);
+      }
+      
+      if (meal.cuisines) {
+        // New format with relationships
+        cuisineIds = meal.cuisines.map(cuisine => cuisine.id);
+      } else if (meal.cuisine) {
+        // Old format with string
+        cuisineIds = getCuisineIds(meal.cuisine);
+      }
+      
+      if (meal.dietary_items) {
+        // New format with relationships
+        dietaryIds = meal.dietary_items.map(dietary => dietary.id);
+      } else if (meal.dietary) {
+        // Old format with string
+        const dietaryNames = typeof meal.dietary === 'string' 
+          ? meal.dietary.split(',').map(d => d.trim()) 
+          : meal.dietary;
+        dietaryIds = getDietaryIds(dietaryNames);
+      }
+      
       mealForm.value = {
         title: meal.title,
         ingredients: meal.ingredients || '',
         instructions: meal.instructions || '',
         cooking_time: meal.cooking_time || '',
         serves: meal.serves || '',
-        category: typeof meal.category === 'string' ? meal.category.split(',') : (meal.category || []),
-        cuisine: meal.cuisine || '',
-        dietary: typeof meal.dietary === 'string' ? meal.dietary.split(',') : (meal.dietary || []),
+        categories: categoryIds,
+        cuisines: cuisineIds,
+        dietary: dietaryIds,
         image: null,
         active: meal.active
       };
     } else {
+      // Reset form for new recipes
       mealForm.value = {
         title: '',
         ingredients: '',
         instructions: '',
         serves: '',
         cooking_time: '',
-        category: [],
-        cuisine: '',
+        categories: [],
+        cuisines: [],
         dietary: [],
         image: null,
         active: true
       };
     }
-  }
+  },
+  { immediate: true }
 );
 
 function close() {
@@ -239,22 +302,36 @@ async function saveMeal() {
     formData.append('instructions', mealForm.value.instructions);
     formData.append('cooking_time', mealForm.value.cooking_time);
     formData.append('serves', mealForm.value.serves);
-    formData.append('category', mealForm.value.category.join(','));
-    formData.append('cuisine', mealForm.value.cuisine);
-    formData.append('dietary', mealForm.value.dietary.join(','));
+    
+    // Send arrays of IDs for relationships
+    mealForm.value.categories.forEach(categoryId => {
+      formData.append('categories[]', categoryId.toString());
+    });
+    
+    mealForm.value.cuisines.forEach(cuisineId => {
+      formData.append('cuisines[]', cuisineId.toString());
+    });
+    
+    mealForm.value.dietary.forEach(dietaryId => {
+      formData.append('dietary[]', dietaryId.toString());
+    });
+    
     if (mealForm.value.image) {
       formData.append('image', mealForm.value.image);
     }
+    
     formData.append('active', mealForm.value.active ? '1' : '0');
+    
     if (props.editingMeal) {
       await api.post(`/recipes/${props.editingMeal.id}`, formData);
     } else {
       await api.post('/recipes', formData);
     }
-
+    
     emit('saved');
     close();
   } catch (error) {
     console.error("Error saving meal:", error);
   }
-}</script>
+}
+</script>

@@ -4,7 +4,7 @@
     @click="chooseMeal(mealData)">
     <ion-card class="flex flex-col justify-between h-full my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
-      <div class="flex flex-1 items-center justify-center max-h-[70%]">
+      <div class="flex flex-1 items-center justify-center min-h-[65%] max-h-[65%]">
         <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${mealData.image_name}.jpg`"
           class="h-full w-full object-cover object-center"></ion-img>
       </div>
@@ -39,6 +39,7 @@
 import { IonCard, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
 import { alarmSharp, leafSharp, restaurantSharp } from 'ionicons/icons';
 import type { Meal } from '@/types/meal';
+import type { Dietary } from '@/types/dietary';
 
 defineProps<{
   mealData: Meal | null
@@ -52,12 +53,27 @@ const chooseMeal = (meal: Meal) => {
   emit('replaceMeal', meal);
 };
 
-const formatDietary = (dietary: string | string[] | null | undefined): string => {
+const formatDietary = (dietary: string | string[] | Dietary[] | null | undefined): string => {
   if (!dietary) return 'N/A';
   
-  const dietaryArray = Array.isArray(dietary) ? dietary : dietary.split(',');
-  return dietaryArray
-    .map(item => item.trim().charAt(0).toUpperCase() + item.trim().slice(1))
+  // Case 1: It's an array of Dietary objects (new relational format)
+  if (Array.isArray(dietary) && dietary.length > 0 && typeof dietary[0] === 'object') {
+    return (dietary as Dietary[])
+      .map(item => item.name)
+      .join(' | ');
+  }
+  
+  // Case 2: It's a string (old format)
+  if (typeof dietary === 'string') {
+    const dietaryArray = dietary.split(',');
+    return dietaryArray
+      .map(item => item.trim().charAt(0).toUpperCase() + item.trim().slice(1))
+      .join(' | ');
+  }
+  
+  // Case 3: It's already an array of strings
+  return (dietary as string[])
+    .map(item => item.charAt(0).toUpperCase() + item.slice(1))
     .join(' | ');
 };
 </script>

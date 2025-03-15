@@ -1,3 +1,7 @@
+import { Category } from '@/types/category';
+import { Cuisine } from '@/types/cuisine';
+import { Dietary } from '@/types/dietary';
+
 export interface Meal {
   id: number;
   user_id: number;
@@ -16,4 +20,7 @@ export interface Meal {
   created_at: string;
   updated_at: string;
 
+  categories?: Category[];
+  cuisines?: Cuisine[];
+  dietary_items?: Dietary[];
 }

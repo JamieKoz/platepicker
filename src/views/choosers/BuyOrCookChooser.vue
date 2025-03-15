@@ -22,5 +22,5 @@ import { arrowBack } from 'ionicons/icons';
 const router = useRouter();
 
 const handleBuy = () => router.push('/restaurant-chooser/dine-in');
-const handleCook = () => router.push('/meal-chooser');
+const handleCook = () => router.push('/filter-chooser');
 </script>

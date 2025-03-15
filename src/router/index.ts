@@ -44,6 +44,10 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/choosers/BuyOrCookChooser.vue')
       },
       {
+        path: 'filter-chooser',
+        component: () => import('@/views/choosers/FilterChooser.vue')
+      },
+      {
         path: 'meal-chooser',
         component: () => import('@/views/choosers/MealChooser.vue')
       },

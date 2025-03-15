@@ -27,7 +27,7 @@
           </ion-row>
           <!-- Winner View -->
           <ion-row v-else class="h-full flex justify-center items-start">
-            <ion-col class="flex flex-col items-center">
+            <ion-col class="flex flex-col items-center mx-6">
               <div class="w-full flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
               </div>
@@ -69,17 +69,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import api from '@/api/axios';
 import { refresh, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline, shareOutline } from 'ionicons/icons';
 import { useMealStore } from '@/store/useMealStore';
 import { useUser } from '@clerk/vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router'; // <-- Add useRoute
 import MealCard from '@/components/MealCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, toastController, actionSheetController, IonActionSheet } from '@ionic/vue';
 import type { Meal } from '@/types/meal';
 
+const route = useRoute();
 const mealStore = useMealStore();
 let meal1 = ref<Meal | null>(null);
 let meal2 = ref<Meal | null>(null);
@@ -94,13 +95,32 @@ const newMealAnimation2 = ref(false);
 const { user } = useUser();
 const router = useRouter();
 
+const getFiltersFromRoute = () => {
+  const filters: any = {};
+  
+  if (route.query.categories) {
+    filters.categories = route.query.categories as string;
+  }
+  
+  if (route.query.cuisines) {
+    filters.cuisines = route.query.cuisines as string;
+  }
+  
+  if (route.query.dietary) {
+    filters.dietary = route.query.dietary as string;
+  }
+  
+  return filters;
+};
+
 // Fetch initial meals on mount
 onMounted(() => fetchInitialMeals());
 
 async function fetchInitialMeals() {
   try {
     loadError.value = false;
-    await mealStore.fetchMeals();
+    const filters = getFiltersFromRoute();
+    await mealStore.fetchMeals(filters);
     const newMeal1 = mealStore.getNewMeal();
     const newMeal2 = mealStore.getNewMeal();
     if (newMeal1) meal1.value = newMeal1;
@@ -110,6 +130,12 @@ async function fetchInitialMeals() {
     loadError.value = true;
   }
 }
+
+watch(() => route.query, (newQuery) => {
+  if (newQuery.categories || newQuery.cuisines || newQuery.dietary) {
+    fetchInitialMeals();
+  }
+}, { deep: true });
 
 async function handleRetry() {
   await fetchInitialMeals();
