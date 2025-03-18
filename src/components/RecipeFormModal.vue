@@ -198,12 +198,14 @@ watch(
   () => props.editingMeal,
   (meal) => {
     if (meal) {
+      console.log('Meal data received:', meal);
+      
       // For existing recipes, handle both the new format (with relationships) and old format
       let categoryIds: number[] = [];
       let cuisineIds: number[] = [];
       let dietaryIds: number[] = [];
       
-      if (meal.categories) {
+      if (meal.categories && meal.categories.length) {
         // New format with relationships
         categoryIds = meal.categories.map(cat => cat.id);
       } else if (meal.category) {
@@ -214,7 +216,7 @@ watch(
         categoryIds = getCategoryIds(categoryNames);
       }
       
-      if (meal.cuisines) {
+      if (meal.cuisines && meal.cuisines.length) {
         // New format with relationships
         cuisineIds = meal.cuisines.map(cuisine => cuisine.id);
       } else if (meal.cuisine) {
@@ -222,16 +224,27 @@ watch(
         cuisineIds = getCuisineIds(meal.cuisine);
       }
       
-      if (meal.dietary_items) {
-        // New format with relationships
+      // The issue: dietary is coming as an array of objects, not dietary_items
+      if (meal.dietary_items && meal.dietary_items.length) {
         dietaryIds = meal.dietary_items.map(dietary => dietary.id);
-      } else if (meal.dietary) {
-        // Old format with string
-        const dietaryNames = typeof meal.dietary === 'string' 
-          ? meal.dietary.split(',').map(d => d.trim()) 
-          : meal.dietary;
+      } else if (meal.dietary && Array.isArray(meal.dietary)) {
+        // Check if dietary is an array of objects with id property
+        if (meal.dietary.length > 0 && typeof meal.dietary[0] === 'object' && 'id' in meal.dietary[0]) {
+          console.log('Found dietary as array of objects:', meal.dietary);
+          dietaryIds = meal.dietary.map((dietary: any) => dietary.id);
+        } else {
+          // It's an array of strings
+          console.log('Found dietary as array of strings:', meal.dietary);
+          dietaryIds = getDietaryIds(meal.dietary as string[]);
+        }
+      } else if (meal.dietary && typeof meal.dietary === 'string') {
+        // It's a string that needs splitting
+        console.log('Found dietary as string:', meal.dietary);
+        const dietaryNames = meal.dietary.split(',').map(d => d.trim());
         dietaryIds = getDietaryIds(dietaryNames);
       }
+      
+      console.log('Final dietary IDs:', dietaryIds);
       
       mealForm.value = {
         title: meal.title,

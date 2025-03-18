@@ -141,6 +141,7 @@ const userStore = useUserStore();
 const groupBy = ref<'none' | 'cuisine' | 'category' | 'dietary'>('none');
 
 
+// In your groupedMeals computed property:
 const groupedMeals = computed(() => {
   if (groupBy.value === 'none') {
     return {};
@@ -152,23 +153,24 @@ const groupedMeals = computed(() => {
     let groupNames: string[] = [];
     
     if (groupBy.value === 'cuisine' && meal.cuisines && meal.cuisines.length) {
-      groupNames = meal.cuisines.map(c => c.name);
+      groupNames = meal.cuisines.map(c => c.name.trim()); // Add trim()
     } else if (groupBy.value === 'category' && meal.categories && meal.categories.length) {
-      groupNames = meal.categories.map(c => c.name);
-    } else if (groupBy.value === 'dietary' && meal.dietary_items && meal.dietary_items.length) {
-      groupNames = meal.dietary_items.map(d => d.name);
+      groupNames = meal.categories.map(c => c.name.trim()); // Add trim()
+    } else if (groupBy.value === 'dietary' && meal.dietary && Array.isArray(meal.dietary) && 
+              meal.dietary.length > 0 && typeof meal.dietary[0] === 'object') {
+      groupNames = meal.dietary.map(d => d.name.trim()); // Add trim()
     } else {
       // Fall back to string property if relational data is not available
       if (groupBy.value === 'cuisine' && meal.cuisine) {
-        groupNames = [meal.cuisine];
+        groupNames = [meal.cuisine.trim()]; // Add trim()
       } else if (groupBy.value === 'category' && meal.category) {
-        groupNames = meal.category.split(',').map(c => c.trim());
+        groupNames = meal.category.split(',').map(c => c.trim()); // Already has trim()
       } else if (groupBy.value === 'dietary' && meal.dietary) {
         const dietaryValue = typeof meal.dietary === 'string' 
-          ? meal.dietary.split(',').map(d => d.trim())
+          ? meal.dietary.split(',').map(d => d.trim()) // Already has trim()
           : Array.isArray(meal.dietary) 
             ? meal.dietary 
-            : [String(meal.dietary)]; // Convert to string if it's an object or other type
+            : [String(meal.dietary)];
         groupNames = dietaryValue;
       }
     }
@@ -181,16 +183,16 @@ const groupedMeals = computed(() => {
       return;
     }
     
-    // Add meal to each of its groups
+    // Normalize group names to ensure consistent keys
     groupNames.forEach(groupName => {
-      // Ensure groupName is a string (not an object)
-      const groupKey = typeof groupName === 'object' 
-        ? (groupName && 'name' in groupName ? groupName.name : 'Unknown')
-        : groupName;
+      // Normalize the group name (trim, lowercase, etc.)
+      const normalizedName = (typeof groupName === 'string' ? groupName : String(groupName))
+        .trim()                 // Remove whitespace
+        .replace(/\s+/g, ' ');  // Normalize multiple spaces to single space
         
-      const group = grouped[groupKey] || [];
+      const group = grouped[normalizedName] || [];
       group.push(meal);
-      grouped[groupKey] = group;
+      grouped[normalizedName] = group;
     });
   });
   
