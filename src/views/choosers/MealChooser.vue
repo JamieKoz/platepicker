@@ -3,8 +3,10 @@
     <ion-content>
       <ion-header class="ion-no-border">
         <ion-toolbar class="transparent-toolbar">
+          <Back-Arrow />
           <ion-title class="text-center">{{ mealStore.mealCounter }}</ion-title>
         </ion-toolbar>
+
       </ion-header>
       <RetryConnection v-if="loadError" message="Unable to load meals. Please check your connection."
         @retry="handleRetry" />
@@ -76,6 +78,7 @@ import { useMealStore } from '@/store/useMealStore';
 import { useUser } from '@clerk/vue';
 import { useRouter, useRoute } from 'vue-router';
 import MealCard from '@/components/MealCard.vue';
+import BackArrow from '@/components/navigation/BackArrow.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, toastController, actionSheetController, IonActionSheet } from '@ionic/vue';
 import type { Meal } from '@/types/meal';

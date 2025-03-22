@@ -1,15 +1,14 @@
 <template>
-  <ion-page class="mt-12">
+  <ion-page class="mt-8">
     <ion-content :fullscreen="true">
-      <div class="p-4">
-        <!-- Header with back button -->
-        <div class="flex items-center mb-6">
-          <ion-button fill="clear" @click="router.go(-1)">
-            <ion-icon :icon="arrowBack" slot="icon-only"></ion-icon>
-          </ion-button>
-          <h1 class="text-xl font-semibold ml-2">Filter Meals</h1>
+      <div class="flex items-center mb-6 pt-2">
+        <div class="mt-2">
+          <Back-Arrow />
         </div>
+        <h1 class="text-xl font-semibold ml-2">Filter Meals</h1>
+      </div>
 
+      <div class="p-2">
         <div class="flex justify-between">
           <span class="text-xs pt-2">Note: Deselect all if you want all options</span>
           <div class="">
@@ -82,17 +81,16 @@ import {
   IonPage, 
   IonContent, 
   IonButton, 
-  IonIcon,
   IonLabel,
   IonRange
 } from '@ionic/vue';
 import { useRouter } from 'vue-router';
-import { arrowBack } from 'ionicons/icons';
 import { onMounted, ref } from 'vue';
 import api from '@/api/axios';
 import type { Category } from '@/types/category';
 import type { Cuisine } from '@/types/cuisine';
 import type { Dietary } from '@/types/dietary';
+import BackArrow from '@/components/navigation/BackArrow.vue';
 
 const router = useRouter();
 
