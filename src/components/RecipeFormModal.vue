@@ -16,13 +16,9 @@
           <ion-input v-model="mealForm.title" required placeholder="Pasta Bolognese"></ion-input>
         </ion-item>
 
-        <ion-item>
-          <ion-label position="stacked">Ingredients</ion-label>
-          <ion-textarea v-model="mealForm.ingredients" class="min-h-[150px]" placeholder="- 2 eggs,
-- 500g Salt"></ion-textarea>
-        </ion-item>
+        <RecipeLine v-model="mealForm.recipe_lines" />
 
-        <ion-item>
+        <ion-item class="mt-4">
           <ion-label position="stacked">Instructions</ion-label>
           <ion-textarea v-model="mealForm.instructions" class="min-h-[150px]" placeholder="Stir for 20 mins"></ion-textarea>
         </ion-item>
@@ -123,6 +119,7 @@ import {
   IonSelect,
   IonSelectOption
 } from '@ionic/vue';
+import RecipeLine from './RecipeLine.vue';
 import api from '@/api/axios';
 
 const props = defineProps<{
@@ -140,6 +137,14 @@ const categories = ref<Category[]>([]);
 const cuisines = ref<Cuisine[]>([]);
 const dietaryRequirements = ref<Dietary[]>([]);
 
+interface RecipeLine {
+  ingredient_name: string;
+  quantity: number | null;
+  measurement_name: string;
+  notes: string;
+  sort_order: number;
+}
+
 const mealForm = ref({
   title: '',
   ingredients: '',
@@ -150,17 +155,18 @@ const mealForm = ref({
   serves: '',
   dietary: [] as number[],
   image: null as File | null,
-  active: true
+  active: true,
+  recipe_lines: [] as RecipeLine[]
 });
 
 // Fetch reference data (categories, cuisines, dietary requirements)
 onMounted(async () => {
   try {
-    // You'll need to create these endpoints in your API
     const [categoriesRes, cuisinesRes, dietaryRes] = await Promise.all([
       api.get('/categories'),
       api.get('/cuisines'),
-      api.get('/dietary')
+      api.get('/dietary'),
+      api.get('/measurements')
     ]);
     
     categories.value = categoriesRes.data;
@@ -204,6 +210,7 @@ watch(
       let categoryIds: number[] = [];
       let cuisineIds: number[] = [];
       let dietaryIds: number[] = [];
+      let recipeLines: RecipeLine[] = [];
       
       if (meal.categories && meal.categories.length) {
         // New format with relationships
@@ -244,7 +251,16 @@ watch(
         dietaryIds = getDietaryIds(dietaryNames);
       }
       
-      console.log('Final dietary IDs:', dietaryIds);
+      // Handle recipe lines if they exist
+      if (meal.recipe_lines && meal.recipe_lines.length) {
+        recipeLines = meal.recipe_lines.map(line => ({
+          ingredient_name: line.ingredient.name,
+          quantity: line.quantity,
+          measurement_name: line.measurement ? line.measurement.name : '',
+          notes: line.notes || '',
+          sort_order: line.sort_order
+        }));
+      }
       
       mealForm.value = {
         title: meal.title,
@@ -256,7 +272,8 @@ watch(
         cuisines: cuisineIds,
         dietary: dietaryIds,
         image: null,
-        active: meal.active
+        active: meal.active,
+        recipe_lines: recipeLines
       };
     } else {
       // Reset form for new recipes
@@ -270,7 +287,8 @@ watch(
         cuisines: [],
         dietary: [],
         image: null,
-        active: true
+        active: true,
+        recipe_lines: []
       };
     }
   },
@@ -327,6 +345,17 @@ async function saveMeal() {
     
     mealForm.value.dietary.forEach(dietaryId => {
       formData.append('dietary[]', dietaryId.toString());
+    });
+    
+    // Add recipe lines
+    mealForm.value.recipe_lines.forEach((line, index) => {
+      formData.append(`recipe_lines[${index}][ingredient_name]`, line.ingredient_name);
+      if (line.quantity !== null) {
+        formData.append(`recipe_lines[${index}][quantity]`, line.quantity.toString());
+      }
+      formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name);
+      formData.append(`recipe_lines[${index}][notes]`, line.notes);
+      formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());
     });
     
     if (mealForm.value.image) {
