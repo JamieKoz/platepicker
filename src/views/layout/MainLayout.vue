@@ -46,9 +46,9 @@
               <ion-label>Favourites</ion-label>
             </ion-item>
 
-            <ion-item button @click="navigateTo('/recipes-list')" v-show="isUserAdmin">
+            <ion-item button @click="navigateTo('/admin-dashboard')" v-show="isUserAdmin">
               <ion-icon :icon="list" slot="start"></ion-icon>
-              <ion-label>Recipes List</ion-label>
+              <ion-label>Admin</ion-label>
             </ion-item>
 
             <ion-item button @click="doSignOut">

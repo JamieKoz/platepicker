@@ -7,6 +7,7 @@
   
 import { arrowBack } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
+import { IonIcon, IonButton } from '@ionic/vue';
 
 const router = useRouter();
 </script>

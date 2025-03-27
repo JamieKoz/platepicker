@@ -21,7 +21,7 @@
         <div class="mb-6">
           <ion-label class="text-lg font-medium mb-2 block">Categories</ion-label>
           <div class="flex flex-wrap gap-2">
-            <ion-chip v-for="category in categories" :key="category.id"
+            <ion-chip v-for="category in categoryStore.categories" :key="category.id"
               :class="['m-0 h-8 text-white', selectedCategories.includes(category.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
               @click="toggleCategory(category.id)">
               {{ category.name }}
@@ -33,7 +33,7 @@
         <div class="mb-6">
           <ion-label class="text-lg font-medium mb-2 block">Cuisines</ion-label>
           <div class="flex flex-wrap gap-2">
-            <ion-chip v-for="cuisine in cuisines" :key="cuisine.id"
+            <ion-chip v-for="cuisine in cuisineStore.cuisine" :key="cuisine.id"
               :class="['m-0 h-8 text-white', selectedCuisines.includes(cuisine.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
               @click="toggleCuisine(cuisine.id)">
               {{ cuisine.name }}
@@ -45,7 +45,7 @@
         <div class="mb-6">
           <ion-label class="text-lg font-medium mb-2 block">Dietary Requirements</ion-label>
           <div class="flex flex-wrap gap-2">
-            <ion-chip v-for="dietary in dietaryRequirements" :key="dietary.id"
+            <ion-chip v-for="dietary in dietaryStore.dietary" :key="dietary.id"
               :class="['m-0 h-8 text-white', selectedDietary.includes(dietary.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
               @click="toggleDietary(dietary.id)">
               {{ dietary.name }}
@@ -86,18 +86,15 @@ import {
 } from '@ionic/vue';
 import { useRouter } from 'vue-router';
 import { onMounted, ref } from 'vue';
-import api from '@/api/axios';
-import type { Category } from '@/types/category';
-import type { Cuisine } from '@/types/cuisine';
-import type { Dietary } from '@/types/dietary';
 import BackArrow from '@/components/navigation/BackArrow.vue';
+import { useCategoryStore } from '@/store/useCategoryStore';
+import { useDietaryStore } from '@/store/useDietaryStore';
+import { useCuisineStore } from '@/store/useCuisineStore';
 
 const router = useRouter();
-
-// Data stores
-const categories = ref<Category[]>([]);
-const cuisines = ref<Cuisine[]>([]);
-const dietaryRequirements = ref<Dietary[]>([]);
+const categoryStore = useCategoryStore();
+const cuisineStore = useCuisineStore();
+const dietaryStore = useDietaryStore();
 
 // Selected filters
 const selectedCategories = ref<number[]>([]);
@@ -135,7 +132,6 @@ const toggleDietary = (id: number) => {
   }
 };
 
-// Check if any filters are selected
 // Reset all filters
 const resetFilters = () => {
   selectedCategories.value = [];
@@ -182,16 +178,12 @@ const applyFilters = () => {
 // Load data on component mount
 onMounted(async () => {
   try {
-    // Fetch filter options from API
-    const [categoriesRes, cuisinesRes, dietaryRes] = await Promise.all([
-      api.get('/categories'),
-      api.get('/cuisines'),
-      api.get('/dietary')
+    // Fetch filter options using stores
+    await Promise.all([
+      categoryStore.fetchCategories(),
+      cuisineStore.fetchCuisine(),
+      dietaryStore.fetchDietary()
     ]);
-    
-    categories.value = categoriesRes.data;
-    cuisines.value = cuisinesRes.data;
-    dietaryRequirements.value = dietaryRes.data;
     
     // Load saved filters from localStorage if available
     const savedFilters = localStorage.getItem('mealFilters');

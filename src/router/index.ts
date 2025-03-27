@@ -73,9 +73,40 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/profile/Feedback.vue')
       },
       {
-        path: 'recipes-list',
-        component: () => import('@/views/admin/RecipeList.vue')
+        path: 'admin-dashboard',
+        component: () => import('@/views/admin/Dashboard.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
       },
+      {
+        path: 'recipes-list',
+        component: () => import('@/views/admin/RecipeList.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'categories-list',
+        component: () => import('@/views/admin/CategoryList.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'cuisines-list',
+        component: () => import('@/views/admin/CuisineList.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'dietary-list',
+        component: () => import('@/views/admin/DietaryList.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'measurements-list',
+        component: () => import('@/views/admin/MeasurementList.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'ingredients-list',
+        component: () => import('@/views/admin/IngredientList.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      }
     ]
   }
 ];
