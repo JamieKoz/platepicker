@@ -9,6 +9,7 @@
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
+
     <ion-content class="ion-padding">
       <form @submit.prevent="saveMeal">
         <ion-item>
@@ -39,9 +40,9 @@
         </ion-item>
 
         <ion-item>
-          <ion-label position="stacked">Category</ion-label>
-          <ion-select v-model="mealForm.categories" :multiple="true" placeholder="Select category of meal">
-            <ion-select-option v-for="category in categories" :key="category.id" :value="category.id">
+          <ion-label position="stacked">Categories</ion-label>
+            <ion-select :multiple="true" v-model="mealForm.category_ids">
+            <ion-select-option v-for="category in categoryStore.categories" :key="category.id" :value="category.id">
               {{ category.name }}
             </ion-select-option>
           </ion-select>
@@ -49,8 +50,8 @@
 
         <ion-item>
           <ion-label position="stacked">Cuisine</ion-label>
-          <ion-select v-model="mealForm.cuisines" :multiple="true" placeholder="Select cuisine">
-            <ion-select-option v-for="cuisine in cuisines" :key="cuisine.id" :value="cuisine.id">
+          <ion-select :multiple="true" v-model="mealForm.cuisine_ids" placeholder="Select cuisine">
+            <ion-select-option v-for="cuisine in cuisineStore.cuisine" :key="cuisine.id" :value="cuisine.id">
               {{ cuisine.name }}
             </ion-select-option>
           </ion-select>
@@ -58,8 +59,8 @@
 
         <ion-item>
           <ion-label position="stacked">Dietary Requirements</ion-label>
-          <ion-select v-model="mealForm.dietary" :multiple="true" placeholder="Select dietary requirements">
-            <ion-select-option v-for="dietary in dietaryRequirements" :key="dietary.id" :value="dietary.id">
+          <ion-select :multiple="true" v-model="mealForm.dietary_ids"  placeholder="Select dietary requirements">
+            <ion-select-option v-for="dietary in dietaryStore.dietary" :key="dietary.id" :value="dietary.id">
               {{ dietary.name }}
             </ion-select-option>
           </ion-select>
@@ -102,6 +103,8 @@ import type { Recipe } from '@/types/recipe';
 import type { Category } from '@/types/category';
 import type { Cuisine } from '@/types/cuisine';
 import type { Dietary } from '@/types/dietary';
+import type { Measurement } from '@/types/measurement';
+import { Ingredient } from '@/types/ingredient';
 import {
   IonModal,
   IonHeader,
@@ -120,6 +123,11 @@ import {
   IonSelectOption
 } from '@ionic/vue';
 import RecipeLine from './RecipeLine.vue';
+
+import { useCategoryStore } from '@/store/useCategoryStore';
+import { useCuisineStore } from '@/store/useCuisineStore';
+import { useDietaryStore } from '@/store/useDietaryStore';
+import { useMeasurementStore } from '@/store/useMeasurementStore';
 import api from '@/api/axios';
 
 const props = defineProps<{
@@ -132,160 +140,122 @@ const emit = defineEmits<{
   (e: 'saved'): void;
 }>();
 
+// Initialize stores
+const categoryStore = useCategoryStore();
+const cuisineStore = useCuisineStore();
+const dietaryStore = useDietaryStore();
+const measurementStore = useMeasurementStore();
+
 const showDeleteConfirm = ref(false);
-const categories = ref<Category[]>([]);
-const cuisines = ref<Cuisine[]>([]);
-const dietaryRequirements = ref<Dietary[]>([]);
 
 interface RecipeLine {
+  id?: number;
+  recipe_id?: number;
+  user_meal_id?: number;
+  ingredient_id?: number;
   ingredient_name: string;
   quantity: number | null;
+  measurement_id?: number;
   measurement_name: string;
-  notes: string;
+  notes?: string;
   sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+  // Relationships
+  ingredient?: Ingredient;
+  measurement?: Measurement;
 }
 
 const mealForm = ref({
   title: '',
-  ingredients: '',
   instructions: '',
   cooking_time: '',
-  cuisines: [] as number[],
-  categories: [] as number[],
   serves: '',
-  dietary: [] as number[],
   image: null as File | null,
   active: true,
-  recipe_lines: [] as RecipeLine[]
+  recipe_lines: [] as RecipeLine[],
+  
+  // Relationship IDs for form submission
+  category_ids: [] as number[],
+  cuisine_ids: [] as number[],
+  dietary_ids: [] as number[]
+});
+
+// Ensure stores are populated
+onMounted(async () => {
+  await Promise.all([
+    categoryStore.fetchCategories(),
+    cuisineStore.fetchCuisine(),
+    dietaryStore.fetchDietary(),
+    measurementStore.fetchMeasurement()
+  ]);
 });
 
 // Fetch reference data (categories, cuisines, dietary requirements)
+// Ensure stores are populated
 onMounted(async () => {
-  try {
-    const [categoriesRes, cuisinesRes, dietaryRes] = await Promise.all([
-      api.get('/categories'),
-      api.get('/cuisines'),
-      api.get('/dietary'),
-      api.get('/measurements')
-    ]);
-    
-    categories.value = categoriesRes.data;
-    cuisines.value = cuisinesRes.data;
-    dietaryRequirements.value = dietaryRes.data;
-  } catch (error) {
-    console.error("Error fetching reference data:", error);
-  }
+  await Promise.all([
+    categoryStore.fetchCategories(),
+    cuisineStore.fetchCuisine(),
+    dietaryStore.fetchDietary(),
+    measurementStore.fetchMeasurement()
+  ]);
 });
 
-// Helper function to convert category strings to IDs
-const getCategoryIds = (categoryNames: string[]): number[] => {
-  if (!categoryNames || !categoryNames.length) return [];
-  return categories.value
-    .filter(category => categoryNames.includes(category.name))
-    .map(category => category.id);
-};
-
-// Helper function to convert cuisine string to IDs
-const getCuisineIds = (cuisineName: string): number[] => {
-  if (!cuisineName) return [];
-  const cuisine = cuisines.value.find(c => c.name === cuisineName);
-  return cuisine ? [cuisine.id] : [];
-};
-
-// Helper function to convert dietary strings to IDs
-const getDietaryIds = (dietaryNames: string[]): number[] => {
-  if (!dietaryNames || !dietaryNames.length) return [];
-  return dietaryRequirements.value
-    .filter(dietary => dietaryNames.includes(dietary.name))
-    .map(dietary => dietary.id);
-};
 
 watch(
   () => props.editingMeal,
   (meal) => {
     if (meal) {
-      console.log('Meal data received:', meal);
-      
-      // For existing recipes, handle both the new format (with relationships) and old format
-      let categoryIds: number[] = [];
-      let cuisineIds: number[] = [];
-      let dietaryIds: number[] = [];
       let recipeLines: RecipeLine[] = [];
-      
-      if (meal.categories && meal.categories.length) {
-        // New format with relationships
-        categoryIds = meal.categories.map(cat => cat.id);
-      } else if (meal.category) {
-        // Old format with string
-        const categoryNames = typeof meal.category === 'string' 
-          ? meal.category.split(',').map(cat => cat.trim()) 
-          : meal.category;
-        categoryIds = getCategoryIds(categoryNames);
-      }
-      
-      if (meal.cuisines && meal.cuisines.length) {
-        // New format with relationships
-        cuisineIds = meal.cuisines.map(cuisine => cuisine.id);
-      } else if (meal.cuisine) {
-        // Old format with string
-        cuisineIds = getCuisineIds(meal.cuisine);
-      }
-      
-      // The issue: dietary is coming as an array of objects, not dietary_items
-      if (meal.dietary_items && meal.dietary_items.length) {
-        dietaryIds = meal.dietary_items.map(dietary => dietary.id);
-      } else if (meal.dietary && Array.isArray(meal.dietary)) {
-        // Check if dietary is an array of objects with id property
-        if (meal.dietary.length > 0 && typeof meal.dietary[0] === 'object' && 'id' in meal.dietary[0]) {
-          console.log('Found dietary as array of objects:', meal.dietary);
-          dietaryIds = meal.dietary.map((dietary: any) => dietary.id);
-        } else {
-          // It's an array of strings
-          console.log('Found dietary as array of strings:', meal.dietary);
-          dietaryIds = getDietaryIds(meal.dietary as string[]);
-        }
-      } else if (meal.dietary && typeof meal.dietary === 'string') {
-        // It's a string that needs splitting
-        console.log('Found dietary as string:', meal.dietary);
-        const dietaryNames = meal.dietary.split(',').map(d => d.trim());
-        dietaryIds = getDietaryIds(dietaryNames);
-      }
       
       // Handle recipe lines if they exist
       if (meal.recipe_lines && meal.recipe_lines.length) {
         recipeLines = meal.recipe_lines.map(line => ({
-          ingredient_name: line.ingredient.name,
+          id: line.id,
+          ingredient_id: line.ingredient_id,
+          ingredient_name: line.ingredient?.name || line.ingredient_name,
           quantity: line.quantity,
-          measurement_name: line.measurement ? line.measurement.name : '',
+          measurement_id: line.measurement_id,
+          measurement_name: line.measurement?.name || line.measurement_name || '',
           notes: line.notes || '',
           sort_order: line.sort_order
         }));
       }
+
+      let dietaryIds: number[] = [];
       
+      const mealWithDietary = meal as unknown as { dietary?: Dietary[] };
+      
+      if (mealWithDietary.dietary && Array.isArray(mealWithDietary.dietary)) {
+        dietaryIds = mealWithDietary.dietary.map(item => item.id);
+      }
+      
+
       mealForm.value = {
         title: meal.title,
-        ingredients: meal.ingredients || '',
         instructions: meal.instructions || '',
-        cooking_time: meal.cooking_time || '',
-        serves: meal.serves || '',
-        categories: categoryIds,
-        cuisines: cuisineIds,
-        dietary: dietaryIds,
+        cooking_time: meal.cooking_time?.toString() || '',
+        serves: meal.serves?.toString() || '',
+        // Use relationship arrays directly
+        category_ids: meal.categories ? meal.categories.map(cat => cat.id) : [],
+        cuisine_ids: meal.cuisines ? meal.cuisines.map(cuisine => cuisine.id) : [],
+        dietary_ids: dietaryIds,
         image: null,
-        active: meal.active,
+        active: Boolean(meal.active),
         recipe_lines: recipeLines
       };
+      
     } else {
-      // Reset form for new recipes
+      // Reset form for new meal
       mealForm.value = {
         title: '',
-        ingredients: '',
         instructions: '',
         serves: '',
         cooking_time: '',
-        categories: [],
-        cuisines: [],
-        dietary: [],
+        category_ids: [],
+        cuisine_ids: [],
+        dietary_ids: [],
         image: null,
         active: true,
         recipe_lines: []
@@ -329,34 +299,60 @@ async function saveMeal() {
   try {
     const formData = new FormData();
     formData.append('title', mealForm.value.title);
-    formData.append('ingredients', mealForm.value.ingredients);
     formData.append('instructions', mealForm.value.instructions);
-    formData.append('cooking_time', mealForm.value.cooking_time);
-    formData.append('serves', mealForm.value.serves);
     
-    // Send arrays of IDs for relationships
-    mealForm.value.categories.forEach(categoryId => {
-      formData.append('categories[]', categoryId.toString());
-    });
+    if (mealForm.value.cooking_time) {
+      formData.append('cooking_time', mealForm.value.cooking_time.toString());
+    }
     
-    mealForm.value.cuisines.forEach(cuisineId => {
-      formData.append('cuisines[]', cuisineId.toString());
-    });
+    if (mealForm.value.serves) {
+      formData.append('serves', mealForm.value.serves.toString());
+    }
     
-    mealForm.value.dietary.forEach(dietaryId => {
-      formData.append('dietary[]', dietaryId.toString());
-    });
+    if (mealForm.value.category_ids && mealForm.value.category_ids.length > 0) {
+      mealForm.value.category_ids.forEach(id => {
+        formData.append('categories[]', id.toString());
+      });
+    }
     
-    // Add recipe lines
-    mealForm.value.recipe_lines.forEach((line, index) => {
-      formData.append(`recipe_lines[${index}][ingredient_name]`, line.ingredient_name);
-      if (line.quantity !== null) {
-        formData.append(`recipe_lines[${index}][quantity]`, line.quantity.toString());
-      }
-      formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name);
-      formData.append(`recipe_lines[${index}][notes]`, line.notes);
-      formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());
-    });
+    if (mealForm.value.cuisine_ids && mealForm.value.cuisine_ids.length > 0) {
+      mealForm.value.cuisine_ids.forEach(id => {
+        formData.append('cuisines[]', id.toString());
+      });
+    }
+    
+    if (mealForm.value.dietary_ids && mealForm.value.dietary_ids.length > 0) {
+      mealForm.value.dietary_ids.forEach(id => {
+        formData.append('dietary[]', id.toString());
+      });
+    }
+    
+    // Handle recipe lines
+    if (mealForm.value.recipe_lines && mealForm.value.recipe_lines.length > 0) {
+      mealForm.value.recipe_lines.forEach((line, index) => {
+        // Skip empty lines
+        if (!line.ingredient_name) return;
+        
+        formData.append(`recipe_lines[${index}][ingredient_name]`, line.ingredient_name);
+        
+        if (line.quantity !== null) {
+          formData.append(`recipe_lines[${index}][quantity]`, line.quantity.toString());
+        }
+        
+        formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name || '');
+        
+        if (line.notes) {
+          formData.append(`recipe_lines[${index}][notes]`, line.notes);
+        }
+        
+        formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());
+        
+        // Include IDs if available for updating
+        if (line.id) {
+          formData.append(`recipe_lines[${index}][id]`, line.id.toString());
+        }
+      });
+    }
     
     if (mealForm.value.image) {
       formData.append('image', mealForm.value.image);
@@ -364,10 +360,12 @@ async function saveMeal() {
     
     formData.append('active', mealForm.value.active ? '1' : '0');
     
+    // Log formdata entries for debugging
+    let response;
     if (props.editingMeal) {
-      await api.post(`/recipes/${props.editingMeal.id}`, formData);
+      response = await api.post(`/recipes/${props.editingMeal.id}`, formData);
     } else {
-      await api.post('/recipes', formData);
+      response = await api.post('/recipes', formData);
     }
     
     emit('saved');

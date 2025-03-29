@@ -238,13 +238,8 @@ async function fetchIngredients(page = 1) {
       params['search'] = currentSearch.value;
     }
     
-    console.log('Fetching ingredients with params:', params);
     const response = await api.get('/ingredients', { params });
-    console.log('Ingredients response:', response.data);
-    
-    // Handle different API response formats
     if (Array.isArray(response.data)) {
-      // If API returns a simple array
       ingredients.value = response.data;
       meta.value = {
         current_page: 1,
@@ -258,10 +253,8 @@ async function fetchIngredients(page = 1) {
       };
       links.value = { prev: null, next: null };
     } else {
-      // If API returns paginated data
       ingredients.value = response.data.data || response.data;
-      
-      // Handle pagination metadata if available
+
       if (response.data.meta || response.data.current_page) {
         meta.value = {
           current_page: response.data.current_page || response.data.meta?.current_page || 1,

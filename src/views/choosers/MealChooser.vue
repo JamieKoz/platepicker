@@ -48,10 +48,10 @@
               <div class="mt-4 mb-16">
                 <div class="rounded-md mb-6 mx-6">
                   <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
-                  <ul class="ingredient-list">
-                    <li v-for="(ingredient, index) in formattedIngredients" :key="index" class="ingredient-item">
-                      {{ ingredient }}
-                    </li>
+                    <ul v-if="winner.recipe_lines && winner.recipe_lines.length > 0" class="ingredient-list">
+                      <li v-for="line in winner.recipe_lines" :key="line.id" class="ingredient-item">
+                        {{ formatRecipeLine(line) }}
+                      </li>
                   </ul>
                 </div>
                 <div class="rounded-md mb-6 mx-6">
@@ -82,6 +82,7 @@ import BackArrow from '@/components/navigation/BackArrow.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, toastController, actionSheetController, IonActionSheet } from '@ionic/vue';
 import type { Meal } from '@/types/meal';
+import { RecipeLine } from '@/types/recipeline';
 
 const route = useRoute();
 const mealStore = useMealStore();
@@ -119,7 +120,31 @@ const getFiltersFromRoute = () => {
 
   return filters;
 };
-
+const formatRecipeLine = (line: RecipeLine): string => {
+  let result = '';
+  
+  if (line.quantity) {
+    result += line.quantity + ' ';
+  }
+  
+  if (line.measurement && line.measurement.name) {
+    result += line.measurement.name + ' ';
+  } else if (line.measurement_name) {
+    result += line.measurement_name + ' ';
+  }
+  
+  if (line.ingredient && line.ingredient.name) {
+    result += line.ingredient.name;
+  } else if (line.ingredient_name) {
+    result += line.ingredient_name;
+  }
+  
+  if (line.notes) {
+    result += `, ${line.notes}`;
+  }
+  
+  return result.trim();
+};
 // Fetch initial meals on mount
 onMounted(() => fetchInitialMeals());
 
@@ -150,7 +175,7 @@ async function handleRetry() {
 
 async function trackMealSelection(meal: Meal) {
   try {
-    const mealId = meal.recipe_id || meal.id;
+    const mealId = meal.id;
     await api.post(`/user-meals/${mealId}/increment-tally`);
   } catch (error) {
     console.error('Error tracking meal selection:', error);
@@ -165,9 +190,7 @@ const handleMealSelected = async (clickedMeal: Meal) => {
     return;
   }
 
-  if (clickedMeal.recipe_id != null) {
-    await trackMealSelection(clickedMeal);
-  }
+  await trackMealSelection(clickedMeal);
 
   // Determine which meal was clicked and which needs to be replaced
   const isMeal1Clicked = clickedMeal.id === meal1.value?.id;
@@ -205,32 +228,6 @@ const handleMealSelected = async (clickedMeal: Meal) => {
   }, 400);
 };
 
-const formattedIngredients = computed(() => {
-  if (!winner.value?.ingredients) return [];
-
-  try {
-    const withoutQuotes = winner.value.ingredients.replace(/^"|"$/g, '');
-
-    const cleanStr = withoutQuotes
-      .replace(/^\[|\]$/g, '')  // Remove outer brackets
-      .split("', '")            // Split on items
-      .map(item => {
-        return item
-          .replace(/^'|'$/g, '') // Remove single quotes at start/end
-          .replace(/\\/g, '')     // Remove all backslashes
-          .trim()
-          // Convert all Unicode escapes to their actual characters
-          .replace(/u([0-9a-fA-F]{4})/g, (match, grp) =>
-            String.fromCharCode(parseInt(grp, 16))
-          );
-      });
-
-    return cleanStr;
-  } catch (e) {
-    console.error('Error parsing ingredients:', e);
-    return [];
-  }
-});
 const showRefreshButton = computed(() => {
   return mealStore.mealCounter === 0 && winner.value !== null;
 });
@@ -249,6 +246,17 @@ const handleRefresh = async () => {
   await fetchInitialMeals();
 };
 
+const formattedIngredients = computed(() => {
+  if (!winner.value?.recipe_lines || !winner.value.recipe_lines.length) {
+    return [];
+  }
+
+  // Format each recipe line to a readable string
+  return winner.value.recipe_lines.map(line => formatRecipeLine(line));
+});
+
+// Update share handlers to use the new formatting
+
 const handleShare = async () => {
   if (!winner.value) return;
 
@@ -265,7 +273,9 @@ const handleShare = async () => {
         },
         icon: clipboardOutline,
         handler: async () => {
-          const shareText = `${winner.value?.title}`;
+          // Create a formatted recipe text
+          const shareText = `${winner.value?.title}\n\nIngredients:\n${formattedIngredients.value.join('\n')}\n\nInstructions:\n${winner.value?.instructions}`;
+          
           try {
             await navigator.clipboard.writeText(shareText);
             const toast = await toastController.create({
@@ -282,7 +292,6 @@ const handleShare = async () => {
       {
         text: 'Share via Email',
         cssClass: 'custom-button',
-
         icon: mailOutline,
         handler: () => {
           const subject = encodeURIComponent(winner.value?.title || 'Recipe');
@@ -332,7 +341,6 @@ const handleShare = async () => {
 
   await actionSheet.present();
 };
-// mport MealChooser from '@/components/MealChooser.vue';
 </script>
 
 <style scoped>

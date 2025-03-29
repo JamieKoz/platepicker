@@ -158,16 +158,16 @@ const groupedMeals = computed(() => {
       groupNames = meal.categories.map(c => c.name.trim()); // Add trim()
     } else if (groupBy.value === 'dietary' && meal.dietary && Array.isArray(meal.dietary) && 
               meal.dietary.length > 0 && typeof meal.dietary[0] === 'object') {
-      groupNames = meal.dietary.map(d => d.name.trim()); // Add trim()
+      groupNames = meal.dietary.map(d => d.trim()); // Add trim()
     } else {
       // Fall back to string property if relational data is not available
       if (groupBy.value === 'cuisine' && meal.cuisine) {
         groupNames = [meal.cuisine.trim()]; // Add trim()
       } else if (groupBy.value === 'category' && meal.category) {
-        groupNames = meal.category.split(',').map(c => c.trim()); // Already has trim()
+        groupNames = meal.category.split(',').map(c => c.trim());
       } else if (groupBy.value === 'dietary' && meal.dietary) {
         const dietaryValue = typeof meal.dietary === 'string' 
-          ? meal.dietary.split(',').map(d => d.trim()) // Already has trim()
+          ? meal.dietary.split(',').map(d => d.trim())
           : Array.isArray(meal.dietary) 
             ? meal.dietary 
             : [String(meal.dietary)];

@@ -71,14 +71,14 @@
       <div class="my-2 p-2">
         <ion-toolbar>
           <div class="flex items-center justify-between">
-            <ion-button @click="fetchCuisines(cuisineStore.currentPage - 1)"
+            <ion-button @click="cuisineStore.fetchCuisine(cuisineStore.currentPage - 1)"
               :disabled="!cuisineStore.hasPrevPage" fill="clear" size="small">
               Previous
             </ion-button>
             <ion-text class="text-xs text-center items-center">
               Page {{ cuisineStore.currentPage }} / {{ cuisineStore.lastPage }}
             </ion-text>
-            <ion-button @click="cuisineStore.fetchCuisines(cuisineStore.currentPage + 1)"
+            <ion-button @click="cuisineStore.fetchCuisine(cuisineStore.currentPage + 1)"
               :disabled="!cuisineStore.hasNextPage" fill="clear" size="small">
               Next
             </ion-button>
@@ -162,11 +162,6 @@ function cancelEdit() {
   editName.value = '';
 }
 
-// function toggleNameSort() {
-//   nameDirection.value = nameDirection.value === 'asc' ? 'desc' : 'asc';
-//   cuisineStore.fetchCuisine(1);
-// }
-
 function confirmDelete(cuisine: Cuisine) {
   cuisineToDelete.value = cuisine;
   showDeleteConfirm.value = true;
@@ -207,7 +202,6 @@ function retryConnection() {
 
 async function search(event: CustomEvent) {
   const searchValue = (event.target as HTMLIonSearchbarElement).value?.trim() ?? '';
-  currentSearch.value = searchValue;
   cuisineStore.searchCuisine(searchValue);
 }
 

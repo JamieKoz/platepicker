@@ -121,7 +121,6 @@ async function fetchRecipes(page = 1) {
     };
 
     const response = await api.get('/recipes', { params });
-    console.log('Recipe response:', response.data);
     recipes.value = response.data.data;
     meta.value = {
       current_page: response.data.current_page,

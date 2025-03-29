@@ -33,6 +33,7 @@
           <template v-if="isSignedIn">
 
             <ion-item button @click="navigateTo('/profile')">
+              <ion-icon :icon="person" slot="start"></ion-icon>
               <ion-label>{{ capitalizeFirstLetter(user?.username || '') }}</ion-label>
             </ion-item>
 
@@ -82,7 +83,7 @@ import { IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonIcon, IonPopover, IonContent, IonList, IonItem, IonLabel, IonRouterOutlet, IonAvatar
 } from '@ionic/vue';
 import { personCircle, list, home,
-  logOut, logIn, personAdd, trophy, person
+  logOut, logIn, personAdd, trophy, person,
 } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { capitalizeFirstLetter } from '@/utils/string-utils';

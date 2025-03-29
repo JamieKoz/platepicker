@@ -13,8 +13,8 @@
         <!-- Ingredient search field (takes most space) -->
         <div class="flex-grow w-4/12 relative ingredient-search-container">
           <ion-item class="w-full ingredient-input" lines="none" color="none">
-            <ion-input v-model="line.ingredient_name" placeholder="Ingredient"
-              @input="() => debounceSearch(line, index)" @focus="activateSearchLine(index)"
+            <ion-input :value="line.ingredient_name" placeholder="Ingredient"
+              @input="updateIngredientName(index, $event)" @focus="activateSearchLine(index)"
               @blur="handleBlur"></ion-input>
           </ion-item>
         </div>
@@ -22,16 +22,20 @@
         <!-- Quantity field (smaller) -->
         <div class="w-3/12">
           <ion-item class="w-full quantity-input" lines="none" color="none">
-            <ion-input v-model="line.quantity" type="number" placeholder="Qty"></ion-input>
+            <ion-input 
+              :value="line.quantity !== null ? line.quantity : ''" 
+              @input="updateQuantity(index, $event)" 
+              type="number" 
+              placeholder="Qty"></ion-input>
           </ion-item>
         </div>
         
         <!-- Measurement dropdown (medium size) -->
         <div class="w-3/12">
           <ion-item class="w-full measurement-input" lines="none" color="none">
-            <ion-select v-model="line.measurement_id" placeholder="Unit" @ionChange="updateMeasurementName(line)">
-              <ion-select-option v-for="measurement in measurements" :key="measurement.id" :value="measurement.id">
-                {{ measurement.name }} {{ measurement.abbreviation && measurement.abbreviation.length > 0 ? "(" + measurement.abbreviation + ")" : ""}}
+            <ion-select :value="line.measurement_id" placeholder="Unit" @ionChange="updateMeasurement(index, $event)">
+              <ion-select-option v-for="measurement in measurementStore.measurement" :key="measurement.id" :value="measurement.id">
+                {{ measurement.name }} {{ measurement.abbreviation ? `(${measurement.abbreviation})` : '' }}
               </ion-select-option>
             </ion-select>
           </ion-item>
@@ -67,7 +71,7 @@
         v-for="ingredient in searchResults" 
         :key="ingredient.id" 
         class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-white"
-        @mousedown="selectIngredient(recipeLines[activeSearchIndex], ingredient)"
+        @mousedown="selectIngredient(activeSearchIndex, ingredient)"
       >
         {{ ingredient.name }}
       </div>
@@ -83,13 +87,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits, defineProps, watch, nextTick } from 'vue';
+import { ref, defineEmits, defineProps, watch, nextTick, onMounted } from 'vue';
 import { IonButton, IonIcon, IonItem, IonInput, IonSelect, IonSelectOption } from '@ionic/vue';
 import { addOutline, trashOutline, chevronUpOutline, chevronDownOutline } from 'ionicons/icons';
-import api from '@/api/axios';
 import type { Ingredient } from '@/types/ingredient';
 import type { Measurement } from '@/types/measurement';
 import type { RecipeLine } from '@/types/recipeline';
+import { useMeasurementStore } from '@/store/useMeasurementStore';
+import api from '@/api/axios';
 
 const props = defineProps<{
   modelValue: RecipeLine[];
@@ -99,91 +104,155 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: RecipeLine[]): void;
 }>();
 
+// Initialize the measurement store
+const measurementStore = useMeasurementStore();
+
+// Ensure measurements are loaded
+onMounted(async () => {
+  if (measurementStore.measurement.length === 0) {
+    await measurementStore.fetchMeasurement();
+  }
+});
+
+// Internal state
 const recipeLines = ref<RecipeLine[]>([]);
-const measurements = ref<Measurement[]>([]);
 const searchResults = ref<Ingredient[]>([]);
 const showSuggestions = ref(false);
 const activeSearchIndex = ref<number | null>(null);
 const searchTimeout = ref<number | null>(null);
 const isSearching = ref(false);
-const debugMode = ref(false); // Set to true to see debug info
+const debugMode = ref(false);
 
 // Dropdown positioning
 const dropdownTop = ref(0);
 const dropdownLeft = ref(0);
 const dropdownWidth = ref(0);
 
-// Watch for external changes
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    if (newValue) {
-      recipeLines.value = [...newValue];
+// Creates a default recipe line with all required fields
+const createDefaultRecipeLine = (sortOrder: number): RecipeLine => {
+  return {
+    ingredient_name: '',
+    quantity: null,
+    measurement_name: '',
+    measurement_id: undefined,
+    sort_order: sortOrder,
+    notes: ''
+  };
+};
+
+// Add a new ingredient line
+const addIngredientLine = () => {
+  const newLine = createDefaultRecipeLine(recipeLines.value.length);
+  const newLines = [...recipeLines.value, newLine];
+  recipeLines.value = newLines;
+  emitUpdate();
+};
+
+// Initialize based on props
+onMounted(() => {
+  if (props.modelValue && Array.isArray(props.modelValue) && props.modelValue.length > 0) {
+    // Copy prop data with required fields
+    recipeLines.value = props.modelValue.map((line, index) => ({
+      ...createDefaultRecipeLine(index),
+      ...line
+    }));
+  } else {
+    // Create default line if empty
+    recipeLines.value = [createDefaultRecipeLine(0)];
+  }
+});
+
+// Helper function to emit updates safely
+const emitUpdate = () => {
+  const copiedLines = JSON.parse(JSON.stringify(recipeLines.value));
+  emit('update:modelValue', copiedLines);
+};
+
+// Update ingredient name
+const updateIngredientName = (index: number, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const value = input.value || '';
+  
+  if (index >= 0 && index < recipeLines.value.length) {
+    const updatedLines = [...recipeLines.value];
+    updatedLines[index] = {
+      ...updatedLines[index],
+      ingredient_name: value
+    };
+    recipeLines.value = updatedLines;
+    
+    // Debounce search
+    if (searchTimeout.value) {
+      clearTimeout(searchTimeout.value);
     }
-  },
-  { immediate: true }
-);
-
-// Watch for internal changes
-watch(
-  recipeLines,
-  (newValue) => {
-    emit('update:modelValue', newValue);
-  },
-  { deep: true }
-);
-
-// Fetch measurements
-const fetchMeasurements = async () => {
-  try {
-    const response = await api.get('/measurements');
-    measurements.value = response.data;
-  } catch (error) {
-    console.error("Error fetching measurements:", error);
+    
+    activeSearchIndex.value = index;
+    positionDropdown(index);
+    
+    searchTimeout.value = setTimeout(() => {
+      searchIngredients(value);
+    }, 300) as unknown as number;
   }
 };
 
-fetchMeasurements();
+// Update quantity
+const updateQuantity = (index: number, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const value = input.value ? Number(input.value) : null;
+  
+  if (index >= 0 && index < recipeLines.value.length) {
+    const updatedLines = [...recipeLines.value];
+    updatedLines[index] = {
+      ...updatedLines[index],
+      quantity: value
+    };
+    recipeLines.value = updatedLines;
+    emitUpdate();
+  }
+};
+
+// Update measurement
+const updateMeasurement = (index: number, event: CustomEvent) => {
+  const measurementId = event.detail.value;
+  
+  if (index >= 0 && index < recipeLines.value.length) {
+    const measurement = measurementStore.measurement.find(m => m.id === measurementId);
+    const measurementName = measurement ? measurement.name : '';
+    
+    const updatedLines = [...recipeLines.value];
+    updatedLines[index] = {
+      ...updatedLines[index],
+      measurement_id: measurementId,
+      measurement_name: measurementName
+    };
+    recipeLines.value = updatedLines;
+    emitUpdate();
+  }
+};
 
 // Set the active search line and position the dropdown
 const activateSearchLine = async (index: number) => {
   activeSearchIndex.value = index;
   
-  // Position the dropdown properly
   await nextTick();
   positionDropdown(index);
   
-  if (recipeLines.value[index].ingredient_name) {
-    // Search with current value when focusing
+  if (recipeLines.value[index]?.ingredient_name) {
     searchIngredients(recipeLines.value[index].ingredient_name);
   }
 };
 
 // Position the dropdown under the current input field
 const positionDropdown = (index: number) => {
-  // Try multiple selectors to find the correct input element
-  let inputElement = null;
-  const selectors = [
-    `.ingredient-search-container:nth-child(${index + 1}) ion-input`,
-    `.w-4\\/12:nth-of-type(${index + 1}) ion-input`,
-    `.recipe-line:nth-child(${index + 1}) .w-4\\/12 ion-input`,
-    `ion-item:nth-of-type(${index * 3 + 1}) ion-input`
-  ];
-  
-  for (const selector of selectors) {
-    const elements = document.querySelectorAll(selector);
-    if (elements.length > 0) {
-      inputElement = elements[0];
-      break;
-    }
+  if (index < 0 || index >= recipeLines.value.length) {
+    return;
   }
+
+  let inputElement = null;
+  const allInputs = document.querySelectorAll('.ingredient-input ion-input');
   
-  // Fallback to finding all ingredient inputs and using the index
-  if (!inputElement) {
-    const allInputs = document.querySelectorAll('.w-4\\/12 ion-input');
-    if (allInputs.length > index) {
-      inputElement = allInputs[index];
-    }
+  if (allInputs.length > index) {
+    inputElement = allInputs[index];
   }
   
   if (inputElement) {
@@ -191,43 +260,15 @@ const positionDropdown = (index: number) => {
     dropdownTop.value = inputRect.bottom + window.scrollY;
     dropdownLeft.value = inputRect.left + window.scrollX;
     dropdownWidth.value = inputRect.width;
-    
-    if (debugMode.value) {
-      console.log('Dropdown position:', {
-        top: dropdownTop.value,
-        left: dropdownLeft.value,
-        width: dropdownWidth.value
-      });
-    }
-  } else {
-    console.error('Could not find input element for positioning dropdown');
   }
 };
 
 // Handle input blur
 const handleBlur = () => {
-  // Delay hiding suggestions to allow clicking on them
   setTimeout(() => {
     showSuggestions.value = false;
     activeSearchIndex.value = null;
   }, 200);
-};
-
-// Debounce search to prevent too many API calls
-const debounceSearch = (line: RecipeLine, index: number) => {
-  if (searchTimeout.value) {
-    clearTimeout(searchTimeout.value);
-  }
-  
-  // Ensure the active index is set
-  activeSearchIndex.value = index;
-  
-  // Position dropdown when searching
-  positionDropdown(index);
-  
-  searchTimeout.value = setTimeout(() => {
-    searchIngredients(line.ingredient_name);
-  }, 300) as unknown as number;
 };
 
 // Search ingredients
@@ -242,19 +283,17 @@ const searchIngredients = async (query: string) => {
     isSearching.value = true;
     const response = await api.get('/ingredients/search', {
       params: {
-        q: query,
-        limit: 10
+        q: query
       }
     });
     
-    searchResults.value = response.data;
-    showSuggestions.value = searchResults.value.length > 0;
-    
-    // Debug info
-    if (debugMode.value) {
-      console.log("Search results:", searchResults.value);
-      console.log("Show suggestions:", showSuggestions.value);
+    // If response has a data property with search results
+    if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+      searchResults.value = [];
     }
+
+    searchResults.value = response.data.data;
+    showSuggestions.value = searchResults.value.length > 0;
     
   } catch (error) {
     console.error("Error searching ingredients:", error);
@@ -266,47 +305,42 @@ const searchIngredients = async (query: string) => {
 };
 
 // Select an ingredient from search results
-const selectIngredient = (line: RecipeLine, ingredient: Ingredient) => {
-  if (line) {
-    line.ingredient_name = ingredient.name;
-    line.ingredient_id = ingredient.id;
-    console.log("Selected ingredient:", ingredient);
+const selectIngredient = (index: number | null, ingredient: Ingredient) => {
+  if (index === null || index < 0 || index >= recipeLines.value.length) {
+    return;
   }
+
+  const updatedLines = [...recipeLines.value];
+  updatedLines[index] = {
+    ...updatedLines[index],
+    ingredient_name: ingredient.name,
+    ingredient_id: ingredient.id
+  };
+  
+  recipeLines.value = updatedLines;
   showSuggestions.value = false;
-};
-
-// Update measurement name when ID changes
-const updateMeasurementName = (line: RecipeLine) => {
-  if (line.measurement_id) {
-    const measurement = measurements.value.find(m => m.id === line.measurement_id);
-    if (measurement) {
-      line.measurement_name = measurement.name;
-    }
-  } else {
-    line.measurement_name = '';
-  }
-};
-
-// Add a new ingredient line
-const addIngredientLine = () => {
-  recipeLines.value.push({
-    ingredient_name: '',
-    ingredient_id: undefined,
-    quantity: null,
-    measurement_name: '',
-    measurement_id: null,
-    sort_order: recipeLines.value.length
-  });
+  emitUpdate();
 };
 
 // Remove an ingredient line
 const removeIngredientLine = (index: number) => {
-  recipeLines.value.splice(index, 1);
+  if (index < 0 || index >= recipeLines.value.length) return;
+  
+  const updatedLines = [...recipeLines.value];
+  updatedLines.splice(index, 1);
   
   // Update sort order
-  recipeLines.value.forEach((line, idx) => {
+  updatedLines.forEach((line, idx) => {
     line.sort_order = idx;
   });
+  
+  // Ensure there's always at least one line
+  if (updatedLines.length === 0) {
+    updatedLines.push(createDefaultRecipeLine(0));
+  }
+  
+  recipeLines.value = updatedLines;
+  emitUpdate();
 };
 
 // Move an ingredient line up or down
@@ -317,15 +351,39 @@ const moveIngredientLine = (index: number, direction: number) => {
     return;
   }
   
-  const temp = recipeLines.value[index];
-  recipeLines.value[index] = recipeLines.value[newIndex];
-  recipeLines.value[newIndex] = temp;
+  const updatedLines = [...recipeLines.value];
+  const temp = updatedLines[index];
+  updatedLines[index] = updatedLines[newIndex];
+  updatedLines[newIndex] = temp;
   
   // Update sort order
-  recipeLines.value.forEach((line, idx) => {
+  updatedLines.forEach((line, idx) => {
     line.sort_order = idx;
   });
+  
+  recipeLines.value = updatedLines;
+  emitUpdate();
 };
+
+// Watch for external prop changes
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue !== recipeLines.value) {
+      if (newValue && Array.isArray(newValue) && newValue.length > 0) {
+        // Copy prop data with required fields
+        recipeLines.value = newValue.map((line, index) => ({
+          ...createDefaultRecipeLine(index),
+          ...line
+        }));
+      } else if (recipeLines.value.length === 0) {
+        // Create default line if empty
+        recipeLines.value = [createDefaultRecipeLine(0)];
+      }
+    }
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped></style>
