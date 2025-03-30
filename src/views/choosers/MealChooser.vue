@@ -230,7 +230,7 @@ const handleMealSelected = async (clickedMeal: Meal) => {
 };
 
 const showRefreshButton = computed(() => {
-  return mealStore.mealCounter === 0 && winner.value !== null;
+  return winner.value !== null;
 });
 
 const handleRefresh = async () => {

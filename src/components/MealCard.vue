@@ -6,7 +6,7 @@
       <ion-ripple-effect></ion-ripple-effect>
       <div class="flex flex-1 items-center justify-center min-h-[65%] max-h-[65%]">
         <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${mealData.image_name}.jpg`"
-          class="h-full w-full object-cover object-center"></ion-img>
+          class="h-full w-full object-cover object-center aspect-4/3"></ion-img>
       </div>
       <ion-card-title class="py-2 overflow-hidden font-bold p-2 text-lg break-word white-space">
         <ion-card-subtitle class="text-white text-center">{{ mealData.title }}</ion-card-subtitle>
