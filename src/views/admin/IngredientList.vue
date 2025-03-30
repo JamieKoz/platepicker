@@ -56,7 +56,7 @@
           <!-- Edit Mode -->
           <form v-else @submit.prevent="saveEdit(ingredient)" class="flex items-center w-full justify-between">
             <ion-input v-model="editName" required class="flex-grow"></ion-input>
-            <div>
+            <div class="flex">
               <ion-button type="submit" size="small" color="success" class="mr-2">
                 <ion-icon :icon="checkmark" />
               </ion-button>

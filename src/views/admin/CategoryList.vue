@@ -28,7 +28,7 @@
         <div class="flex items-center justify-between">
           <ion-input v-model="newCategoryName" required placeholder="New category name"
             class="flex-grow"></ion-input>
-          <div>
+          <div class="flex">
             <ion-button type="submit" size="small" color="success">
               <ion-icon :icon="checkmark" />
             </ion-button>

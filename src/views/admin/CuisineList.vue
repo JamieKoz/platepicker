@@ -27,7 +27,7 @@
       <form v-if="isAddingNew" @submit.prevent="saveNewCuisine" class="p-4">
         <div class="flex items-center justify-between">
           <ion-input v-model="newCuisineName" required placeholder="New cuisine name" class="flex-grow"></ion-input>
-          <div>
+          <div class="flex">
             <ion-button type="submit" size="small" color="success">
               <ion-icon :icon="checkmark" />
             </ion-button>
