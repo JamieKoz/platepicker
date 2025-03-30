@@ -124,15 +124,16 @@ const formatRecipeLine = (line: RecipeLine): string => {
   let result = '';
   
   if (line.quantity) {
-    result += line.quantity + ' ';
+    result += line.quantity;
   }
   
   if (line.measurement && line.measurement.name) {
-    result += line.measurement.name + ' ';
-  } else if (line.measurement_name) {
-    result += line.measurement_name + ' ';
-  }
-  
+    if(line.measurement.name !== 'Units'){
+      result += line.measurement.abbreviation + ' ';
+    } else{
+      result += ' ';
+    }
+  }   
   if (line.ingredient && line.ingredient.name) {
     result += line.ingredient.name;
   } else if (line.ingredient_name) {

@@ -7,24 +7,27 @@
       </ion-toolbar>
       <ion-toolbar>
         <div class="flex justify-between px-4 gap-2">
-          <ion-select v-model="groupBy" interface="popover" @ionChange="handleGroupChange" 
-            placeholder="Group by" class="group-select">
+          <ion-select v-model="groupBy" interface="popover" @ionChange="handleGroupChange" placeholder="Group by"
+            class="group-select">
             <ion-select-option value="none">None</ion-select-option>
             <ion-select-option value="cuisine">Cuisine</ion-select-option>
             <ion-select-option value="category">Category</ion-select-option>
             <ion-select-option value="dietary">Dietary</ion-select-option>
           </ion-select>
-          
+
           <div class="flex">
             <ion-button @click="toggleTitleSort" size="small" fill="clear">
               A-Z {{ titleDirection === 'asc' ? '↑' : '↓' }}
             </ion-button>
+
             <ion-button @click="toggleActiveSort" size="small" fill="clear">
               Status {{ activeDirection === 'asc' ? '↑' : '↓' }}
             </ion-button>
+
             <ion-button @click="openAddModal" size="small" color="primary">
               Add +
             </ion-button>
+
           </div>
         </div>
       </ion-toolbar>
@@ -32,63 +35,99 @@
 
     <ion-content>
       <RetryConnection v-if="loadError" @retry="retryConnection" />
-      
-      <!-- When not grouping -->
-      <ion-list v-if="groupBy === 'none' && !loadError">
-        <ion-item v-for="meal in meals" :key="meal.id">
-          <ion-label>
-            <h2>{{ meal.title }}</h2>
-          </ion-label>
-          <ion-button @click="openEditModal(meal)" color="warning" size="small" class="mr-2">
-            <ion-icon :icon="createOutline" />
-          </ion-button>
-          <ion-button @click="toggleMealStatus(meal)" :color="meal.active ? 'danger' : 'success'" size="small">
-            {{ meal.active ? 'Deactivate' : 'Activate' }}
-          </ion-button>
-        </ion-item>
-      </ion-list>
 
-      <!-- When grouping by criteria -->
-      <div v-else-if="!loadError">
-        <ion-list v-for="(group, groupName) in groupedMeals" :key="groupName">
-          <ion-list-header>
-            <ion-label>{{ groupName || 'Uncategorized' }}</ion-label>
-          </ion-list-header>
-          
-          <ion-item v-for="meal in group" :key="meal.id">
+      <!-- When not grouping -->
+      <div v-if="groupBy === 'none' && !loadError">
+        <ion-list>
+          <ion-item v-for="meal in meals" :key="meal.id">
             <ion-label>
               <h2>{{ meal.title }}</h2>
             </ion-label>
+
             <ion-button @click="openEditModal(meal)" color="warning" size="small" class="mr-2">
               <ion-icon :icon="createOutline" />
             </ion-button>
+
             <ion-button @click="toggleMealStatus(meal)" :color="meal.active ? 'danger' : 'success'" size="small">
               {{ meal.active ? 'Deactivate' : 'Activate' }}
             </ion-button>
+
           </ion-item>
         </ion-list>
+
+        <!-- Pagination for non-grouped view -->
+        <div class="my-2 p-2">
+          <ion-toolbar>
+            <div class="flex items-center justify-between">
+              <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="clear"
+                size="small">
+                Previous
+              </ion-button>
+              <ion-text class="text-xs text-center items-center">
+                Page {{ meta.current_page }} / {{ meta.last_page }}
+              </ion-text>
+              <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="clear"
+                size="small">
+                Next
+              </ion-button>
+            </div>
+          </ion-toolbar>
+        </div>
       </div>
 
-      <div class="my-2 p-2">
-        <ion-toolbar>
-          <div class="flex items-center justify-between">
-            <ion-button @click="fetchMealList(meta.current_page - 1)" :disabled="!links.prev" fill="clear" size="small">
-              Previous
-            </ion-button>
-            <ion-text class="text-xs text-center items-center">
-              Page {{ meta.current_page }} / {{ meta.last_page }}
-            </ion-text>
-            <ion-button @click="fetchMealList(meta.current_page + 1)" :disabled="!links.next" fill="clear" size="small">
-              Next
-            </ion-button>
-          </div>
-        </ion-toolbar>
+      <!-- When grouping by criteria -->
+      <div v-else-if="!loadError">
+        <div v-for="group in groupedMeals" :key="group.name" class="mb-6">
+          <ion-list-header class="flex justify-between">
+            <ion-label>{{ group.name }}</ion-label>
+            <ion-text class="text-sm text-gray-500">{{ group.total_user_meals }} recipes</ion-text>
+          </ion-list-header>
+
+          <ion-list>
+            <ion-item v-for="meal in group.user_meals" :key="meal.id">
+              <ion-label>
+                <h2>{{ meal.title }}</h2>
+              </ion-label>
+              <ion-button @click="openEditModal(meal)" color="warning" size="small" class="mr-2">
+                <ion-icon :icon="createOutline" />
+              </ion-button>
+              <ion-button @click="toggleMealStatus(meal)" :color="meal.active ? 'danger' : 'success'" size="small">
+                {{ meal.active ? 'Deactivate' : 'Activate' }}
+              </ion-button>
+            </ion-item>
+
+            <ion-item v-if="group.has_more" button detail @click="loadMoreForGroup(group.id, group.name)">
+              <ion-label class="text-center text-blue-500">
+                Load more {{ group.name }} recipes
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        </div>
+
+        <div v-if="groupPagination" class="my-4 p-2">
+          <ion-toolbar>
+            <div class="flex items-center justify-between">
+              <ion-button @click="fetchGroupedMeals(groupPagination.current_page - 1)"
+                :disabled="!groupPagination.prev_page_url" fill="clear" size="small">
+                Previous Group Set
+              </ion-button>
+              <ion-text class="text-xs text-center items-center">
+                Groups {{ groupPagination.from }}-{{ groupPagination.to }}
+                of {{ groupPagination.total_groups }}
+              </ion-text>
+              <ion-button @click="fetchGroupedMeals(groupPagination.current_page + 1)"
+                :disabled="!groupPagination.next_page_url" fill="clear" size="small">
+                Next Group Set
+              </ion-button>
+            </div>
+          </ion-toolbar>
+        </div>
       </div>
     </ion-content>
-    
+
     <RecipeBrowser :is-open="isRecipeBrowserOpen" @close="isRecipeBrowserOpen = false"
       @open-create-modal="openCreateModal" @recipe-added="fetchMealList(1)" />
-    
+
     <MealFormModal :is-open="isModalOpen" :editing-meal="editingMeal" @close="closeModal"
       @saved="fetchMealList(meta.current_page)" />
   </ion-page>
@@ -109,9 +148,31 @@ import MealFormModal from '@/components/MealFormModal.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { createOutline } from 'ionicons/icons';
 
+
+interface Group {
+  id: number;
+  name: string;
+  total_user_meals: number;
+  user_meals: Meal[];
+  has_more: boolean;
+}
+
+interface GroupPagination {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total_groups: number;
+  from: number;
+  to: number;
+  prev_page_url: string | null;
+  next_page_url: string | null;
+}
+
 const loadError = ref(false);
 const isRecipeBrowserOpen = ref(false);
 const meals = ref<Meal[]>([]);
+const groupedMeals = ref<Group[]>([]);
+const groupPagination = ref<GroupPagination | null>(null);
 const meta = ref<PaginationMeta>({
   current_page: 1,
   last_page: 1,
@@ -134,77 +195,12 @@ const isModalOpen = ref(false);
 const editingMeal = ref<Meal | null>(null);
 const groupBy = ref<'none' | 'cuisine' | 'category' | 'dietary'>('none');
 
-// Group meals by selected criteria
-const groupedMeals = computed(() => {
-  if (groupBy.value === 'none') {
-    return {};
-  }
-
-  const grouped: Record<string, Meal[]> = {};
-  
-  meals.value.forEach(meal => {
-    let groupNames: string[] = [];
-    
-    if (groupBy.value === 'cuisine' && meal.cuisines && meal.cuisines.length) {
-      groupNames = meal.cuisines.map(c => c.name);
-    } else if (groupBy.value === 'category' && meal.categories && meal.categories.length) {
-      groupNames = meal.categories.map(c => c.name);
-    } else if (groupBy.value === 'dietary' && meal.dietary_items && meal.dietary_items.length) {
-      groupNames = meal.dietary_items.map(d => d.name);
-    } else {
-      // Fall back to string property if relational data is not available
-      if (groupBy.value === 'cuisine' && meal.cuisine) {
-        groupNames = [meal.cuisine];
-      } else if (groupBy.value === 'category' && meal.category) {
-        groupNames = meal.category.split(',').map(c => c.trim());
-      } else if (groupBy.value === 'dietary' && meal.dietary) {
-        const dietaryValue = typeof meal.dietary === 'string' 
-          ? meal.dietary.split(',').map(d => d.trim())
-          : Array.isArray(meal.dietary) 
-            ? meal.dietary 
-            : [String(meal.dietary)]; // Convert to string if it's an object or other type
-        groupNames = dietaryValue;
-      }
-    }
-    
-    // If no group found, add to "Uncategorized"
-    if (groupNames.length === 0) {
-      const group = grouped[''] || [];
-      group.push(meal);
-      grouped[''] = group;
-      return;
-    }
-    
-    // Add meal to each of its groups
-    groupNames.forEach(groupName => {
-      // Ensure groupName is a string (not an object)
-      const groupKey = typeof groupName === 'object' 
-        ? (groupName && 'name' in groupName ? groupName.name : 'Unknown')
-        : groupName;
-        
-      const group = grouped[groupKey] || [];
-      group.push(meal);
-      grouped[groupKey] = group;
-    });
-  });
-  
-  // Sort the groups alphabetically by key
-  return Object.keys(grouped)
-    .sort((a, b) => {
-      // Empty string (Uncategorized) always goes last
-      if (a === '') return 1;
-      if (b === '') return -1;
-      return a.localeCompare(b);
-    })
-    .reduce((sortedGroups: Record<string, Meal[]>, key) => {
-      sortedGroups[key] = grouped[key];
-      return sortedGroups;
-    }, {});
-});
-
 function handleGroupChange() {
   // Persisting user preference in localStorage
   localStorage.setItem('mealListGroupBy', groupBy.value);
+
+  // Refresh data with new grouping
+  refreshData();
 }
 
 function openCreateModal() {
@@ -228,12 +224,20 @@ function closeModal() {
 
 function toggleActiveSort() {
   activeDirection.value = activeDirection.value === 'asc' ? 'desc' : 'asc';
-  fetchMealList(1);
+  refreshData();
 }
 
 function toggleTitleSort() {
   titleDirection.value = titleDirection.value === 'asc' ? 'desc' : 'asc';
-  fetchMealList(1);
+  refreshData();
+}
+
+function refreshData() {
+  if (groupBy.value === 'none') {
+    fetchMealList(1);
+  } else {
+    fetchGroupedMeals(1);
+  }
 }
 
 async function fetchMealList(page = 1) {
@@ -243,7 +247,8 @@ async function fetchMealList(page = 1) {
     const params = {
       page,
       active_direction: activeDirection.value,
-      title_direction: titleDirection.value
+      title_direction: titleDirection.value,
+      group_by: 'none'
     };
 
     if (currentSearch.value) {
@@ -273,16 +278,76 @@ async function fetchMealList(page = 1) {
   }
 }
 
+async function fetchGroupedMeals(page = 1) {
+  try {
+    loadError.value = false;
+    let response;
+    const params = {
+      page,
+      active_direction: activeDirection.value,
+      title_direction: titleDirection.value,
+      group_by: groupBy.value
+    };
+
+    if (currentSearch.value) {
+      response = await api.get(`/user-meals/search`, { params: { ...params, q: currentSearch.value } });
+    } else {
+      response = await api.get(`/user-meals/list`, { params });
+    }
+
+    if (response.data.grouped) {
+      groupedMeals.value = response.data.groups;
+      groupPagination.value = response.data.pagination;
+    } else {
+      console.error("Expected grouped data but received paginated response");
+      loadError.value = true;
+    }
+  } catch (error) {
+    loadError.value = true;
+    console.error("Error fetching grouped meals:", error);
+  }
+}
+
+async function loadMoreForGroup(groupId: number, groupName: string) {
+  try {
+    const params = {
+      active_direction: activeDirection.value,
+      title_direction: titleDirection.value,
+      group_by: groupBy.value,
+      group_id: groupId,
+      full_group: true
+    };
+
+    let response;
+    if (currentSearch.value) {
+      response = await api.get(`/user-meals/search`, { params: { ...params, q: currentSearch.value } });
+    } else {
+      response = await api.get(`/user-meals/list`, { params });
+    }
+
+    if (response.data && response.data.user_meals) {
+      // Find and update the specific group with complete recipes list
+      const groupIndex = groupedMeals.value.findIndex(g => g.id === groupId);
+      if (groupIndex !== -1) {
+        groupedMeals.value[groupIndex].user_meals = response.data.user_meals;
+        groupedMeals.value[groupIndex].has_more = false;
+      }
+    }
+  } catch (error) {
+    console.error(`Error loading more recipes for ${groupName}:`, error);
+  }
+}
+
 function retryConnection() {
   loadError.value = false;
-  return fetchMealList(meta.value.current_page);
+  refreshData();
 }
 
 async function search(event: CustomEvent) {
   try {
     const searchValue = (event.target as HTMLIonSearchbarElement).value?.trim() ?? '';
     currentSearch.value = searchValue;
-    fetchMealList(1);
+    refreshData();
   } catch (error) {
     console.error("Error searching meals:", error);
   }
@@ -294,7 +359,7 @@ async function toggleMealStatus(meal: Meal) {
 
   try {
     await api.post(`/user-meals/${meal.id}/toggle-status`);
-    await fetchMealList(meta.value.current_page);
+    refreshData();
   } catch (error) {
     console.error("Error toggling meal status:", error);
     meal.active = originalStatus;
@@ -307,8 +372,8 @@ onMounted(() => {
   if (savedGroupBy && ['none', 'cuisine', 'category', 'dietary'].includes(savedGroupBy)) {
     groupBy.value = savedGroupBy as any;
   }
-  
-  fetchMealList(1);
+
+  refreshData();
 });
 </script>
 
