@@ -1,35 +1,51 @@
-// useRestaurantStore.ts with direct photo return
+// useRestaurantStore.ts with dining option support
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/api/axios';
 import type { Restaurant, PhotoReference } from '@/types/restaurant';
+
+// Define valid dining options
+export type DiningOption = 'delivery' | 'takeaway' | 'drive_thru' | 'dine_in';
 
 export const useRestaurantStore = defineStore('restaurant', () => {
   const restaurants = ref<Restaurant[]>([]);
   const photoCache = ref<Record<string, PhotoReference[]>>({});
   const isLoading = ref(false);
   const isLoadingAdditionalPhotos = ref(false);
-  
+  const currentDiningOption = ref<DiningOption>('delivery');
+
+  /**
+   * Set the current dining option
+   */
+  const setDiningOption = (option: DiningOption) => {
+    currentDiningOption.value = option;
+  };
+
   /**
    * Fetch restaurants by address (place ID)
    */
-  const fetchRestaurantsByAddress = async (placeId: string) => {
+  const fetchRestaurantsByAddress = async (placeId: string, diningOption?: DiningOption) => {
     isLoading.value = true;
+
+    // Use provided dining option or fall back to the stored one
+    const option = diningOption || currentDiningOption.value;
+
     try {
       const response = await api.get('/restaurants/nearby', {
         params: {
-          place_id: placeId
+          place_id: placeId,
+          dining_option: option
         },
         timeout: 15000
       });
-      
+
       if (!response.data) {
         throw new Error('No data received');
       }
-      
+
       // Randomize the restaurants
       restaurants.value = response.data.sort(() => Math.random() - 0.5);
-      
+
       // Start preloading photos for upcoming restaurants
       preloadPhotosForUpcomingRestaurants();
     } catch (error) {
@@ -40,25 +56,33 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       isLoading.value = false;
     }
   };
-  
+
   /**
    * Fetch restaurants by coordinates. Used by current location
    */
-  const fetchRestaurantsByLocation = async (lat: number, lng: number) => {
+  const fetchRestaurantsByLocation = async (lat: number, lng: number, diningOption?: DiningOption) => {
     isLoading.value = true;
+
+    // Use provided dining option or fall back to the stored one
+    const option = diningOption || currentDiningOption.value;
+
     try {
       const response = await api.get('/restaurants/reverse-geocode', {
-        params: { lat, lng },
+        params: {
+          lat,
+          lng,
+          dining_option: option
+        },
         timeout: 15000
       });
-      
+
       if (!response.data) {
         throw new Error('No data received');
       }
-      
+
       // Randomize the restaurants
       restaurants.value = response.data.sort(() => Math.random() - 0.5);
-      
+
       // Start preloading photos for upcoming restaurants
       preloadPhotosForUpcomingRestaurants();
     } catch (error) {
@@ -69,27 +93,27 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       isLoading.value = false;
     }
   };
-  
+
   /**
    * Get the next restaurant from the queue
    */
   const getNewRestaurant = (): Restaurant | null => {
     if (restaurants.value.length > 0) {
       const nextRestaurant = restaurants.value.shift() || null;
-      
+
       // Preload the upcoming restaurants after taking one
       if (restaurants.value.length > 0) {
         preloadPhotosForUpcomingRestaurants(1);
       }
-      
+
       return nextRestaurant;
     }
     return null;
   };
-  
+
   const preloadPhotosForUpcomingRestaurants = (count = 1) => {
     const restaurantsToPreload = restaurants.value.slice(0, count);
-    
+
     if (restaurantsToPreload.length > 0) {
       const restaurant = restaurantsToPreload[0];
       if (!photoCache.value[restaurant.place_id]) {
@@ -97,38 +121,38 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       }
     }
   };
-  
+
   const fetchAdditionalPhotos = async (placeId?: string): Promise<PhotoReference[]> => {
     if (!placeId) {
       console.error("Attempted to fetch photos with undefined place_id");
       return [];
     }
-    
+
     if (photoCache.value[placeId]) {
       console.log("Returning cached photos for", placeId);
       return photoCache.value[placeId];
     }
-    
+
     if (isLoadingAdditionalPhotos.value) {
       // console.log("Already loading photos for another restaurant, skipping");
       return [];
     }
-    
+
     isLoadingAdditionalPhotos.value = true;
     try {
-      
+
       const photoEndpoint = `/restaurants/photos/${placeId}`;
-      
+
       const response = await api.get(photoEndpoint, {
         timeout: 15000
       });
-      
+
       if (response.data && response.data.photos && response.data.photos.length > 0) {
         const limitedPhotos = response.data.photos.slice(0, 4);
         photoCache.value[placeId] = limitedPhotos;
         return limitedPhotos;
       }
-      
+
       return [];
     } catch (error) {
       console.error('Error fetching additional photos:', error);
@@ -137,30 +161,30 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       isLoadingAdditionalPhotos.value = false;
     }
   };
-  
+
   /**
    * Get all photos for a restaurant (from cache or fetch new)
    */
-const getRestaurantPhotos = async (placeId: string): Promise<PhotoReference[]> => {
+  const getRestaurantPhotos = async (placeId: string): Promise<PhotoReference[]> => {
     try {
-        if (!placeId) {
-            console.warn('Attempted to get photos without a placeId');
-            return [];
-        }
-        
-        if (photoCache.value[placeId]) {
-            return photoCache.value[placeId];
-        }
-        
-        return await fetchAdditionalPhotos(placeId);
-    } catch (error) {
-        console.error('Error in getRestaurantPhotos:', error);
+      if (!placeId) {
+        console.warn('Attempted to get photos without a placeId');
         return [];
+      }
+
+      if (photoCache.value[placeId]) {
+        return photoCache.value[placeId];
+      }
+
+      return await fetchAdditionalPhotos(placeId);
+    } catch (error) {
+      console.error('Error in getRestaurantPhotos:', error);
+      return [];
     }
-};
-  
+  };
+
   const restaurantCounter = computed(() => restaurants.value.length);
-  
+
   return {
     restaurants,
     restaurantCounter,
@@ -171,6 +195,8 @@ const getRestaurantPhotos = async (placeId: string): Promise<PhotoReference[]> =
     fetchAdditionalPhotos,
     photoCache, // Expose the cache directly
     isLoading,
-    isLoadingAdditionalPhotos
+    isLoadingAdditionalPhotos,
+    currentDiningOption,
+    setDiningOption
   };
 });

@@ -106,7 +106,12 @@ const routes: Array<RouteRecordRaw> = [
         path: 'ingredients-list',
         component: () => import('@/views/admin/IngredientList.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
-      }
+      },
+      {
+        path: 'buy-options-chooser',
+        component: () => import('@/views/choosers/BuyOptions.vue'),
+      },
+
     ]
   }
 ];

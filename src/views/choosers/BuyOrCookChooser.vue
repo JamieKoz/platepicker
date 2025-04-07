@@ -16,6 +16,7 @@ import BackArrow from '@/components/navigation/BackArrow.vue';
 
 const router = useRouter();
 
-const handleBuy = () => router.push('/restaurant-chooser/dine-in');
+// const handleBuy = () => router.push('/restaurant-chooser/dine-in');
+const handleBuy = () => router.push('/buy-options-chooser');
 const handleCook = () => router.push('/filter-chooser');
 </script>
