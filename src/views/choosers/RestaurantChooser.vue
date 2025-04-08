@@ -138,13 +138,28 @@ const router = useRouter()
 const { user } = useUser();
 
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
+  // If we're down to the last comparison, this is the winner
   if (restaurantStore.restaurantCounter === 0) {
+    // Set the winner first
     winner.value = chosenRestaurant;
     
-    if (winner.value.has_additional_photos) {
-      await restaurantStore.getRestaurantPhotos(winner.value.place_id);
+    // Then fetch additional photos if needed - this happens after the UI updates
+    if (winner.value && winner.value.place_id) {
+      try {
+        // Fetch photos for the winner in the background
+        restaurantStore.getRestaurantPhotos(winner.value.place_id)
+          .then(photos => {
+            console.log(`Loaded ${photos.length} photos for winner`);
+          })
+          .catch(err => {
+            console.error("Error loading photos for winner:", err);
+          });
+      } catch (error) {
+        console.error("Error initiating photo load:", error);
+      }
     }
     
+    // Clear other restaurants
     restaurant1.value = null;
     restaurant2.value = null;
     return;
@@ -159,29 +174,42 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
   await nextTick();
   restaurantToAnimate.value = true;
 
-  setTimeout(async () => {
-    try {
-      const nextRestaurant = restaurantStore.getNewRestaurant();
-      if (!nextRestaurant) return;
+  // Use a promise to handle the animation timing
+  const animationPromise = new Promise<void>(resolve => {
+    setTimeout(() => resolve(), 300); // Match animation duration
+  });
 
-      restaurantToAnimate.value = false;
-      
-      await nextTick();
-      restaurantToReplace.value = nextRestaurant;
-      
-      // Wait for next render before starting slide-in
-      await nextTick();
-      newRestaurantAnimation.value = true;
-
-      setTimeout(() => {
-        newRestaurantAnimation.value = false;
-      }, 300); // Match animation duration
-
-    } catch (error) {
-      console.error('Error replacing restaurant:', error);
-      loadError.value = true;
+  try {
+    // Wait for animation to complete
+    await animationPromise;
+    
+    // Get next restaurant
+    const nextRestaurant = restaurantStore.getNewRestaurant();
+    if (!nextRestaurant) {
+      console.warn("No next restaurant available");
+      return;
     }
-  }, 300); // Match animation duration
+
+    // Reset animation flag for exiting restaurant
+    restaurantToAnimate.value = false;
+    
+    // Set the new restaurant on next tick to ensure clean DOM update
+    await nextTick();
+    restaurantToReplace.value = nextRestaurant;
+    
+    // Wait for next render before starting slide-in animation
+    await nextTick();
+    newRestaurantAnimation.value = true;
+
+    // Reset the slide-in animation after it completes
+    setTimeout(() => {
+      newRestaurantAnimation.value = false;
+    }, 300); // Match animation duration
+
+  } catch (error) {
+    console.error('Error replacing restaurant:', error);
+    loadError.value = true;
+  }
 };
 
 

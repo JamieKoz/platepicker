@@ -138,36 +138,81 @@ const emit = defineEmits<{
 }>();
 
 // Only use photos that have valid references, skipping the primary photo
+// Updated visiblePhotos computed property and photo handling
+// Only use photos that have valid references
 const visiblePhotos = computed(() => {
   if (!props.restaurantData) return [];
 
   const results = [];
   
   try {
+    // First add the primary photo if available
+    if (props.restaurantData.primary_photo) {
+      const primaryRef = props.restaurantData.primary_photo.reference;
+      
+      if (primaryRef && typeof primaryRef === 'string' && primaryRef.length > 10 && primaryRef.length < 400) {
+        results.push({
+          reference: primaryRef,
+          width: props.restaurantData.primary_photo.width || 450,
+          height: props.restaurantData.primary_photo.height || 350
+        });
+      } else {
+        console.log("Primary photo has invalid reference:", 
+                   primaryRef ? (primaryRef.length > 40 ? primaryRef.substring(0, 40) + '...' : primaryRef) : "undefined");
+      }
+    }
+    
+    // Then add photos from the photos array
     if (props.restaurantData.photos && Array.isArray(props.restaurantData.photos)) {
-      results.push(props.restaurantData.primary_photo);
       props.restaurantData.photos.forEach(photo => {
-        if (photo && photo.photo_reference && results.length < MAX_PHOTOS) {
-          if(photo.photo_reference !== props.restaurantData?.primary_photo?.photo_reference){
-            results.push(photo);
+        const photoRef = photo.reference || photo.photo_reference;
+        
+        // Only add valid photo references and avoid duplicates
+        if (photoRef && typeof photoRef === 'string' && photoRef.length > 10 && photoRef.length < 400) {
+          // Check if it's not a duplicate of an already added photo
+          const isDuplicate = results.some(p => (p.reference || p.photo_reference) === photoRef);
+          
+          if (!isDuplicate && results.length < MAX_PHOTOS) {
+            results.push({
+              reference: photoRef,
+              width: photo.width || 450,
+              height: photo.height || 350
+            });
           }
         }
       });
     }
     
-    // If we have no photos at all, then try to use the primary photo as a fallback
-    if (results.length === 0 && props.restaurantData.primary_photo?.photo_reference) {
-      results.push(props.restaurantData.primary_photo);
+    // Check cache for additional photos if we don't have enough
+    if (results.length < 2 && props.restaurantData.place_id && restaurantStore.photoCache[props.restaurantData.place_id]) {
+      const cachedPhotos = restaurantStore.photoCache[props.restaurantData.place_id];
+      
+      cachedPhotos.forEach(photo => {
+        const photoRef = photo.reference || photo.photo_reference;
+        
+        if (photoRef && typeof photoRef === 'string' && photoRef.length > 10 && photoRef.length < 400) {
+          // Check for duplicates
+          const isDuplicate = results.some(p => (p.reference || p.photo_reference) === photoRef);
+          
+          if (!isDuplicate && results.length < MAX_PHOTOS) {
+            results.push({
+              reference: photoRef,
+              width: photo.width || 450,
+              height: photo.height || 350
+            });
+          }
+        }
+      });
     }
+    
+    console.log(`Restaurant ${props.restaurantData.name}: Found ${results.length} valid photos to display`);
     
     return results;
   } catch (error) {
     console.error("Error in visiblePhotos computed property:", error);
     return [];
   }
-});
-
-const handleCardClick = (event: MouseEvent) => {
+});const handleCardClick = (event: MouseEvent) => {
   if (!(event.target as HTMLElement).closest('.nav-button') && props.restaurantData) {
     emit('chooseRestaurant', props.restaurantData);
   }
@@ -186,11 +231,19 @@ function setSwiper(swiperInstance: any) {
 }
 
 function getPhotoUrl(photo: any): string {
-  if (!photo || !photo.photo_reference) {
+  // If no photo object provided, use placeholder
+  if (!photo) {
+    console.log("No photo provided, using placeholder");
     return placeholderImage;
   }
 
-  const photoRef = photo.photo_reference;
+  // Get the reference, checking both possible property names
+  const photoRef = photo.reference || photo.photo_reference;
+  
+  if (!photoRef) {
+    console.log("No photo reference found in photo object:", photo);
+    return placeholderImage;
+  }
   
   // Check cache first
   const cachedUrl = imageCache.value.get(photoRef);
@@ -198,37 +251,36 @@ function getPhotoUrl(photo: any): string {
     return cachedUrl === 'error' ? placeholderImage : cachedUrl;
   }
 
-  // Extract the actual photo reference if it's a nested URL
-  let actualPhotoRef = photoRef;
-  
-  // If the photo reference is a URL that contains another photo_reference parameter
-  if (typeof photoRef === 'string' && photoRef.includes('photo_reference=')) {
-    try {
-      // Try to extract just the photo reference part
-      const match = photoRef.match(/photo_reference=([^&]+)/);
-      if (match && match[1]) {
-        actualPhotoRef = decodeURIComponent(match[1]);
-      }
-    } catch (e) {
-      console.error('Error extracting photo reference:', e);
-      return placeholderImage;
-    }
-  }
-  if (actualPhotoRef && actualPhotoRef.length > 500) {
-    console.error('Photo reference too long, likely invalid');
+  // Validate the photo reference
+  if (typeof photoRef !== 'string') {
+    console.error('Invalid photo reference (not a string):', photoRef);
     imageCache.value.set(photoRef, 'error');
     return placeholderImage;
   }
-  // Return photo URL directly from our proxy endpoint
-  const proxyUrl = `${api.defaults.baseURL}/restaurants/photo-proxy?photo_reference=${encodeURIComponent(actualPhotoRef)}&maxwidth=450&maxheight=350`;
   
-  // Add to cache to prevent duplicate retrievals
-  imageCache.value.set(photoRef, proxyUrl);
+  // Check if reference is a reasonable length
+  // Google photo references are typically 100-300 characters
+  if (photoRef.length < 10 || photoRef.length > 400) {
+    console.error(`Invalid photo reference length (${photoRef.length})`, 
+                 photoRef.length > 40 ? photoRef.substring(0, 40) + '...' : photoRef);
+    imageCache.value.set(photoRef, 'error');
+    return placeholderImage;
+  }
   
-  return proxyUrl;
-}
-
-function handleImageError(event: Event, index: number) {
+  // Return photo URL from our proxy endpoint
+  try {
+    const proxyUrl = `${api.defaults.baseURL}/restaurants/photo-proxy?photo_reference=${encodeURIComponent(photoRef)}&maxwidth=800&maxheight=600`;
+    
+    // Add to cache
+    imageCache.value.set(photoRef, proxyUrl);
+    
+    return proxyUrl;
+  } catch (error) {
+    console.error('Error generating photo URL:', error);
+    imageCache.value.set(photoRef, 'error');
+    return placeholderImage;
+  }
+}function handleImageError(event: Event, index: number) {
   const img = event.target as HTMLImageElement;
   
   // Mark as failed in cache
@@ -273,66 +325,79 @@ const loadAdditionalPhotos = async () => {
   const placeId = props.restaurantData.place_id;
   
   // Check if we already have enough photos
-  if (visiblePhotos.value.length >= MAX_PHOTOS) {
+  if (props.restaurantData.photos && props.restaurantData.photos.length >= MAX_PHOTOS) {
+    console.log(`Already have ${props.restaurantData.photos.length} photos, not loading more`);
     return;
   }
   
+  console.log(`Loading additional photos for restaurant ${props.restaurantData.name} (${placeId})`);
   isLoadingMorePhotos.value = true;
 
   try {
-    // Check if photos are already in the store cache
-    const cachedPhotos = restaurantStore.photoCache[placeId];
-    
-    if (cachedPhotos && cachedPhotos.length > 0) {
-      // Use cached photos from store
-      updateRestaurantPhotos(cachedPhotos);
+    // First, check if we already have photos in the store cache
+    if (restaurantStore.photoCache[placeId] && restaurantStore.photoCache[placeId].length > 0) {
+      console.log(`Found ${restaurantStore.photoCache[placeId].length} cached photos in store`);
+      updateRestaurantPhotos(restaurantStore.photoCache[placeId]);
     } else {
-      // Fetch photos from API
-      const response = await api.get(`/restaurants/photos/${placeId}`);
+      // If not in cache, fetch from API through store
+      console.log(`Fetching photos from API for ${placeId}`);
+      const photos = await restaurantStore.getRestaurantPhotos(placeId);
       
-      if (response.data.photos && Array.isArray(response.data.photos) && response.data.photos.length > 0) {
-        updateRestaurantPhotos(response.data.photos);
+      if (photos && photos.length > 0) {
+        console.log(`Received ${photos.length} photos from API`);
+        updateRestaurantPhotos(photos);
+      } else {
+        console.log('No photos received from API');
       }
     }
   } catch (error) {
     console.error("Error fetching photos:", error);
   } finally {
     isLoadingMorePhotos.value = false;
+    // Force swiper to update after photos are loaded
     updateSwiper();
   }
 };
-
 const updateRestaurantPhotos = (photos: any[]) => {
   if (!props.restaurantData) return;
+  
+  console.log(`Updating restaurant photos for ${props.restaurantData.name}, received ${photos.length} new photos`);
   
   // Initialize photos array if it doesn't exist
   if (!props.restaurantData.photos) {
     props.restaurantData.photos = [];
   }
   
-  // Convert photo format
+  // Convert photo format 
   const newPhotos = photos
-    .filter(photo => photo && (photo.photo_reference || photo.url))
+    .filter(photo => photo && (photo.reference || photo.photo_reference))
     .map(photo => {
-      const photoRef = photo.photo_reference || 
-        (photo.url && typeof photo.url === 'string' && photo.url.match(/photo_reference=([^&]+)/) ? 
-          decodeURIComponent(photo.url.match(/photo_reference=([^&]+)/)[1]) : 
-          photo.url);
-          
+      // Handle different photo formats - the API might return either reference or photo_reference
+      const photoRef = photo.reference || photo.photo_reference;
+      
       return {
-        photo_reference: photoRef,
+        reference: photoRef, // Use 'reference' for consistency
         width: photo.width || 450,
-        height: photo.height || 350,
-        id: Math.random().toString(36).substring(2, 9)
+        height: photo.height || 350
       };
     });
   
-  // Preserve the first photo if it exists
-  const existingPhotos = props.restaurantData.photos || [];
-  const firstPhoto = existingPhotos.length > 0 ? [existingPhotos[0]] : [];
-  props.restaurantData.photos = [...firstPhoto, ...newPhotos].slice(1, MAX_PHOTOS);
+  console.log(`Processed ${newPhotos.length} photos with valid references`);
+  
+  // Add the new photos to the restaurant
+  if (newPhotos.length > 0) {
+    // Ensure we're not adding duplicates
+    const existingRefs = props.restaurantData.photos.map(p => p.reference);
+    const uniqueNewPhotos = newPhotos.filter(p => !existingRefs.includes(p.reference));
+    
+    // Add the unique new photos
+    props.restaurantData.photos = [...props.restaurantData.photos, ...uniqueNewPhotos];
+    console.log(`Added ${uniqueNewPhotos.length} unique new photos, total: ${props.restaurantData.photos.length}`);
+  }
+  
+  // Update the swiper to show the new photos
+  updateSwiper();
 };
-
 const calculateYellowWidth = (rating: number) => {
   // Convert rating to percentage (e.g., 3.7/5 = 74%)
   return Math.min(Math.max(Math.floor((rating / 5) * 100), 0), 100);
