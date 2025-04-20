@@ -40,17 +40,17 @@
       <!-- Regular view with pagination (when grouping is none) -->
       <div v-if="groupBy === 'none' && !loadError">
         <ion-list>
-          <ion-item v-for="meal in meals" :key="meal.id">
+          <ion-item v-for="recipe in recipes" :key="recipe.id">
             <ion-label>
-              <h2>{{ meal.title }}</h2>
+              <h2>{{ recipe.title }}</h2>
             </ion-label>
 
-            <ion-button @click="openEditModal(meal)" color="warning" size="small" class="mr-2">
+            <ion-button @click="openEditModal(recipe)" color="warning" size="small" class="mr-2">
               <ion-icon :icon="createOutline" />
             </ion-button>
 
-            <ion-button @click="toggleMealStatus(meal)" :color="meal.active ? 'danger' : 'success'" size="small">
-              {{ meal.active ? 'Deactivate' : 'Activate' }}
+            <ion-button @click="toggleMealStatus(recipe)" :color="recipe.active ? 'danger' : 'success'" size="small">
+              {{ recipe.active ? 'Deactivate' : 'Activate' }}
             </ion-button>
 
           </ion-item>
@@ -152,12 +152,13 @@ import RecipeFormModal from '@/components/RecipeFormModal.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { createOutline } from 'ionicons/icons';
 import { useUserStore } from '@/store/useUserStore';
+import { Recipe } from '@/types/recipe';
 
 interface Group {
   id: number;
   name: string;
   total_recipes: number;
-  recipes: Meal[];
+  recipes: Recipe[];
   has_more: boolean;
 }
 
@@ -173,7 +174,7 @@ interface GroupPagination {
 }
 
 const loadError = ref(false);
-const meals = ref<Meal[]>([]);
+const recipes = ref<Recipe[]>([]);
 const groupedMeals = ref<Group[]>([]);
 const groupPagination = ref<GroupPagination | null>(null);
 const meta = ref<PaginationMeta>({
@@ -195,8 +196,7 @@ const currentSearch = ref('');
 const activeDirection = ref<'asc' | 'desc'>('desc');
 const titleDirection = ref<'asc' | 'desc'>('asc');
 const isModalOpen = ref(false);
-const editingMeal = ref<Meal | null>(null);
-const userStore = useUserStore();
+const editingMeal = ref<Recipe | null>(null);
 const groupBy = ref<'none' | 'cuisine' | 'category' | 'dietary'>('none');
 
 function handleGroupChange() {
@@ -212,8 +212,8 @@ function openCreateModal() {
   isModalOpen.value = true;
 }
 
-function openEditModal(meal: Meal) {
-  editingMeal.value = meal;
+function openEditModal(recipe: Recipe) {
+  editingMeal.value = recipe;
   isModalOpen.value = true;
 }
 
@@ -257,7 +257,7 @@ async function fetchMealList(page = 1) {
       response = await api.get(`/recipes/list`, { params });
     }
 
-    meals.value = response.data.data;
+    recipes.value = response.data.data;
     meta.value = {
       current_page: response.data.current_page,
       last_page: response.data.last_page,
@@ -354,16 +354,16 @@ async function search(event: CustomEvent) {
   }
 }
 
-async function toggleMealStatus(meal: Meal) {
-  const originalStatus = meal.active;
-  meal.active = !meal.active;
+async function toggleMealStatus(recipe: Recipe) {
+  const originalStatus = recipe.active;
+  recipe.active = !recipe.active;
 
   try {
-    await api.post(`/recipes/${meal.id}/toggle-status`);
+    await api.post(`/recipes/${recipe.id}/toggle-status`);
     refreshData();
   } catch (error) {
     console.error("Error toggling meal status:", error);
-    meal.active = originalStatus;
+    recipe.active = originalStatus;
   }
 }
 

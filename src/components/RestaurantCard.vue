@@ -105,7 +105,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
-import type { Restaurant } from '@/types/restaurant';
+import type { PhotoReference, Restaurant } from '@/types/restaurant';
 import type { Swiper } from 'swiper';
 import { Swiper as VueSwiper, SwiperSlide as VueSwiperSlide } from 'swiper/vue';
 import { chevronBack, chevronForward } from 'ionicons/icons';
@@ -143,7 +143,7 @@ const emit = defineEmits<{
 const visiblePhotos = computed(() => {
   if (!props.restaurantData) return [];
 
-  const results = [];
+  const results: PhotoReference[] = [];
   
   try {
     // First add the primary photo if available
@@ -165,12 +165,12 @@ const visiblePhotos = computed(() => {
     // Then add photos from the photos array
     if (props.restaurantData.photos && Array.isArray(props.restaurantData.photos)) {
       props.restaurantData.photos.forEach(photo => {
-        const photoRef = photo.reference || photo.photo_reference;
+        const photoRef = photo.reference || photo.reference;
         
         // Only add valid photo references and avoid duplicates
         if (photoRef && typeof photoRef === 'string' && photoRef.length > 10 && photoRef.length < 400) {
           // Check if it's not a duplicate of an already added photo
-          const isDuplicate = results.some(p => (p.reference || p.photo_reference) === photoRef);
+          const isDuplicate = results.some(p => (p.reference || p.reference) === photoRef);
           
           if (!isDuplicate && results.length < MAX_PHOTOS) {
             results.push({
@@ -188,11 +188,11 @@ const visiblePhotos = computed(() => {
       const cachedPhotos = restaurantStore.photoCache[props.restaurantData.place_id];
       
       cachedPhotos.forEach(photo => {
-        const photoRef = photo.reference || photo.photo_reference;
+        const photoRef = photo.reference || photo.reference;
         
         if (photoRef && typeof photoRef === 'string' && photoRef.length > 10 && photoRef.length < 400) {
           // Check for duplicates
-          const isDuplicate = results.some(p => (p.reference || p.photo_reference) === photoRef);
+          const isDuplicate = results.some(p => (p.reference || p.reference) === photoRef);
           
           if (!isDuplicate && results.length < MAX_PHOTOS) {
             results.push({
@@ -285,7 +285,7 @@ function getPhotoUrl(photo: any): string {
   
   // Mark as failed in cache
   if (visiblePhotos.value[index]) {
-    const photoRef = visiblePhotos.value[index].photo_reference;
+    const photoRef = visiblePhotos.value[index].reference;
     imageCache.value.set(photoRef, 'error');
   }
   
@@ -376,7 +376,7 @@ const updateRestaurantPhotos = (photos: any[]) => {
       const photoRef = photo.reference || photo.photo_reference;
       
       return {
-        reference: photoRef, // Use 'reference' for consistency
+        reference: photoRef,
         width: photo.width || 450,
         height: photo.height || 350
       };
@@ -387,7 +387,7 @@ const updateRestaurantPhotos = (photos: any[]) => {
   // Add the new photos to the restaurant
   if (newPhotos.length > 0) {
     // Ensure we're not adding duplicates
-    const existingRefs = props.restaurantData.photos.map(p => p.reference);
+    const existingRefs = props.restaurantData.photos?.map(p => p.reference) || [];
     const uniqueNewPhotos = newPhotos.filter(p => !existingRefs.includes(p.reference));
     
     // Add the unique new photos

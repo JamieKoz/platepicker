@@ -1,7 +1,7 @@
 // types/restaurant.ts
 
 export interface PhotoReference {
-  photo_reference: string;
+  reference: string;
   height?: number;
   width?: number;
   html_attributions?: string[];

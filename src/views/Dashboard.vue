@@ -35,28 +35,32 @@
           <div v-if="loadingTopMeal" class="flex justify-center">
             <ion-spinner></ion-spinner>
           </div>
-          <div v-else-if="topMeals.length > 0" class="space-y-4">
-            <ion-card v-for="(topMeal, index) in topMeals" :key="topMeal.meal.id" class="overflow-hidden">
-              <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
-                :alt="topMeal.meal.title" class="w-full h-48 object-cover">
-              <ion-card-content>
-                <div class="flex justify-between items-center mb-2">
-                  <h3 class="text-lg text-white font-semibold">{{ topMeal.meal.title }}</h3>
-                  <div class="text-sm text-gray-400">
-                    {{ topMeal.total_tally }} picks
-                  </div>
-                </div>
-                <p class="text-sm text-gray-400" :class="{ 'line-clamp-2': !expandedMeals[topMeal.meal.id] }">
-                  {{ topMeal.meal.instructions }}
-                </p>
-                <button @click="toggleExpand(topMeal.meal.id)" class="text-sm text-blue-500 hover:text-blue-600 mt-1">
-                  {{ expandedMeals[topMeal.meal.id] ? 'Show less' : 'Show more' }}
-                </button>
-              </ion-card-content>
-            </ion-card>
-          </div>
-          <div v-else class="text-center text-gray-400">
+
+          <div v-else-if="!topMeals || topMeals.length === 0" class="text-center text-gray-400">
             No top meals data available
+          </div>
+
+          <div v-else class="space-y-4">
+            <div v-for="(topMeal, index) in topMeals" :key="index">
+              <ion-card v-if="isMealValid(topMeal)" class="overflow-hidden">
+                <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
+                  :alt="topMeal.meal.title" class="w-full h-48 object-cover">
+                <ion-card-content>
+                  <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg text-white font-semibold">{{ topMeal.meal.title }}</h3>
+                    <div class="text-sm text-gray-400">
+                      {{ topMeal.total_tally }} picks
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-400" :class="{ 'line-clamp-2': !expandedMeals[topMeal.meal.id] }">
+                    {{ topMeal.meal.instructions }}
+                  </p>
+                  <button @click="toggleExpand(topMeal.meal.id)" class="text-sm text-blue-500 hover:text-blue-600 mt-1">
+                    {{ expandedMeals[topMeal.meal.id] ? 'Show less' : 'Show more' }}
+                  </button>
+                </ion-card-content>
+              </ion-card>
+            </div>
           </div>
         </div>
 
@@ -96,6 +100,7 @@ import {
   listOutline,
   thumbsUpOutline,
 } from 'ionicons/icons';
+import { computed } from 'vue';
 
 interface TopMeal {
   total_tally: number;
@@ -112,14 +117,30 @@ const loadingTopMeal = ref(true);
 const topMeals = ref<TopMeal[]>([]);
 const expandedMeals = reactive<Record<number, boolean>>({});
 
+function isMealValid(topMeal: TopMeal) {
+  return topMeal && 
+         topMeal.meal && 
+         topMeal.meal.id && 
+         topMeal.meal.title && 
+         topMeal.meal.image_name;
+}
 const fetchTopMeal = async () => {
-
   try {
     loadingTopMeal.value = true;
     const response = await api.get('/user-meals/top-meals');
-    topMeals.value = response.data;
+    
+    // Ensure we have an array (even if empty)
+    topMeals.value = Array.isArray(response.data) ? response.data : [];
+    
+    console.log(`Fetched ${topMeals.value.length} meals`);
+    
+    // Log how many valid meals we have
+    const validCount = topMeals.value.filter(meal => isMealValid(meal)).length;
+    console.log(`${validCount} valid meals found`);
+    
   } catch (error) {
     console.error('Error fetching top meals:', error);
+    topMeals.value = []; // Reset to empty array on error
   } finally {
     loadingTopMeal.value = false;
   }

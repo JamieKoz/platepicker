@@ -87,7 +87,8 @@ const resetForm = () => {
   feedback.value = {
     type: 'suggestion',
     message: '',
-    email: ''
+    email: '', 
+    rating: 0 
   }
   submitStatus.value = null
 }
