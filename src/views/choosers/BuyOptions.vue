@@ -2,9 +2,9 @@
   <ion-page class="mt-12">
     <ion-content :fullscreen="true">
       <Back-Arrow />
-      <OptionSelector option1Title="Dine In" option2Title="Takeaway" option1Icon="utensils" option2Icon="takeaway"
-        @option1Click="() => handleBuy('Dine In')" @option2Click="() => handleBuy('Takeaway')" />
-      <OptionSelector option1Title="Delivery" option2Title="Drive Thru" option1Icon="car" option2Icon="driveThru"
+      <OptionSelector option1Title="Dine In" option2Title="Delivery" option1Icon="utensils" option2Icon="car"
+        @option1Click="() => handleBuy('Dine In')" @option2Click="() => handleBuy('Delivery')" />
+      <OptionSelector option1Title="Takeaway" option2Title="Drive Thru" option1Icon="takeaway" option2Icon="driveThru"
         @option1Click="() => handleBuy('Delivery')" @option2Click="() => handleBuy('Drive Thru')" />
     </ion-content>
   </ion-page>
