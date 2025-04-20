@@ -8,7 +8,19 @@
         <h1 class="text-xl font-semibold ml-2">Filter Meals</h1>
       </div>
 
-      <div class="p-2">
+      <div v-if="isLoading" class="p-4 flex justify-center">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p class="ml-2 text-gray-400">Loading filter options...</p>
+      </div>
+
+      <div v-else-if="hasLoadError" class="p-4 text-center">
+        <p class="text-red-500 mb-2">Couldn't load filter options</p>
+        <ion-button @click="loadFilterData" fill="outline" size="small">
+          Try Again
+        </ion-button>
+      </div>
+
+      <div v-else class="p-2">
         <div class="flex justify-between">
           <span class="text-xs pt-2">Note: Deselect all if you want all options</span>
           <div class="">
@@ -17,39 +29,49 @@
             </ion-button>
           </div>
         </div>
+        
         <!-- Categories -->
         <div class="mb-6">
           <ion-label class="text-lg font-medium mb-2 block">Categories</ion-label>
-          <div class="flex flex-wrap gap-2">
-            <ion-chip v-for="category in categoryStore.categories" :key="category.id"
+          <div v-if="categories.length > 0" class="flex flex-wrap gap-2">
+            <ion-chip v-for="category in categories" :key="category.id"
               :class="['m-0 h-8 text-white', selectedCategories.includes(category.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
               @click="toggleCategory(category.id)">
               {{ category.name }}
             </ion-chip>
+          </div>
+          <div v-else class="text-sm text-gray-400 p-2">
+            No categories available
           </div>
         </div>
 
         <!-- Cuisines -->
         <div class="mb-6">
           <ion-label class="text-lg font-medium mb-2 block">Cuisines</ion-label>
-          <div class="flex flex-wrap gap-2">
-            <ion-chip v-for="cuisine in cuisineStore.cuisine" :key="cuisine.id"
+          <div v-if="cuisines.length > 0" class="flex flex-wrap gap-2">
+            <ion-chip v-for="cuisine in cuisines" :key="cuisine.id"
               :class="['m-0 h-8 text-white', selectedCuisines.includes(cuisine.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
               @click="toggleCuisine(cuisine.id)">
               {{ cuisine.name }}
             </ion-chip>
+          </div>
+          <div v-else class="text-sm text-gray-400 p-2">
+            No cuisines available
           </div>
         </div>
 
         <!-- Dietary Requirements -->
         <div class="mb-6">
           <ion-label class="text-lg font-medium mb-2 block">Dietary Requirements</ion-label>
-          <div class="flex flex-wrap gap-2">
-            <ion-chip v-for="dietary in dietaryStore.dietary" :key="dietary.id"
-              :class="['m-0 h-8 text-white', selectedDietary.includes(dietary.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
-              @click="toggleDietary(dietary.id)">
-              {{ dietary.name }}
+          <div v-if="dietary.length > 0" class="flex flex-wrap gap-2">
+            <ion-chip v-for="diet in dietary" :key="diet.id"
+              :class="['m-0 h-8 text-white', selectedDietary.includes(diet.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
+              @click="toggleDietary(diet.id)">
+              {{ diet.name }}
             </ion-chip>
+          </div>
+          <div v-else class="text-sm text-gray-400 p-2">
+            No dietary requirements available
           </div>
         </div>
 
@@ -82,25 +104,46 @@ import {
   IonContent, 
   IonButton, 
   IonLabel,
-  IonRange
+  IonRange,
+  IonSpinner
 } from '@ionic/vue';
 import { useRouter } from 'vue-router';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import BackArrow from '@/components/navigation/BackArrow.vue';
 import { useCategoryStore } from '@/store/useCategoryStore';
 import { useDietaryStore } from '@/store/useDietaryStore';
 import { useCuisineStore } from '@/store/useCuisineStore';
+import type { Category } from '@/types/category';
+import type { Cuisine } from '@/types/cuisine';
+import type { Dietary } from '@/types/dietary';
 
 const router = useRouter();
 const categoryStore = useCategoryStore();
 const cuisineStore = useCuisineStore();
 const dietaryStore = useDietaryStore();
 
+// Loading and error states
+const isLoading = ref(false);
+const hasLoadError = ref(false);
+
 // Selected filters
 const selectedCategories = ref<number[]>([]);
 const selectedCuisines = ref<number[]>([]);
 const selectedDietary = ref<number[]>([]);
 const cookingTime = ref(0);
+
+// Safe access to store data with computed properties
+const categories = computed<Category[]>(() => {
+  return Array.isArray(categoryStore.categories) ? categoryStore.categories : [];
+});
+
+const cuisines = computed<Cuisine[]>(() => {
+  return Array.isArray(cuisineStore.cuisine) ? cuisineStore.cuisine : [];
+});
+
+const dietary = computed<Dietary[]>(() => {
+  return Array.isArray(dietaryStore.dietary) ? dietaryStore.dietary : [];
+});
 
 // Toggle selection for categories
 const toggleCategory = (id: number) => {
@@ -175,8 +218,11 @@ const applyFilters = () => {
   });
 };
 
-// Load data on component mount
-onMounted(async () => {
+// Function to load all filter data
+const loadFilterData = async () => {
+  isLoading.value = true;
+  hasLoadError.value = false;
+  
   try {
     // Fetch filter options using stores
     await Promise.all([
@@ -185,7 +231,25 @@ onMounted(async () => {
       dietaryStore.fetchDietary()
     ]);
     
+    // Check if the data was loaded successfully
+    if (!categories.value.length && !cuisines.value.length && !dietary.value.length) {
+      console.warn("All filter data is empty - this might indicate an issue with the API");
+    }
+    
     // Load saved filters from localStorage if available
+    loadSavedFilters();
+    
+  } catch (error) {
+    console.error("Error fetching reference data:", error);
+    hasLoadError.value = true;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Function to load saved filters
+const loadSavedFilters = () => {
+  try {
     const savedFilters = localStorage.getItem('mealFilters');
     if (savedFilters) {
       const filters = JSON.parse(savedFilters);
@@ -195,8 +259,15 @@ onMounted(async () => {
       cookingTime.value = filters.cooking_time || 0;
     }
   } catch (error) {
-    console.error("Error fetching reference data:", error);
+    console.error("Error loading saved filters:", error);
+    // If there's an error loading saved filters, just reset them
+    resetFilters();
   }
+};
+
+// Load data on component mount
+onMounted(() => {
+  loadFilterData();
 });
 </script>
 

@@ -138,11 +138,20 @@ const router = useRouter()
 const { user } = useUser();
 
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
+  // Validate the chosen restaurant has a place_id
+  if (!chosenRestaurant || !chosenRestaurant.place_id) {
+    console.error("Invalid restaurant selected", chosenRestaurant);
+    return;
+  }
+
+  // Safely check restaurantCounter to avoid n.value is undefined
+  const remainingRestaurants = restaurantStore.restaurantCounter || 0;
+
   // If we're down to the last comparison, this is the winner
-  if (restaurantStore.restaurantCounter === 0) {
+  if (remainingRestaurants === 0) {
     // Set the winner first
     winner.value = chosenRestaurant;
-    
+
     // Then fetch additional photos if needed - this happens after the UI updates
     if (winner.value && winner.value.place_id) {
       try {
@@ -158,14 +167,17 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
         console.error("Error initiating photo load:", error);
       }
     }
-    
+
     // Clear other restaurants
     restaurant1.value = null;
     restaurant2.value = null;
     return;
   }
 
-  const isRestaurant1Clicked = chosenRestaurant.place_id === restaurant1.value?.place_id;
+  const isRestaurant1Clicked =
+    restaurant1.value &&
+    chosenRestaurant.place_id === restaurant1.value.place_id;
+
   const restaurantToAnimate = isRestaurant1Clicked ? animateRestaurant2 : animateRestaurant1;
   const newRestaurantAnimation = isRestaurant1Clicked ? newRestaurantAnimation2 : newRestaurantAnimation1;
   const restaurantToReplace = isRestaurant1Clicked ? restaurant2 : restaurant1;
@@ -182,7 +194,6 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
   try {
     // Wait for animation to complete
     await animationPromise;
-    
     // Get next restaurant
     const nextRestaurant = restaurantStore.getNewRestaurant();
     if (!nextRestaurant) {
@@ -192,11 +203,11 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
 
     // Reset animation flag for exiting restaurant
     restaurantToAnimate.value = false;
-    
+
     // Set the new restaurant on next tick to ensure clean DOM update
     await nextTick();
     restaurantToReplace.value = nextRestaurant;
-    
+
     // Wait for next render before starting slide-in animation
     await nextTick();
     newRestaurantAnimation.value = true;
@@ -211,7 +222,6 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
     loadError.value = true;
   }
 };
-
 
 const handleShare = async () => {
   if (!winner.value) return;
@@ -493,11 +503,26 @@ const getUserLocation = async () => {
 
     // Get user location with timeout (built into the geolocation API)
     const position = await getGeolocationWithTimeout();
+    
+    if (!position || !position.coords) {
+      throw new Error('Invalid geolocation response');
+    }
+    
     const { latitude, longitude } = position.coords;
+    
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+      throw new Error('Invalid coordinates received from geolocation');
+    }
+    
     lastCoords.value = { latitude, longitude };
 
     // Store already handles timeouts
     await restaurantStore.fetchRestaurantsByLocation(latitude, longitude);
+    
+    // Check if we actually got restaurants back
+    if (!restaurantStore.restaurants || restaurantStore.restaurants.length < 2) {
+      throw new Error('Not enough restaurants found in this area');
+    }
 
     const newRestaurant1 = restaurantStore.getNewRestaurant();
     const newRestaurant2 = restaurantStore.getNewRestaurant();
@@ -516,8 +541,22 @@ const getUserLocation = async () => {
     restaurant2.value = null;
     loadError.value = true;
 
+    let errorMessage = 'Unable to get your location. Please try again or enter manually.';
+    
+    if (error instanceof Error) {
+      if (error.name === 'GeolocationPositionError') {
+        if (error.message.includes('timed out')) {
+          errorMessage = 'Location request timed out. Please try again.';
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'Location permission denied. Please allow location access or enter address manually.';
+        }
+      } else if (error.message.includes('restaurants')) {
+        errorMessage = 'No restaurants found in this area. Please try a different location.';
+      }
+    }
+
     const toast = await toastController.create({
-      message: 'Unable to get your location. Please try again or enter manually.',
+      message: errorMessage,
       duration: 3000,
       position: 'bottom',
       color: 'danger'

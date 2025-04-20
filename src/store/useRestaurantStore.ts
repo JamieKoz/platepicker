@@ -34,12 +34,17 @@ export const useRestaurantStore = defineStore('restaurant', () => {
         },
         timeout: 15000
       });
-      
+
       if (!response.data) {
         throw new Error('No data received');
       }
-      
+
       // Randomize the restaurants
+      if(!response.data || !Array.isArray(response.data) || typeof response.data !== 'object'){
+          restaurants.value = [];
+          throw new Error('Unexpected data format received');
+      }
+
       restaurants.value = response.data.sort(() => Math.random() - 0.5);
     } catch (error) {
       console.error('Error fetching restaurants:', error);

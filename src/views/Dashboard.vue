@@ -129,12 +129,10 @@ const fetchTopMeal = async () => {
     loadingTopMeal.value = true;
     const response = await api.get('/user-meals/top-meals');
     
-    // Ensure we have an array (even if empty)
     topMeals.value = Array.isArray(response.data) ? response.data : [];
     
     console.log(`Fetched ${topMeals.value.length} meals`);
     
-    // Log how many valid meals we have
     const validCount = topMeals.value.filter(meal => isMealValid(meal)).length;
     console.log(`${validCount} valid meals found`);
     
