@@ -1,66 +1,69 @@
 <!-- FeedbackForm.vue -->
 <template>
-  <div class="w-full flex items-center justify-center">
-    <div class="p-4 rounded-md w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto modal-content">
-      <div class="flex justify-between items-center mb-4">
-        <h2>Share Your Feedback</h2>
-      </div>
+  <ion-page>
+    <ion-content>
+      <Back-Arrow />
 
-      <form @submit.prevent="submitFeedback" class="flex flex-col gap-3">
-        <div class="flex flex-col gap-2">
-          <label>Rating</label>
-          <div class="flex gap-2">
-            <button 
-              v-for="star in 5" 
-              :key="star"
-              type="button"
-              @click="feedback.rating = star"
-              class="star-button"
-              :class="{ 'active': star <= feedback.rating }"
-            >
-              ★
-            </button>
+      <div class="w-full flex items-center justify-center">
+        <div class="p-4 rounded-md w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto modal-content">
+          <div class="flex justify-between items-center mb-4">
+            <h2>Share Your Feedback</h2>
           </div>
-        </div>
 
-        <div class="flex flex-col gap-2">
-          <label for="feedbackType">Type of Feedback</label>
-          <select v-model="feedback.type" id="feedbackType" class="p-2 border-solid border-1 border-white rounded-lg" required>
-            <option value="suggestion">Suggestion</option>
-            <option value="bug">Bug Report</option>
-            <option value="compliment">Compliment</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
+          <form @submit.prevent="submitFeedback" class="flex flex-col gap-3">
+            <div class="flex flex-col gap-2">
+              <label>Rating</label>
+              <div class="flex gap-2">
+                <button v-for="star in 5" :key="star" type="button" @click="feedback.rating = star" class="star-button"
+                  :class="{ 'active': star <= feedback.rating }">
+                  ★
+                </button>
+              </div>
+            </div>
 
-        <div class="flex flex-col gap-2">
-          <label for="feedbackMessage">Your Feedback</label>
-          <textarea
-            v-model="feedback.message"
-            id="feedbackMessage"
-            rows="5"
-            required
-            placeholder="Tell us what you think..."
-            class="resize-y p-2 border-solid border-1 border-white rounded-lg"
-          ></textarea>
-        </div>
+            <div class="flex flex-col gap-2">
+              <label for="feedbackType">Type of Feedback</label>
+              <select v-model="feedback.type" id="feedbackType"
+                class="p-2 border-solid border-1 border-white rounded-lg" required>
+                <option value="suggestion">Suggestion</option>
+                <option value="bug">Bug Report</option>
+                <option value="compliment">Compliment</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
 
-        <div> 
-          <button type="submit" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Sending...' : 'Submit Feedback' }}
-          </button>
-        </div>
+            <div class="flex flex-col gap-2">
+              <label for="feedbackMessage">Your Feedback</label>
+              <textarea v-model="feedback.message" id="feedbackMessage" rows="12" required
+                placeholder="Tell us what you think..."
+                class="resize-y p-2 border-solid border-1 border-white rounded-lg"></textarea>
+            </div>
 
-        <div v-if="submitStatus" :class="['status-message', submitStatus.type]">
-          {{ submitStatus.message }}
+            <div>
+              <button type="submit" :disabled="isSubmitting">
+                {{ isSubmitting ? 'Sending...' : 'Submit Feedback' }}
+              </button>
+            </div>
+
+            <div v-if="submitStatus" :class="['status-message', submitStatus.type]">
+              {{ submitStatus.message }}
+            </div>
+          </form>
         </div>
-      </form>
-    </div>
-  </div>
+      </div>
+    </ion-content>
+  </ion-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
+import { 
+  IonPage, 
+  IonContent, 
+} from '@ionic/vue';
+import BackArrow from '@/components/navigation/BackArrow.vue';
+import api from '@/api/axios';
 
 interface FeedbackData {
   type: 'suggestion' | 'bug' | 'compliment' | 'other';
@@ -98,18 +101,7 @@ const submitFeedback = async () => {
   submitStatus.value = null
 
   try {
-    // Replace with your actual API endpoint
-    const response = await fetch('/api/feedback', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(feedback.value)
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to submit feedback')
-    }
+    const response = await api.post('/feedback', feedback.value)
 
     submitStatus.value = {
       type: 'success',
@@ -121,6 +113,7 @@ const submitFeedback = async () => {
       resetForm()
     }, 2000)
   } catch (error) {
+    console.error('Error submitting feedback:', error)
     submitStatus.value = {
       type: 'error',
       message: 'Failed to submit feedback. Please try again.'
@@ -132,7 +125,6 @@ const submitFeedback = async () => {
 </script>
 
 <style scoped>
-
 button[type="submit"] {
   background-color: #4CAF50;
   padding: 0.75rem 1.5rem;

@@ -1,6 +1,7 @@
 <template>
   <ion-page class="mt-12">
     <ion-content :fullscreen="true">
+      <Back-Arrow />
       <div class="p-4">
         <h1 class="text-2xl font-bold mb-6">Your Top Meals</h1>
 
@@ -67,6 +68,7 @@ import {
 } from '@ionic/vue';
 import api from '@/api/axios';
 import type { Favourite } from '@/types/favourite';
+import BackArrow from '@/components/navigation/BackArrow.vue';
 
 const favourites = ref<Favourite[]>([]);
 const loading = ref(true);

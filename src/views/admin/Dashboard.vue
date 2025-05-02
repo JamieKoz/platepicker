@@ -7,6 +7,7 @@
     </ion-header>
     
     <ion-content>
+      <Back-Arrow />
       <div class="admin-menu p-4">
         <h1 class="text-xl font-bold mb-4">Admin Center</h1>
         
@@ -67,6 +68,8 @@ import {
   scale,
   leaf
 } from 'ionicons/icons';
+
+import BackArrow from '@/components/navigation/BackArrow.vue';
 
 const router = useRouter();
 

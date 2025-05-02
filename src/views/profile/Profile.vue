@@ -2,21 +2,18 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button @click="router.go(-1)">
-            <ion-icon :icon="arrowBack" />
-          </ion-button>
-        </ion-buttons>
         <ion-title>Edit Profile</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding">
+
       <div class="max-w-md mx-auto">
         <form @submit.prevent="updateProfile" class="space-y-4">
           <!-- Profile Section -->
           <div class="mb-6">
-            <h2 class="font-bold text-lg opacity-60 font-medium mb-4">Profile Details</h2>
+            <Back-Arrow />
+            <h2 class="font-bold text-lg opacity-60 font-medium my-4 ml-4">Profile Details</h2>
 
             <ion-item>
               <ion-label position="stacked" class="font-bold opacity-40">Username</ion-label>
@@ -40,7 +37,7 @@
 
           <!-- Password Section -->
           <div class="mb-6">
-            <h2 class="text-lg font-medium opacity-60 mb-4 font-bold">Change Password</h2>
+            <h2 class="text-lg font-medium opacity-60 mb-4 font-bold ml-4">Change Password</h2>
             <ion-item>
               <ion-label position="stacked" class="font-bold opacity-40">Current Password</ion-label>
               <ion-input v-model="passwordData.currentPassword" type="password" :clear-input="true" />
@@ -88,9 +85,8 @@ import {
   IonLoading,
   toastController
 } from '@ionic/vue';
-import { arrowBack } from 'ionicons/icons';
+import BackArrow from '@/components/navigation/BackArrow.vue';
 import { capitalizeFirstLetter } from '@/utils/string-utils';
-const router = useRouter();
 const { user } = useUser();
 const isLoading = ref(false);
 const passwordError = ref('');

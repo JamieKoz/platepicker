@@ -184,14 +184,14 @@ async function trackMealSelection(meal: Meal) {
 }
 
 const handleMealSelected = async (clickedMeal: Meal) => {
+  await trackMealSelection(clickedMeal);
+
   if (mealStore.mealCounter === 0) {
     winner.value = clickedMeal;
     meal1.value = null;
     meal2.value = null;
     return;
   }
-
-  await trackMealSelection(clickedMeal);
 
   // Determine which meal was clicked and which needs to be replaced
   const isMeal1Clicked = clickedMeal.id === meal1.value?.id;
