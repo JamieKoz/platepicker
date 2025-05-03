@@ -237,7 +237,7 @@ const formatDate = (dateString, includeTime = false) => {
 };
 
 const openFeedbackDetail = (item) => {
-  selectedFeedback.value = JSON.parse(JSON.stringify(item)); // Create a deep copy
+  selectedFeedback.value = JSON.parse(JSON.stringify(item));
   showModal.value = true;
 };
 
