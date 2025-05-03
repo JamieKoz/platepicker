@@ -78,6 +78,11 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'feedback-management',
+        component: () => import('@/views/admin/FeedbackManagement.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'recipes-list',
         component: () => import('@/views/admin/RecipeList.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }

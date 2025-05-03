@@ -41,6 +41,13 @@
             <ion-icon :icon="leaf" slot="start" color="primary"></ion-icon>
             <ion-label>Manage Ingredients</ion-label>
           </ion-item>
+
+
+          <ion-item button detail @click="navigateTo('/feedback-management')">
+            <ion-icon :icon="ticket" slot="start" color="primary"></ion-icon>
+            <ion-label>Manage Feedback</ion-label>
+          </ion-item>
+
         </ion-list>
       </div>
     </ion-content>
@@ -66,7 +73,8 @@ import {
   globe,
   nutrition,
   scale,
-  leaf
+  leaf,
+  ticket
 } from 'ionicons/icons';
 
 import BackArrow from '@/components/navigation/BackArrow.vue';
