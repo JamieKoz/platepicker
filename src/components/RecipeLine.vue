@@ -26,6 +26,7 @@
               :value="line.quantity !== null ? line.quantity : ''" 
               @input="updateQuantity(index, $event)" 
               type="number" 
+              step="any"
               placeholder="Qty"></ion-input>
           </ion-item>
         </div>

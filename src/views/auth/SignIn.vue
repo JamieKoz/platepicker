@@ -11,7 +11,7 @@
         <SignIn 
             routing="path" 
             path="/sign-in"
-            :redirect-url="redirectUrl"
+            :fallback-redirect-url="fallbackRedirectUrl"
             :after-sign-in-url="afterSignInUrl"
           :appearance="{
             elements: {
@@ -26,13 +26,13 @@
             }
           }"
         />
-          <div class="mt-4 text-center">
+          <!--<div class="mt-4 text-center">
             <p>Don't have an account? 
               <ion-button fill="clear" @click="router.push('/sign-up')">
                 Sign up
               </ion-button>
             </p>
-          </div>
+</div>-->
       </div>
     </ion-content>
   </ion-page>
@@ -51,6 +51,6 @@ import {
 } from '@ionic/vue';
 
 const router = useRouter();
-const redirectUrl = "/";
+const fallbackRedirectUrl = "/";
 const afterSignInUrl = "/home";
 </script>

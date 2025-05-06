@@ -12,9 +12,6 @@
           <SignUp 
             routing="path" 
             path="/sign-up"
-            :redirect-url="redirectUrl"
-            :after-sign-up-url="afterSignUpUrl"
-            @sign-up-attempt="handleSignUpAttempt"
             :appearance="{
               elements: {
                 rootBox: 'w-full max-w-md',
@@ -28,13 +25,6 @@
               }
             }"
           />
-          <div class="mt-4 text-center">
-            <p>Already have an account? 
-              <ion-button fill="clear" @click="router.push('/sign-in')">
-                Sign in
-              </ion-button>
-            </p>
-          </div>
         </div>
       </div>
     </ion-content>
@@ -43,30 +33,5 @@
 
 <script setup lang="ts">
 import { SignUp } from '@clerk/vue';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonButton } from '@ionic/vue';
-import { useRouter } from 'vue-router';
-import { onMounted } from 'vue';
-import { useUserStore } from '@/store/useUserStore';
-
-const router = useRouter();
-const userStore = useUserStore();
-const redirectUrl = "/";
-const afterSignUpUrl = "/home";
-
-// This function will be triggered when a user attempts to sign up
-const handleSignUpAttempt = async () => {
-  console.log('User is attempting to sign up');
-};
-
-// Initialize user and handle registration
-onMounted(async () => {
-  // Initialize user data from Clerk
-  const { isNewUser } = await userStore.initializeUser();
-  
-  // If this is a new user registration, the assignInitialRecipes will 
-  // be automatically called in the initializeUser method
-  if (isNewUser) {
-    console.log('New user registration detected');
-  }
-});
+import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle } from '@ionic/vue';
 </script>

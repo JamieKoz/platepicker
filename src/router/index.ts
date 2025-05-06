@@ -33,6 +33,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/auth/SignUp.vue'),
         meta: { requiresAuth: false }
       },
+      {
+        path: '/sign-up/verify-email-address',
+        name: 'VerifyEmail',
+        component: () => import('@/views/auth/VerifyEmail.vue')
+      },
       // src/router/index.ts
       {
         path: '/home',

@@ -64,6 +64,8 @@
           </div>
         </div>
 
+        
+        <div v-if="user">
         <h2 class="text-xl font-semibold mb-4">We'd love your feedback!</h2>
         <ion-card class="min-height-[120px] border-solid border-1 border-green-500" @click="navigateTo('/feedback')">
           <ion-card-content class="flex flex-col items-center justify-center p-4">
@@ -71,6 +73,7 @@
             <h2 class="text-lg font-semibold text-green-500">Leave a review</h2>
           </ion-card-content>
         </ion-card>
+          </div>
 
         <div class="mb-8">
           <h2 class="text-xl font-semibold mb-4">Explore Meals</h2>
