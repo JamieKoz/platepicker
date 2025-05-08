@@ -19,8 +19,7 @@
 
             <form @submit.prevent="handleVerify">
               <ion-item>
-                <ion-label position="floating">Verification Code</ion-label>
-                <ion-input v-model="code" type="text"></ion-input>
+                <ion-input v-model="code" type="text" placeholder="Verification Code"></ion-input>
               </ion-item>
               <ion-button class="w-full mt-4" type="submit">Verify Email</ion-button>
             </form>
