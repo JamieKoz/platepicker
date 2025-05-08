@@ -1,9 +1,7 @@
 // stores/userStore.ts
 import { defineStore } from 'pinia'
-import { useUser } from '@clerk/vue'
-import { watch } from 'vue'
 import api from '@/api/axios'
-
+import type { UserResource } from '@clerk/types'
 // Define the organization member interface
 interface OrgMember {
   id: string;
@@ -41,38 +39,27 @@ export const useUserStore = defineStore('user', {
   }),
   
   actions: {
-    async initializeUser() {
-      const { user, isLoaded } = useUser();
-      
-      // If Clerk hasn't loaded yet, wait for it
-      if (!isLoaded.value) {
-        await new Promise<void>((resolve) => {
-          const unwatch = watch(isLoaded, (loaded) => {
-            if (loaded) {
-              unwatch();
-              resolve();
-            }
-          });
-        });
-      }
-      
+    // Modified to accept clerk user data directly
+    async initializeUser(clerkUser: UserResource | null = null) {
       let isNewUserRegistration = false;
       
-      if (user.value) {
+      if (clerkUser) {
         // Get previous stored user data if any
         const previousData = localStorage.getItem('clerkUserData');
         
         // Set user data from Clerk
         this.userData = {
-          id: user.value.id,
-          name: user.value.firstName || user.value.username || user.value.emailAddresses?.[0]?.emailAddress?.split('@')[0] || '',
-          email: user.value.emailAddresses?.[0]?.emailAddress,
-          imageUrl: user.value.imageUrl,
+          id: clerkUser.id,
+          name: clerkUser.firstName || clerkUser.username || 
+                (clerkUser.emailAddresses && clerkUser.emailAddresses.length > 0 ? 
+                clerkUser.emailAddresses[0].emailAddress.split('@')[0] : ''),
+          email: clerkUser.emailAddresses && clerkUser.emailAddresses.length > 0 ? 
+                clerkUser.emailAddresses[0].emailAddress : undefined,
+          imageUrl: clerkUser.imageUrl,
           initialRecipesAssigned: false
         }
         
-        // Check if this is a new user (no previous data with this ID)
-        if (!previousData || !previousData.includes(user.value.id)) {
+        if (!previousData || !previousData.includes(clerkUser.id)) {
           isNewUserRegistration = true;
           this.isNewUser = true;
         } else {
@@ -91,8 +78,8 @@ export const useUserStore = defineStore('user', {
         // Check admin status and organization info
         this.isAdmin = false;
         
-        if (user.value.organizationMemberships && user.value.organizationMemberships.length > 0) {
-          const orgMembership = user.value.organizationMemberships[0];
+        if (clerkUser.organizationMemberships && clerkUser.organizationMemberships.length > 0) {
+          const orgMembership = clerkUser.organizationMemberships[0];
           this.isAdmin = orgMembership.role === "org:admin";
           
           // Add organization info to userData
@@ -112,7 +99,7 @@ export const useUserStore = defineStore('user', {
         
         // If this is a new user, assign initial recipes
         if (isNewUserRegistration && !this.userData.initialRecipesAssigned) {
-          this.assignInitialRecipes();
+          // this.assignInitialRecipes();
         }
         
         return {

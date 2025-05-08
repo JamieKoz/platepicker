@@ -5,7 +5,7 @@
       <div class="p-4">
         <!-- Welcome Section -->
         <div class="mt-12">
-          <h1 class="text-2xl font-bold mb-2">Welcome{{user ? ' back, ' + user?.firstName : ''}}!</h1>
+          <h1 class="text-2xl font-bold mb-2">Welcome{{user ? ' back, ' + user?.username : ''}}!</h1>
         </div>
 
         <!-- Quick Actions -->

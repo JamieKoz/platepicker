@@ -2,37 +2,38 @@
   <ion-page class="mt-12">
     <ion-content :fullscreen="true">
       <Back-Arrow />
-      <OptionSelector option1Title="Dine In" option2Title="Delivery" option1Icon="utensils" option2Icon="car"
-        @option1Click="() => handleBuy('Dine In')" @option2Click="() => handleBuy('Delivery')" />
-      <OptionSelector option1Title="Takeaway" option2Title="Drive Thru" option1Icon="takeaway" option2Icon="driveThru"
-        @option1Click="() => handleBuy('Delivery')" @option2Click="() => handleBuy('Drive Thru')" />
+
+      <div class="grid grid-cols-2 gap-2 h-[calc(100%-4rem)] p-2 w-full">
+        <dining-option-card title="Dine In" icon="utensils" @click="handleBuy('Dine In')"  />
+
+        <dining-option-card title="Delivery" icon="car" @click="handleBuy('Delivery')"  />
+
+        <dining-option-card title="Takeaway" icon="takeaway" @click="handleBuy('Takeaway')" />
+        
+        <dining-option-card title="Drive Thru" icon="driveThru" @click="handleBuy('Drive Thru')" />
+      </div>
     </ion-content>
   </ion-page>
 </template>
+
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useRestaurantStore, type DiningOption } from '@/store/useRestaurantStore';
 import { IonPage, IonContent } from '@ionic/vue';
-import OptionSelector from '@/components/OptionSelector.vue';
 import { useRouter } from 'vue-router';
 import BackArrow from '@/components/navigation/BackArrow.vue';
+import DiningOptionCard from '@/components/DiningOptions.vue';
 
 const router = useRouter();
 const restaurantStore = useRestaurantStore();
 
 const handleBuy = (option: 'Dine In' | 'Takeaway' | 'Delivery' | 'Drive Thru') => {
-  // Map the clicked option to the corresponding DiningOption
   const diningOptionMap: Record<string, DiningOption> = {
     'Dine In': 'dine_in',
     'Takeaway': 'takeaway',
     'Delivery': 'delivery',
     'Drive Thru': 'drive_thru'
   };
-
-  // Set the dining option in the store
   restaurantStore.setDiningOption(diningOptionMap[option]);
-
-  // Navigate to the restaurant chooser
   router.push('/restaurant-chooser/dine-in');
 };
 </script>

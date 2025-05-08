@@ -37,6 +37,11 @@
               <ion-label>{{ capitalizeFirstLetter(user?.username || '') }}</ion-label>
             </ion-item>
 
+            <ion-item button @click="navigateTo('/admin-dashboard')" v-show="isUserAdmin">
+              <ion-icon :icon="list" slot="start"></ion-icon>
+              <ion-label>Admin</ion-label>
+            </ion-item>
+
             <ion-item button @click="navigateTo('/list')">
               <ion-icon :icon="list" slot="start"></ion-icon>
               <ion-label>Meal List</ion-label>
@@ -45,11 +50,6 @@
             <ion-item button @click="navigateTo('/favourites')">
               <ion-icon :icon="trophy" slot="start"></ion-icon>
               <ion-label>Favourites</ion-label>
-            </ion-item>
-
-            <ion-item button @click="navigateTo('/admin-dashboard')" v-show="isUserAdmin">
-              <ion-icon :icon="list" slot="start"></ion-icon>
-              <ion-label>Admin</ion-label>
             </ion-item>
 
             <ion-item button @click="doSignOut">
@@ -90,25 +90,19 @@ import { capitalizeFirstLetter } from '@/utils/string-utils';
 import { useUserStore } from '@/store/useUserStore'
 
 const router = useRouter();
-const { user } = useUser();
+const { user, isLoaded } = useUser();
 const { isSignedIn, signOut } = useAuth();
 const isUserMenuOpen = ref(false);
 const userStore = useUserStore();
-// watch(user, (newUser) => {
-//   if (newUser?.id) {
-//     const userData = {
-//       id: newUser.id,
-//       name: newUser.firstName || newUser.username || newUser.emailAddresses?.[0]?.emailAddress?.split('@')[0],
-//       email: newUser.emailAddresses?.[0]?.emailAddress,
-//       isAdmin: newUser.organizationMemberships[0].role == "org:admin" ? 1 : 0
-//     };
-//     localStorage.setItem('clerkUserId', newUser.id);
-//     localStorage.setItem('clerkUserData', JSON.stringify(userData));
-//   } else {
-//     localStorage.removeItem('clerkUserId');
-//     localStorage.removeItem('clerkUserData');
-//   }
-// });
+
+watch([() => user.value, () => isLoaded.value], async ([newUser, newIsLoaded]) => {
+  if (newIsLoaded && newUser) {
+    await userStore.initializeUser(newUser);
+    console.log('User store initialized with new user data');
+  } else if (newIsLoaded && !newUser) {
+    userStore.clearUser();
+  }
+}, { immediate: true });
 
 const isUserAdmin = computed(() => {
   if (!user.value) return false;
@@ -145,7 +139,9 @@ const doSignOut = () => {
   }
 };
 
-onMounted(() => {
-  userStore.initializeUser();
+onMounted(async () => {
+  if (isLoaded.value && user.value) {
+    await userStore.initializeUser(user.value);
+  }
 })
 </script>
