@@ -99,7 +99,8 @@ export const useUserStore = defineStore('user', {
         
         // If this is a new user, assign initial recipes
         if (isNewUserRegistration && !this.userData.initialRecipesAssigned) {
-          // this.assignInitialRecipes();
+          this.registerWithBackend();
+          this.assignInitialRecipes();
         }
         
         return {
@@ -178,7 +179,28 @@ export const useUserStore = defineStore('user', {
         localStorage.setItem(`orgData_${this.organizationData.id}`, JSON.stringify(this.organizationData));
       }
     },
-    
+
+
+    async registerWithBackend() {
+      if (!this.userData) return;
+
+      try {
+        const response = await api.post('/users/register-clerk-user', {
+          id: this.userData.id,
+          name: this.userData.name,
+          email: this.userData.email,
+          imageUrl: this.userData.imageUrl,
+          isAdmin: this.isAdmin 
+        });
+
+        console.log('User registered with backend:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Failed to register user with backend:', error);
+        throw error;
+      }
+    },
+
     clearUser() {
       this.userData = null;
       this.isAdmin = false;
@@ -186,7 +208,7 @@ export const useUserStore = defineStore('user', {
       this.organizationMembers = [];
     }
   },
-  
+
   getters: {
     isAuthenticated: (state) => !!state.userData,
     isUserAdmin: (state) => state.isAdmin,
