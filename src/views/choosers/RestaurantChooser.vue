@@ -114,6 +114,7 @@ import RestaurantCard from '@/components/RestaurantCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { useUser } from '@clerk/vue';
 import { useRouter } from 'vue-router';
+import { Capacitor } from '@capacitor/core';
 
 const restaurantStore = useRestaurantStore();
 const searchQuery = ref('');
@@ -136,7 +137,11 @@ const lastRetryAttempt = ref(0);
 const RETRY_COOLDOWN_MS = 5000;
 const router = useRouter()
 const { user } = useUser();
-
+interface GeolocationOptions {
+  enableHighAccuracy?: boolean;
+  timeout?: number;
+  maximumAge?: number;
+}
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
   // Validate the chosen restaurant has a place_id
   if (!chosenRestaurant || !chosenRestaurant.place_id) {
@@ -312,10 +317,13 @@ async function handleRetry() {
       restaurant1.value = null;
       restaurant2.value = null;
       
-      // Try geolocation again (timeout built in)
-      const position = await getGeolocationWithTimeout(10000);
-      const { latitude, longitude } = position.coords;
-      lastCoords.value = { latitude, longitude };
+   const position = await getGeolocation({
+      enableHighAccuracy: true,
+      timeout: 10000
+    });
+    
+    const { latitude, longitude } = position.coords;
+    lastCoords.value = { latitude, longitude };
       
       // Create a timeout promise for the restaurant fetch
       const timeoutPromise = new Promise((_, reject) => {
@@ -502,7 +510,10 @@ const getUserLocation = async () => {
     searchedValue.value = "Current Location";
 
     // Get user location with timeout (built into the geolocation API)
-    const position = await getGeolocationWithTimeout();
+ const position = await getGeolocation({
+      enableHighAccuracy: true,
+      timeout: 10000
+    });
     
     if (!position || !position.coords) {
       throw new Error('Invalid geolocation response');
@@ -592,6 +603,48 @@ const handleRefresh = async () => {
 
   winner.value = null;
   await handleRetry();
+};
+
+
+const getGeolocation = async (options: GeolocationOptions = {}): Promise<GeolocationPosition> => {
+  try {
+    // Try to use Capacitor Geolocation if we're on a native platform
+    if (Capacitor.isNativePlatform()) {
+      // Check if the Geolocation plugin is available in Capacitor.Plugins
+      if (Capacitor.Plugins && Capacitor.Plugins.Geolocation) {
+        console.log('Using Capacitor Plugins.Geolocation');
+        
+        // Try to check permissions first
+        try {
+          const permStatus = await Capacitor.Plugins.Geolocation.checkPermissions();
+          if (permStatus.location !== 'granted') {
+            const requested = await Capacitor.Plugins.Geolocation.requestPermissions();
+            if (requested.location !== 'granted') {
+              throw new Error('Location permission denied');
+            }
+          }
+        } catch (permError) {
+          console.warn('Error checking permissions:', permError);
+          // Continue anyway - some older plugin versions might not have checkPermissions
+        }
+        
+        // Get position using Capacitor plugin
+        return await Capacitor.Plugins.Geolocation.getCurrentPosition({
+          enableHighAccuracy: options.enableHighAccuracy || true,
+          timeout: options.timeout || 10000,
+          maximumAge: options.maximumAge || 0
+        });
+      }
+    }
+    
+    // Fall back to browser geolocation API
+    console.log('Using browser Geolocation API');
+    return await getGeolocationWithTimeout(options.timeout || 10000);
+  } catch (error) {
+    console.error('Error getting location, falling back to browser API:', error);
+    // Final fallback to browser API
+    return await getGeolocationWithTimeout(options.timeout || 10000);
+  }
 };
 </script>
 
