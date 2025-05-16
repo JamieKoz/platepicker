@@ -1,13 +1,14 @@
 # RestaurantCard.vue
 <template>
-  <div v-if="!restaurantData" class="w-[90vw] h-[40vh] flex items-center justify-center rounded-xl border-solid border-2 border-gray-500">
-    <ion-card :key="`skeleton-${uniqueComponentId}`" class="h-[95%] flex flex-col my-2 mx-2 bg-[#2a2a2a] rounded-xl overflow-hidden">
-      <div class="h-[40vh] w-[90vw] flex items-center justify-center">
+  <div v-if="!restaurantData"
+    class="relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col h-full">
+    <ion-card :key="`skeleton-${uniqueComponentId}`" class="h-full flex flex-col my-2 mx-2 bg-[#2a2a2a] rounded-xl overflow-hidden">
+      <div class="h-[65%] min-h-[65%] max-h-[65%] flex items-center justify-center">
         <div class="w-full h-full bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] bg-[length:1000px_100%] animate-shimmer-slow"></div>
       </div>
 
-      <div class="h-[30%] min-h-[30%] max-h-[30%]">
-        <div class="skeleton-text-container">
+      <div class="h-[35%] min-h-[35%] max-h-[35%]">
+        <div class="skeleton-text-container p-2">
           <div class="h-6 mx-auto bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] bg-[length:1000px_100%] animate-shimmer-medium rounded"></div>
           <div class="flex justify-between mt-4">
             <div class="h-4 w-2/5 bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] animate-shimmer-slow rounded"></div>
@@ -19,11 +20,14 @@
     </ion-card>
   </div>
 
-  <div v-else class="ion-activatable relative overflow-hidden border-solid border-2 border-yellow-500 rounded-xl flex flex-col w-[90vw] h-[40vh]" @click="handleCardClick">
+  <div v-else
+    class="relative overflow-hidden border-solid border-2 border-yellow-500 rounded-xl flex flex-col h-full"
+    @click="handleCardClick">
     <ion-card :key="`card-${uniqueComponentId}-${restaurantData.place_id}`" class="flex flex-col justify-between h-full my-2 mx-2">
-      <div class="flex flex-1 overflow-hidden ">
+      <ion-ripple-effect></ion-ripple-effect>
+      <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%]">
         <vue-swiper :key="`swiper-${swiperKey}-${uniqueComponentId}`" :modules="swiperModules" :pagination="{ clickable: true }" :slides-per-view="1"
-          :space-between="0" :preload-images="true" :lazy="true" @swiper="setSwiper">
+          :space-between="0" :preload-images="true" :lazy="true" @swiper="setSwiper" class="h-full w-full">
           <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs bg-gray-900 opacity-70">
             {{ currentSlideIndex !== undefined ? `${currentSlideIndex + 1}/${visiblePhotos.length}` : `${visiblePhotos.length}` }}
           </div>
@@ -80,22 +84,17 @@
                 <div class="absolute top-0 left-0 text-yellow-300 overflow-hidden whitespace-nowrap"
                    :style="{ width: `${calculateYellowWidth(restaurantData.rating || 0)}%` }">★★★★★</div>
               </div>
-              <!-- Remaining empty stars -->
-              <span class="text-gray-200">
-                {{ '★'.repeat(Math.max(0, 4 - Math.floor(restaurantData.rating || 0))) }}
-              </span>
               
               <span class="ml-1 text-xs">({{ restaurantData.user_ratings_total?.toLocaleString() || 0 }})</span>
             </span>
 
-            <span class=""></span>
-            <p v-if="restaurantData.price_level" class="">
+            <p v-if="restaurantData.price_level" class="text-right">
               <span class="text-yellow-300">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4))
                 }}</span>
               <span class="text-gray-200">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
             </p>
           </div>
-          <p class="mt-1 !text-[0.5rem]">{{ restaurantData.vicinity }}</p>
+          <p class="mt-1" style="font-size: 0.5rem;">{{ restaurantData.vicinity }}</p>
         </ion-card-content>
       </ion-card-title>
     </ion-card>
@@ -447,5 +446,35 @@ watch(() => props.restaurantData?.place_id, (newPlaceId) => {
 :deep(.swiper-button-prev), 
 :deep(.swiper-pagination) {
   display: none;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.photo-loading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
 }
 </style>

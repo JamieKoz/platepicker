@@ -1,100 +1,108 @@
 # RestaurantChooser.vue
 <template>
-  <ion-page>
-    <ion-header class="ion-no-border">
-      <div class="fixed top-[5%] left-0 right-0 z-[1000] bg-transparent">
-        <div class="relative">
+  <ion-page class="mt-10">
+    <ion-content>
+      <ion-header class="ion-no-border">
+        <div class="">
           <!-- Search Bar -->
           <ion-searchbar v-model="searchQuery" placeholder="Search address" @ionInput="handleSearchInput"
-            @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur" class="text-black rounded-xl address-searchbar">
+            @ionFocus="searchBarFocused = true" @ionBlur="handleSearchBlur"
+            class="text-black rounded-xl address-searchbar">
           </ion-searchbar>
-          
-          <div v-if="searchBarFocused || addressSuggestions.length > 0" class="absolute left-0 right-0 z-[1001]"> 
-            <ion-list class="mx-auto rounded-lg bg-[#1c1c1d] h-10 cursor-pointer w-[95%] shadow-md flex items-center gap-2" 
-                     @click="getUserLocation">
+
+          <div v-if="searchBarFocused || addressSuggestions.length > 0" class="absolute left-0 right-0 z-[1001]">
+            <ion-list
+              class="mx-auto rounded-lg bg-[#1c1c1d] h-10 cursor-pointer w-[95%] shadow-md flex items-center gap-2"
+              @click="getUserLocation">
               <ion-icon :icon="locationOutline" class="text-[20px]"></ion-icon>
               <span>Use current location</span>
             </ion-list>
-            
-            <ion-list v-if="addressSuggestions.length > 0" 
-                     class="absolute rounded-lg shadow-md max-h-[400px] overflow-y-auto top-[45px] left-0 right-0 bg-white">
+
+            <ion-list v-if="addressSuggestions.length > 0"
+              class="absolute rounded-lg shadow-md max-h-[400px] overflow-y-auto top-[45px] left-0 right-0 bg-white">
               <ion-item v-for="suggestion in addressSuggestions" :key="suggestion.place_id" button
                 @click="selectAddress(suggestion)">
                 <ion-label>{{ suggestion.description }}</ion-label>
               </ion-item>
             </ion-list>
           </div>
-          
-          <div class="flex items-center justify-center w-full px-4 mt-3">
-            <span class="text-white text-xl" v-show="searchedValue !== null">
+
+          <div class="flex items-center justify-center w-full px-4">
+            <span class="text-white text-lg" v-show="searchedValue !== null">
               {{ !winner ? restaurantStore.restaurantCounter : '' }}
             </span>
           </div>
         </div>
-      </div>
-    </ion-header>
+      </ion-header>
 
-    <ion-content v-if="hasLocation" class="main-content">
-      <ion-grid class="h-full">
+      <div v-if="hasLocation" class="ion-no-padding !overflow-hidden ">
+        <ion-grid class="h-full">
 
-        <RetryConnection v-if="loadError" message="Unable to load restaurants. Please check your connection."
-          @retry="handleRetry" />
+          <RetryConnection v-if="loadError" message="Unable to load restaurants. Please check your connection."
+            @retry="handleRetry" />
 
-        <template v-else>
-          <!-- Competition View -->
-          <template v-if="!winner">
-            <ion-row class="h-full flex justify-between items-center flex-col restaurant-row">
-              <ion-col class="flex justify-center items-center">
-                <!-- Show skeleton while loading first restaurant -->
-                <div :class="{'slide-out-right': animateRestaurant1, 'slide-in-left': newRestaurantAnimation1}"
-                  class="transform-none transition-transform duration-300 ease-out origin-center will-change-transform ">
-                  <RestaurantCard v-if="loading" key="loading-card-1" />
-                  <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice" :key="`restaurant-1-${restaurant1?.place_id || 'empty'}`"  />
+          <template v-else>
+            <!-- Competition View -->
+            <template v-if="!winner">
+              <ion-row class="competition-row mx-2">
+                <ion-col class="flex justify-center items-center h-full p-2">
+                  <!-- Show skeleton while loading first restaurant -->
+                    <div :class="{ 'slide-out-right': animateRestaurant1, 'slide-in-left': newRestaurantAnimation1 }"
+                    class="restaurant-container h-full w-full">
+                    <RestaurantCard v-if="loading" key="loading-card-1" />
+                    <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice"
+                      :key="`restaurant-1-${restaurant1?.place_id || 'empty'}`" />
+                  </div>
+
+                </ion-col>
+                <ion-col class="flex justify-center items-center h-full p-2">
+                  <!-- Show skeleton while loading second restaurant -->
+                  <div :class="{ 'slide-out-right': animateRestaurant2, 'slide-in-left': newRestaurantAnimation2 }"
+                    class="restaurant-container h-full w-full">
+                    <RestaurantCard v-if="loading" key="loading-card-2" />
+                    <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice"
+                      :key="`restaurant-2-${restaurant2?.place_id || 'empty'}`" />
+                  </div>
+                </ion-col>
+                <div class="my-2"></div>
+              </ion-row>
+            </template>
+
+            <!-- Winner View -->
+            <ion-row v-else class="h-full flex justify-center items-start">
+              <ion-col class="flex flex-col items-center mx-6">
+                <div class="w-full flex justify-between items-center mb-4">
+                  <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
                 </div>
-              </ion-col>
-              <ion-col class="flex justify-center items-center">
-                <!-- Show skeleton while loading second restaurant -->
-                <div :class="{ 'slide-out-right': animateRestaurant2, 'slide-in-left': newRestaurantAnimation2 }"
-                  class="transform-none transition-transform duration-300 ease-out origin-center will-change-transform ">
-                  <RestaurantCard v-if="loading" key="loading-card-2"/>
-                  <RestaurantCard v-else :restaurantData="restaurant2" @chooseRestaurant="handleRestaurantChoice" :key="`restaurant-2-${restaurant2?.place_id || 'empty'}`" />
+
+                <div>
+                  <RestaurantCard :restaurantData="winner" :key="`winner-${winner?.place_id || 'empty'}`" />
+                </div>
+                <div class="flex-1 flex justify-end">
+                  <ion-button fill="clear" @click="handleShare">
+                    <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
+                  </ion-button>
+
+                  <ion-button v-if="showRefreshButton" @click="handleRefresh" fill="clear">
+                    <ion-icon :icon="refresh" class="bg-gray-900 rounded-xl p-2 text-white" />
+                  </ion-button>
+                </div>
+                <div class="mt-4 mb-16">
+                  <div class="rounded-md mb-6 mx-6">
+                    <h3 class="text-xl font-semibold mb-4">Details</h3>
+                    <p><strong>Address:</strong> {{ winner.vicinity }}</p>
+                    <p><strong>Rating:</strong> {{ winner.rating }} ⭐️ ({{ winner.user_ratings_total }} reviews)</p>
+                    <p v-if="winner.opening_hours"><strong>Open now:</strong> {{ winner.opening_hours.open_now ? 'Yes' :
+                      'No' }}</p>
+                    <p v-if="winner.price_level"><strong>Price:</strong> {{ '$'.repeat(winner.price_level) }}</p>
+                  </div>
                 </div>
               </ion-col>
             </ion-row>
           </template>
+        </ion-grid>
 
-          <!-- Winner View -->
-          <ion-row v-else class="h-full flex justify-center items-start">
-            <ion-col class="flex flex-col items-center">
-              <div class="w-full flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold flex-1 text-center">Winner!</h2>
-              </div>
-
-              <RestaurantCard :restaurantData="winner" class="winner-card" :key="`winner-${winner?.place_id || 'empty'}`" />
-              <div class="flex-1 flex justify-end">
-                <ion-button fill="clear" @click="handleShare">
-                  <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
-                </ion-button>
-
-                <ion-button @click="handleRefresh" :disabled="!showRefreshButton"
-                  :class="{ 'opacity-0': !showRefreshButton }" fill="clear">
-                  <ion-icon :icon="refresh" class="bg-gray-900 rounded-xl p-2 text-white"/>
-                </ion-button>
-              </div>
-              <div class="mt-4 w-full p-2">
-                <div class="bg-white/10 rounded-lg p-4">
-                  <h3 class="text-xl font-semibold mb-4">Details</h3>
-                  <p><strong>Address:</strong> {{ winner.vicinity }}</p>
-                  <p><strong>Rating:</strong> {{ winner.rating }} ⭐️ ({{ winner.user_ratings_total }} reviews)</p>
-                  <p v-if="winner.opening_hours"><strong>Open now:</strong> {{ winner.opening_hours.open_now ? 'Yes' :
-                    'No' }}</p>
-                  <p v-if="winner.price_level"><strong>Price:</strong> {{ '$'.repeat(winner.price_level) }}</p>
-                </div>
-              </div>
-            </ion-col>
-          </ion-row>
-        </template>
-      </ion-grid>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -649,8 +657,10 @@ const getGeolocation = async (options: GeolocationOptions = {}): Promise<Geoloca
 </script>
 
 <style scoped>
-.restaurant-row {
-  height: calc(100vh - 160px);
+.competition-row {
+  height: calc(100vh - 110px);
+  display: flex;
+  flex-direction: column;
 }
 
 .address-searchbar {
@@ -664,8 +674,8 @@ const getGeolocation = async (options: GeolocationOptions = {}): Promise<Geoloca
   --border-color: transparent;
 }
 
-.main-content {
-  --padding-top: 35%;
+.restaurant-container {
+  transition: transform 0.3s ease-out;
 }
 
 .slide-out-right {
@@ -673,7 +683,7 @@ const getGeolocation = async (options: GeolocationOptions = {}): Promise<Geoloca
 }
 
 .slide-in-left {
-  animation: slideInFromLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: slideInFromLeft 0.3s forwards;
 }
 
 @keyframes slideInFromLeft {
@@ -682,6 +692,35 @@ const getGeolocation = async (options: GeolocationOptions = {}): Promise<Geoloca
   }
   100% {
     transform: translateX(0);
+  }
+}
+
+:global(.header-md::after) {
+  background-image: none;
+}
+
+:global(.custom-action-sheet .custom-button) {
+  --button-inner-justify-content: space-between !important;
+  --justify-content: space-between !important;
+}
+
+:global(.custom-action-sheet .action-sheet-button.custom-button .action-sheet-button-inner) {
+  justify-content: space-between !important;
+  width: 100%;
+  flex-direction: row-reverse !important;
+}
+
+:global(.custom-action-sheet .action-sheet-icon) {
+  margin: 0;
+}
+
+:global(ion-grid), :global(ion-row), :global(ion-col) {
+  padding: 0;
+}
+
+@media (min-height: 700px) {
+  .competition-row {
+    height: calc(100vh - 125px);
   }
 }
 </style>
