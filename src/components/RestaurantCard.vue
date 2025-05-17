@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
+import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon, IonRippleEffect } from '@ionic/vue';
 import type { PhotoReference, Restaurant } from '@/types/restaurant';
 import type { Swiper } from 'swiper';
 import { Swiper as VueSwiper, SwiperSlide as VueSwiperSlide } from 'swiper/vue';

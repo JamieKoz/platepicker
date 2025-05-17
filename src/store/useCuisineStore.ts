@@ -123,7 +123,7 @@ export const useCuisineStore = defineStore('cuisine', () => {
     try {
       if (!name.trim()) return false;
       
-      await api.put(`/cuisine/${id}`, { name: name.trim() });
+      await api.put(`/cuisines/${id}`, { name: name.trim() });
       await fetchCuisine(meta.value.current_page);
       return true;
     } catch (error) {

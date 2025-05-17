@@ -21,7 +21,8 @@
 
         <ion-item class="mt-4">
           <ion-label position="stacked">Instructions</ion-label>
-          <ion-textarea v-model="mealForm.instructions" class="min-h-[150px]" placeholder="Stir for 20 mins"></ion-textarea>
+          <ion-textarea v-model="mealForm.instructions" class="min-h-[150px]"
+            placeholder="Stir for 20 mins"></ion-textarea>
         </ion-item>
 
         <ion-item>
@@ -31,7 +32,8 @@
 
         <ion-item>
           <ion-label position="stacked">Cooking Time</ion-label>
-          <ion-input type="number" step="5" v-model="mealForm.cooking_time" placeholder="time in minutes eg. 30"></ion-input>
+          <ion-input type="number" step="5" v-model="mealForm.cooking_time"
+            placeholder="time in minutes eg. 30"></ion-input>
         </ion-item>
 
         <ion-item>
@@ -41,7 +43,7 @@
 
         <ion-item>
           <ion-label position="stacked">Categories</ion-label>
-            <ion-select :multiple="true" v-model="mealForm.category_ids">
+          <ion-select :multiple="true" v-model="mealForm.category_ids">
             <ion-select-option v-for="category in categoryStore.categories" :key="category.id" :value="category.id">
               {{ category.name }}
             </ion-select-option>
@@ -58,12 +60,16 @@
         </ion-item>
 
         <ion-item>
-          <ion-label position="stacked">Dietary Requirements</ion-label>
-          <ion-select :multiple="true" v-model="mealForm.dietary_ids"  placeholder="Select dietary requirements">
+          <ion-label position="stacked">Dietary Requirements (max 3)</ion-label>
+          <ion-select :multiple="true" v-model="mealForm.dietary_ids" placeholder="Select dietary requirements"
+            @ionChange="validateDietarySelection">
             <ion-select-option v-for="dietary in dietaryStore.dietary" :key="dietary.id" :value="dietary.id">
               {{ dietary.name }}
             </ion-select-option>
           </ion-select>
+          <div v-if="dietaryError" class="text-red-500 text-sm mt-1">
+            {{ dietaryError }}
+          </div>
         </ion-item>
 
         <ion-item>
@@ -100,8 +106,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import type { Recipe } from '@/types/recipe';
-import type { Category } from '@/types/category';
-import type { Cuisine } from '@/types/cuisine';
 import type { Dietary } from '@/types/dietary';
 import type { Measurement } from '@/types/measurement';
 import { Ingredient } from '@/types/ingredient';
@@ -145,6 +149,7 @@ const categoryStore = useCategoryStore();
 const cuisineStore = useCuisineStore();
 const dietaryStore = useDietaryStore();
 const measurementStore = useMeasurementStore();
+const dietaryError = ref('');
 
 const showDeleteConfirm = ref(false);
 
@@ -295,7 +300,23 @@ async function deleteMeal() {
   }
 }
 
+function validateDietarySelection() {
+  if (mealForm.value.dietary_ids.length > 3) {
+    dietaryError.value = 'You can only select up to 3 dietary requirements';
+    // Trim the selection to the first 3 items
+    mealForm.value.dietary_ids = mealForm.value.dietary_ids.slice(0, 3);
+  } else {
+    dietaryError.value = '';
+  }
+}
+
 async function saveMeal() {
+  if (mealForm.value.dietary_ids.length > 3) {
+    dietaryError.value = 'You can only select up to 3 dietary requirements.'
+    mealForm.value.dietary_ids = mealForm.value.dietary_ids.slice(0, 3);
+  } else {
+    dietaryError.value = '';
+  }
   try {
     const formData = new FormData();
     formData.append('title', mealForm.value.title);

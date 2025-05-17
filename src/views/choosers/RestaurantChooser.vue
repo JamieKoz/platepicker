@@ -64,7 +64,7 @@
                       :key="`restaurant-2-${restaurant2?.place_id || 'empty'}`" />
                   </div>
                 </ion-col>
-                <div class="my-2"></div>
+                <div class="my-4"></div>
               </ion-row>
             </template>
 
