@@ -33,6 +33,9 @@
       </ion-card-title>
     </ion-card>
   </div>
+  <div v-else class="relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col h-full justify-center items-center">
+    <p class="text-gray-400">No meal data available</p>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -43,7 +46,7 @@ import type { Recipe } from '@/types/recipe';
 import type { Dietary } from '@/types/dietary';
 
 defineProps<{
-  mealData: Meal | Recipe 
+  mealData: Meal | Recipe | null
 }>();
 
 const emit = defineEmits<{
@@ -57,7 +60,9 @@ const isMeal = (data: Meal | Recipe): data is Meal => {
   return 'mealSpecificProperty' in data;
 };
 
-const chooseMeal = (data: Meal | Recipe) => {
+const chooseMeal = (data: Meal | Recipe | null) => {
+ if (!data) return;
+
  if (isMeal(data)) {
     emit('replaceMeal', data);
   } else {

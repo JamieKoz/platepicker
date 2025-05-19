@@ -3,7 +3,7 @@
     <ion-header class="ion-no-border">
       <ion-toolbar class="mt-12 transparent-toolbar">
         <BackArrow />
-        <ion-title class="text-center text-xl">{{ meal?.title || 'Meal Details' }}</ion-title>
+        <ion-title class="text-center text-xl">{{ mealData?.title || 'Meal Details' }}</ion-title>
         <ion-buttons slot="end">
         </ion-buttons>
       </ion-toolbar>
@@ -20,12 +20,12 @@
         <ion-button @click="fetchMeal" class="mt-4">Try Again</ion-button>
       </div>
 
-      <ion-grid v-else-if="meal" class="h-full ion-no-padding">
+      <ion-grid v-else-if="mealData" class="h-full ion-no-padding">
         <ion-row class="h-full flex justify-center items-start mt-4">
           <ion-col class="flex flex-col items-center mx-6">
-            <!-- This div wraps the MealCard the same way as in MealChooser -->
+            <!-- This div wraps the MealCard -->
             <div class="meal-detail-wrapper">
-              <MealCard :mealData="meal" />
+              <MealCard :mealData="mealData" />
             </div>
             
             <div class="flex-1 flex justify-end">
@@ -36,21 +36,20 @@
             
             <div class="mt-4 mb-16">
               <div class="flex flex-wrap gap-2 mb-4">
-                <span v-for="category in meal.categories" :key="category.id" 
+                <span v-for="category in mealData.categories" :key="category.id" 
                   class="bg-blue-600 text-white text-xs rounded-full px-3 py-1">
                   {{ category.name }}
                 </span>
-                <span v-for="cuisine in meal.cuisines" :key="cuisine.id" 
+                <span v-for="cuisine in mealData.cuisines" :key="cuisine.id" 
                   class="bg-purple-600 text-white text-xs rounded-full px-3 py-1">
                   {{ cuisine.name }}
                 </span>
-                
               </div>
               
               <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-gray-900">
                 <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
-                <ul v-if="meal.recipe_lines && meal.recipe_lines.length > 0" class="ingredient-list">
-                  <li v-for="line in meal.recipe_lines" :key="line.id" class="ingredient-item mb-2">
+                <ul v-if="mealData.recipe_lines && mealData.recipe_lines.length > 0" class="ingredient-list">
+                  <li v-for="line in mealData.recipe_lines" :key="line.id" class="ingredient-item mb-2">
                     {{ formatRecipeLine(line) }}
                   </li>
                 </ul>
@@ -59,8 +58,8 @@
 
               <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-gray-900">
                 <h3 class="text-xl font-semibold mb-4">Instructions</h3>
-                <div v-if="meal.instructions" class="whitespace-pre-wrap text-gray-200">
-                  {{ meal.instructions }}
+                <div v-if="mealData.instructions" class="whitespace-pre-wrap text-gray-200">
+                  {{ mealData.instructions }}
                 </div>
                 <p v-else class="text-gray-400">No instructions provided</p>
               </div>
@@ -84,12 +83,16 @@ import {
 } from '@ionic/vue';
 import { shareOutline, alertCircleOutline } from 'ionicons/icons';
 import type { Recipe } from '@/types/recipe';
+import type { Meal } from '@/types/meal';
 import type { RecipeLine } from '@/types/recipeline';
+
+// Accept props for the endpoint configuration
 const props = defineProps<{
   endpoint: string;
 }>();
+
 const route = useRoute();
-const meal = ref<Recipe | null>(null);
+const mealData = ref<Recipe | Meal | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
@@ -128,9 +131,9 @@ const fetchMeal = async () => {
   try {
     const id = route.params.id;
     const response = await api.get(`/${props.endpoint}/${id}`);
-    meal.value = response.data;
+    mealData.value = response.data;
   } catch (err: any) {
-    console.error(`Error fetching meal details:`, err);
+    console.error('Error fetching meal details:', err);
     error.value = err.response?.data?.error || 'Failed to load meal details';
   } finally {
     loading.value = false;
@@ -138,12 +141,12 @@ const fetchMeal = async () => {
 };
 
 const handleShare = async () => {
-  if (!meal.value) return;
+  if (!mealData.value) return;
   
   try {
     const shareData = {
-      title: meal.value.title,
-      text: `Check out this recipe for ${meal.value.title}!`,
+      title: mealData.value.title,
+      text: `Check out this recipe for ${mealData.value.title}!`,
       url: window.location.href
     };
     
@@ -173,7 +176,7 @@ onMounted(() => {
 
 .meal-detail-wrapper {
   width: 100%;
-  max-width: 400px; /* Set a max width to match your mealchooser if needed */
+  max-width: 400px;
   height: auto;
 }
 
