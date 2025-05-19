@@ -40,7 +40,7 @@
       <div v-if="groupBy === 'none' && !loadError">
         <ion-list>
           <ion-item v-for="meal in meals" :key="meal.id">
-            <ion-label>
+            <ion-label @click="router.push(`/user-meals/${meal.id}`)">
               <h2>{{ meal.title }}</h2>
             </ion-label>
 
@@ -147,7 +147,8 @@ import RecipeBrowser from '@/components/RecipeBrowser.vue';
 import MealFormModal from '@/components/MealFormModal.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { createOutline } from 'ionicons/icons';
-
+import { useRouter } from 'vue-router';
+const router = useRouter();
 
 interface Group {
   id: number;

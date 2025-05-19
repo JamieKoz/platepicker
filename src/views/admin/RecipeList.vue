@@ -41,7 +41,7 @@
       <div v-if="groupBy === 'none' && !loadError">
         <ion-list>
           <ion-item v-for="recipe in recipes" :key="recipe.id">
-            <ion-label>
+            <ion-label @click="router.push(`/recipe/${recipe.id}`)">
               <h2>{{ recipe.title }}</h2>
             </ion-label>
 
@@ -153,7 +153,8 @@ import RetryConnection from '@/components/RetryConnection.vue';
 import { createOutline } from 'ionicons/icons';
 import { useUserStore } from '@/store/useUserStore';
 import { Recipe } from '@/types/recipe';
-
+import { useRouter } from 'vue-router';
+const router = useRouter();
 interface Group {
   id: number;
   name: string;

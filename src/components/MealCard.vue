@@ -39,18 +39,37 @@
 import { IonCard, IonCardTitle, IonRippleEffect, IonImg, IonCardSubtitle, IonCardContent, IonIcon } from '@ionic/vue';
 import { alarmSharp, leafSharp, restaurantSharp } from 'ionicons/icons';
 import type { Meal } from '@/types/meal';
+import type { Recipe } from '@/types/recipe';
 import type { Dietary } from '@/types/dietary';
 
 defineProps<{
-  mealData: Meal | null
+  mealData: Meal | Recipe 
 }>();
 
 const emit = defineEmits<{
   (e: 'replaceMeal', meal: Meal): void
 }>();
 
-const chooseMeal = (meal: Meal) => {
-  emit('replaceMeal', meal);
+const isMeal = (data: Meal | Recipe): data is Meal => {
+  // Add logic to determine if it's a Meal
+  // This depends on what properties distinguish a Meal from a Recipe
+  // For example, if Meal has a specific property that Recipe doesn't:
+  return 'mealSpecificProperty' in data;
+};
+
+const chooseMeal = (data: Meal | Recipe) => {
+ if (isMeal(data)) {
+    emit('replaceMeal', data);
+  } else {
+    const mealFromRecipe: Meal = {
+      id: data.id,
+      title: data.title,
+      image_name: data.image_name,
+      instructions: data.instructions,
+    } as Meal;
+    
+    emit('replaceMeal', mealFromRecipe);
+  }
 };
 
 const formatDietary = (dietary: string | string[] | Dietary[] | null | undefined): string => {

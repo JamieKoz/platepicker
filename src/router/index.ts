@@ -121,7 +121,14 @@ const routes: Array<RouteRecordRaw> = [
         path: 'buy-options-chooser',
         component: () => import('@/views/choosers/BuyOptions.vue'),
       },
-
+      {
+        path: '/recipe/:id',
+        component: () => import('@/views/ShowRecipe.vue')
+      },
+      {
+        path: '/user-meals/:id',
+        component: () => import('@/views/ShowUserMeal.vue')
+      }
     ]
   }
 ];

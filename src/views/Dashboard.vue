@@ -42,7 +42,7 @@
 
           <div v-else class="space-y-4">
             <div v-for="(topMeal, index) in topMeals" :key="index">
-              <ion-card v-if="isMealValid(topMeal)" class="overflow-hidden">
+              <ion-card v-if="isMealValid(topMeal)" class="overflow-hidden" @click="router.push(`/user-meals/${topMeal.meal.id}`)">
                 <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
                   :alt="topMeal.meal.title" class="w-full h-48 object-cover">
                 <ion-card-content>
@@ -103,7 +103,6 @@ import {
   listOutline,
   thumbsUpOutline,
 } from 'ionicons/icons';
-import { computed } from 'vue';
 
 interface TopMeal {
   total_tally: number;
