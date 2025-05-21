@@ -11,6 +11,8 @@
         <dining-option-card title="Takeaway" icon="takeaway" @click="handleBuy('Takeaway')" />
         
         <dining-option-card title="Drive Thru" icon="driveThru" @click="handleBuy('Drive Thru')" />
+
+        <dining-option-card title="Bars" icon="bar" @click="handleBuy('Bars')" />
       </div>
     </ion-content>
   </ion-page>
@@ -26,12 +28,13 @@ import DiningOptionCard from '@/components/DiningOptions.vue';
 const router = useRouter();
 const restaurantStore = useRestaurantStore();
 
-const handleBuy = (option: 'Dine In' | 'Takeaway' | 'Delivery' | 'Drive Thru') => {
+const handleBuy = (option: 'Dine In' | 'Takeaway' | 'Delivery' | 'Drive Thru' | 'Bars') => {
   const diningOptionMap: Record<string, DiningOption> = {
     'Dine In': 'dine_in',
     'Takeaway': 'takeaway',
     'Delivery': 'delivery',
-    'Drive Thru': 'drive_thru'
+    'Drive Thru': 'drive_thru',
+    'Bars': 'bars'
   };
   restaurantStore.setDiningOption(diningOptionMap[option]);
   router.push('/restaurant-chooser/dine-in');

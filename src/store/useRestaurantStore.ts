@@ -5,7 +5,7 @@ import api from '@/api/axios';
 import type { Restaurant, PhotoReference } from '@/types/restaurant';
 
 // Define valid dining options
-export type DiningOption = 'delivery' | 'takeaway' | 'drive_thru' | 'dine_in';
+export type DiningOption = 'delivery' | 'takeaway' | 'drive_thru' | 'dine_in' | 'bars';
 
 export const useRestaurantStore = defineStore('restaurant', () => {
   const restaurants = ref<Restaurant[]>([]);
