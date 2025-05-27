@@ -42,24 +42,22 @@
 
           <div v-else class="space-y-4">
             <div v-for="(topMeal, index) in topMeals" :key="index">
-              <ion-card v-if="isMealValid(topMeal)" class="overflow-hidden" @click="router.push(`/user-meals/${topMeal.meal.id}`)">
-                <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
-                  :alt="topMeal.meal.title" class="w-full h-48 object-cover">
-                <ion-card-content>
-                  <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg text-white font-semibold">{{ topMeal.meal.title }}</h3>
-                    <div class="text-sm text-gray-400">
-                      {{ topMeal.total_tally }} picks
+              <div class="border-2 border-purple-500 rounded-lg">
+                <ion-card v-if="isMealValid(topMeal)" class="overflow-hidden mx-2 my-2" @click="router.push(`/user-meals/${topMeal.meal.id}`)">
+                  <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
+                    :alt="topMeal.meal.title" class="w-full h-48 object-cover">
+                  <ion-card-content>
+                    <div class="flex justify-between items-center mb-2">
+                      <h3 class="text-lg text-white font-semibold">{{ topMeal.meal.title }}</h3>
+                      <div class="text-sm text-gray-400">
+                        {{ topMeal.total_tally }} picks
+                      </div>
                     </div>
-                  </div>
-                  <p class="text-sm text-gray-400" :class="{ 'line-clamp-2': !expandedMeals[topMeal.meal.id] }">
-                    {{ topMeal.meal.instructions }}
-                  </p>
-                  <button @click="toggleExpand(topMeal.meal.id)" class="text-sm text-blue-500 hover:text-blue-600 mt-1">
-                    {{ expandedMeals[topMeal.meal.id] ? 'Show less' : 'Show more' }}
-                  </button>
-                </ion-card-content>
-              </ion-card>
+                    <button class="text-sm text-blue-500 mt-1">See recipe</button>
+                  </ion-card-content>
+                </ion-card>
+              </div>
+              
             </div>
           </div>
         </div>
@@ -117,7 +115,7 @@ const { user } = useUser();
 const router = useRouter();
 const loadingTopMeal = ref(true);
 const topMeals = ref<TopMeal[]>([]);
-const expandedMeals = reactive<Record<number, boolean>>({});
+// const expandedMeals = reactive<Record<number, boolean>>({});
 
 function isMealValid(topMeal: TopMeal) {
   return topMeal && 
@@ -146,9 +144,9 @@ const fetchTopMeal = async () => {
   }
 };
 
-const toggleExpand = (mealId: number) => {
-  expandedMeals[mealId] = !expandedMeals[mealId];
-};
+// const toggleExpand = (mealId: number) => {
+//   expandedMeals[mealId] = !expandedMeals[mealId];
+// };
 
 const navigateTo = async (path: string) => {
   try {

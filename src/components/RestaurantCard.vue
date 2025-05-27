@@ -1,4 +1,4 @@
-# RestaurantCard.vue
+<!-- RestaurantCard.vue with improved image loading -->
 <template>
   <div v-if="!restaurantData"
     class="relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col h-full">
@@ -25,43 +25,69 @@
     @click="handleCardClick">
     <ion-card :key="`card-${uniqueComponentId}-${restaurantData.place_id}`" class="flex flex-col justify-between h-full my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
-      <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%]">
-        <vue-swiper :key="`swiper-${swiperKey}-${uniqueComponentId}`" :modules="swiperModules" :pagination="{ clickable: true }" :slides-per-view="1"
-          :space-between="0" :preload-images="true" :lazy="true" @swiper="setSwiper" class="h-full w-full">
+      <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%] bg-gray-800">
+        <vue-swiper 
+          v-if="!props.isWinner && validPhotos.length > 0"
+          :key="`swiper-${swiperKey}-${uniqueComponentId}`" 
+          :modules="swiperModules" 
+          :pagination="{ clickable: true }" 
+          :slides-per-view="1"
+          :space-between="0" 
+          :preload-images="false" 
+          :lazy="false" 
+          @swiper="setSwiper" 
+          class="h-full w-full">
           <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs bg-gray-900 opacity-70">
-            {{ currentSlideIndex !== undefined ? `${currentSlideIndex + 1}/${visiblePhotos.length}` : `${visiblePhotos.length}` }}
+            {{ currentSlideIndex !== undefined ? `${currentSlideIndex + 1}/${validPhotos.length}` : `${validPhotos.length}` }}
           </div>
 
-          <template v-if="visiblePhotos.length > 0">
-            <vue-swiper-slide 
-              v-for="(photo, index) in visiblePhotos" 
-              :key="`slide-${uniqueComponentId}-${index}`"
-              class="h-full w-full flex items-center justify-center"
-            >
+          <vue-swiper-slide 
+            v-for="(photo, index) in validPhotos" 
+            :key="`slide-${photo.id}`"
+            class="h-full w-full flex items-center justify-center bg-gray-800"
+          >
+            <div class="relative w-full h-full">
+              <!-- Loading state -->
+              <div v-if="loadingStates[photo.id]" class="absolute inset-0 flex items-center justify-center bg-gray-800">
+                <div class="loading-spinner"></div>
+              </div>
+              
+              <!-- Image -->
               <img 
-                :src="getPhotoUrl(photo)" 
+                v-show="!loadingStates[photo.id]"
+                :src="photo.url || placeholderImage" 
                 :alt="`${restaurantData.name} photo ${index + 1}`" 
                 class="w-full h-full object-cover object-center"
-                @error="handleImageError($event, index)" 
-                loading="lazy" 
+                @load="handleImageLoad(photo.id)"
+                @error="handleImageError($event, photo.id)" 
               />
-            </vue-swiper-slide>
-          </template>
-          <template v-else>
-            <vue-swiper-slide :key="`no-photos-${uniqueComponentId}`" class="h-full w-full flex items-center justify-center">
-              <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs max-w-4/5 bg-gray-900 opacity-70 text-nowrap overflow-hidden">No photos available</div>
-              <img :src="placeholderImage" :alt="restaurantData.name" class="w-full h-full object-cover object-center" />
-            </vue-swiper-slide>
-          </template>
+            </div>
+          </vue-swiper-slide>
         </vue-swiper>
+        
+        <!-- Static image for winner -->
+        <div v-else-if="props.isWinner && validPhotos.length > 0" class="h-full w-full flex items-center justify-center bg-gray-800">
+          <img 
+            :src="validPhotos[0].url || placeholderImage" 
+            :alt="`${restaurantData.name} photo`" 
+            class="w-full h-full object-cover object-center"
+            @error="handleImageError($event, validPhotos[0].id)" 
+          />
+        </div>
+        
+        <!-- No photos placeholder -->
+        <div v-else class="h-full w-full flex items-center justify-center bg-gray-800">
+          <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs max-w-4/5 bg-gray-900 opacity-70 text-nowrap overflow-hidden">No photos available</div>
+          <img :src="placeholderImage" :alt="restaurantData.name" class="w-full h-full object-cover object-center" />
+        </div>
 
         <!-- Photo loading indicator -->
-        <div class="photo-loading-indicator" v-if="isLoadingMorePhotos">
+        <div class="photo-loading-indicator" v-if="isLoadingMorePhotos && !props.isWinner">
           <div class="loading-spinner"></div>
         </div>
 
         <!-- Custom navigation buttons outside Swiper -->
-        <div class="absolute top-0 left-0 right-0 bottom-0 flex justify-between items-center px-1" v-if="visiblePhotos.length > 1">
+        <div class="absolute top-0 left-0 right-0 bottom-0 flex justify-between items-center px-1" v-if="!props.isWinner && validPhotos.length > 1">
           <button class="pointer-events-auto bg-black opacity-30 w-10 h-10 rounded-full transition-colors duration-200 hover:bg-black/50 flex items-center justify-center cursor-pointer z-10 text-white border-none" @click.stop="navigatePrev">
             <ion-icon :icon="chevronBack"></ion-icon>
           </button>
@@ -102,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
 import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon, IonRippleEffect } from '@ionic/vue';
 import type { PhotoReference, Restaurant } from '@/types/restaurant';
 import type { Swiper } from 'swiper';
@@ -116,102 +142,47 @@ import placeholderImage from '@/assets/meal-placeholder.png';
 import api from '@/api/axios';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
 
+interface ProcessedPhoto {
+  id: string;
+  reference: string;
+  url: string | null;
+  width: number;
+  height: number;
+  failed: boolean;
+}
+
 const swiper = ref<Swiper | null>(null);
 const swiperModules = [Pagination, Navigation];
 const isLoadingMorePhotos = ref(false);
 const swiperKey = ref(0);
 const currentSlideIndex = ref(0);
-const imageCache = ref(new Map<string, string>());
 const restaurantStore = useRestaurantStore();
 const uniqueComponentId = ref(Math.random().toString(36).substring(2, 10));
+const processedPhotos = ref<ProcessedPhoto[]>([]);
+const loadingStates = ref<Record<string, boolean>>({});
+const fetchController = ref<AbortController | null>(null);
 
 const props = defineProps<{
   restaurantData?: Restaurant | null;
+  isWinner?: boolean;
 }>();
 
 // Maximum number of photos to display
 const MAX_PHOTOS = 7;
+// Retry configuration
+const MAX_RETRIES = 3;  // Increased from 2
+const RETRY_DELAY = 1000;
 
 const emit = defineEmits<{
   (e: 'chooseRestaurant', restaurant: Restaurant): void;
 }>();
 
-// Only use photos that have valid references, skipping the primary photo
-// Updated visiblePhotos computed property and photo handling
-// Only use photos that have valid references
-const visiblePhotos = computed(() => {
-  if (!props.restaurantData) return [];
+// Get valid photos that haven't failed
+const validPhotos = computed(() => {
+  return processedPhotos.value.filter(photo => !photo.failed && photo.url);
+});
 
-  const results: PhotoReference[] = [];
-  
-  try {
-    // First add the primary photo if available
-    if (props.restaurantData.primary_photo) {
-      const primaryRef = props.restaurantData.primary_photo.reference;
-      
-      if (primaryRef && typeof primaryRef === 'string' && primaryRef.length > 10 && primaryRef.length < 400) {
-        results.push({
-          reference: primaryRef,
-          width: props.restaurantData.primary_photo.width || 450,
-          height: props.restaurantData.primary_photo.height || 350
-        });
-      } else {
-        console.log("Primary photo has invalid reference:", 
-                   primaryRef ? (primaryRef.length > 40 ? primaryRef.substring(0, 40) + '...' : primaryRef) : "undefined");
-      }
-    }
-    
-    // Then add photos from the photos array
-    if (props.restaurantData.photos && Array.isArray(props.restaurantData.photos)) {
-      props.restaurantData.photos.forEach(photo => {
-        const photoRef = photo.reference || photo.reference;
-        
-        // Only add valid photo references and avoid duplicates
-        if (photoRef && typeof photoRef === 'string' && photoRef.length > 10 && photoRef.length < 400) {
-          // Check if it's not a duplicate of an already added photo
-          const isDuplicate = results.some(p => (p.reference || p.reference) === photoRef);
-          
-          if (!isDuplicate && results.length < MAX_PHOTOS) {
-            results.push({
-              reference: photoRef,
-              width: photo.width || 450,
-              height: photo.height || 350
-            });
-          }
-        }
-      });
-    }
-    
-    // Check cache for additional photos if we don't have enough
-    if (results.length < 2 && props.restaurantData.place_id && restaurantStore.photoCache[props.restaurantData.place_id]) {
-      const cachedPhotos = restaurantStore.photoCache[props.restaurantData.place_id];
-      
-      cachedPhotos.forEach(photo => {
-        const photoRef = photo.reference || photo.reference;
-        
-        if (photoRef && typeof photoRef === 'string' && photoRef.length > 10 && photoRef.length < 400) {
-          // Check for duplicates
-          const isDuplicate = results.some(p => (p.reference || p.reference) === photoRef);
-          
-          if (!isDuplicate && results.length < MAX_PHOTOS) {
-            results.push({
-              reference: photoRef,
-              width: photo.width || 450,
-              height: photo.height || 350
-            });
-          }
-        }
-      });
-    }
-    
-    console.log(`Restaurant ${props.restaurantData.name}: Found ${results.length} valid photos to display`);
-    
-    return results;
-  } catch (error) {
-    console.error("Error in visiblePhotos computed property:", error);
-    return [];
-  }
-});const handleCardClick = (event: MouseEvent) => {
+const handleCardClick = (event: MouseEvent) => {
   if (!(event.target as HTMLElement).closest('.nav-button') && props.restaurantData) {
     emit('chooseRestaurant', props.restaurantData);
   }
@@ -220,76 +191,200 @@ const visiblePhotos = computed(() => {
 function setSwiper(swiperInstance: any) {
   swiper.value = swiperInstance;
   
-  // Update current slide index when slide changes
   swiperInstance.on('slideChange', () => {
     currentSlideIndex.value = swiperInstance.activeIndex;
   });
   
-  // Set initial slide index
   currentSlideIndex.value = swiperInstance.activeIndex || 0;
 }
 
-function getPhotoUrl(photo: any): string {
-  // If no photo object provided, use placeholder
-  if (!photo) {
-    console.log("No photo provided, using placeholder");
-    return placeholderImage;
-  }
-
-  // Get the reference, checking both possible property names
-  const photoRef = photo.reference || photo.photo_reference;
-  
-  if (!photoRef) {
-    console.log("No photo reference found in photo object:", photo);
-    return placeholderImage;
-  }
-  
-  // Check cache first
-  const cachedUrl = imageCache.value.get(photoRef);
-  if (cachedUrl) {
-    return cachedUrl === 'error' ? placeholderImage : cachedUrl;
-  }
-
-  // Validate the photo reference
-  if (typeof photoRef !== 'string') {
-    console.error('Invalid photo reference (not a string):', photoRef);
-    imageCache.value.set(photoRef, 'error');
-    return placeholderImage;
-  }
-  
-  // Check if reference is a reasonable length
-  // Google photo references are typically 100-300 characters
-  if (photoRef.length < 10 || photoRef.length > 400) {
-    console.error(`Invalid photo reference length (${photoRef.length})`, 
-                 photoRef.length > 40 ? photoRef.substring(0, 40) + '...' : photoRef);
-    imageCache.value.set(photoRef, 'error');
-    return placeholderImage;
-  }
-  
-  // Return photo URL from our proxy endpoint
+// Fetch photo URL with retry logic
+async function fetchPhotoUrl(photoRef: string, retries = 0): Promise<string | null> {
   try {
-    const proxyUrl = `${api.defaults.baseURL}/restaurants/photo-proxy?photo_reference=${encodeURIComponent(photoRef)}&maxwidth=800&maxheight=600`;
+    // Use different size parameters to improve success rate
+    const sizes = [
+      { maxwidth: 400, maxheight: 300 },
+      { maxwidth: 600, maxheight: 450 },
+      { maxwidth: 800, maxheight: 600 },
+      { maxwidth: 1200, maxheight: 900 }, // Added larger size
+      { maxwidth: 200, maxheight: 200 }   // Added smaller size as fallback
+    ];
     
-    // Add to cache
-    imageCache.value.set(photoRef, proxyUrl);
+    const sizeParams = sizes[Math.min(retries, sizes.length - 1)];
     
+    const proxyUrl = `${api.defaults.baseURL}/restaurants/photo-proxy?photo_reference=${encodeURIComponent(photoRef)}&maxwidth=${sizeParams.maxwidth}&maxheight=${sizeParams.maxheight}`;
+    
+    // Skip HEAD request check - just return the URL
+    // Google Places API photos should work directly
     return proxyUrl;
+    
   } catch (error) {
-    console.error('Error generating photo URL:', error);
-    imageCache.value.set(photoRef, 'error');
-    return placeholderImage;
+    // Ignore abort errors - these are expected when component unmounts
+    if (error instanceof Error && error.name === 'AbortError') {
+      return null;
+    }
+    
+    console.error('Error fetching photo URL:', error);
+    if (retries < MAX_RETRIES) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return fetchPhotoUrl(photoRef, retries + 1);
+    }
+    return null;
   }
-}function handleImageError(event: Event, index: number) {
+}
+
+// Process photos and fetch URLs
+async function processPhotos() {
+  if (!props.restaurantData) return;
+  
+  console.log(`Processing photos for ${props.restaurantData.name}...`);
+  console.log('Restaurant data:', {
+    name: props.restaurantData.name,
+    hasPhotos: !!props.restaurantData.photos,
+    photosLength: props.restaurantData.photos?.length || 0,
+    hasPrimaryPhoto: !!props.restaurantData.primary_photo,
+    primaryPhotoRef: props.restaurantData.primary_photo?.reference ||  props.restaurantData.primary_photo?.reference,
+    placeId: props.restaurantData.place_id
+  });
+  
+  // Cancel any ongoing fetches
+  if (fetchController.value) {
+    fetchController.value.abort();
+  }
+  fetchController.value = new AbortController();
+  
+  const photosToProcess: PhotoReference[] = [];
+  const addedRefs = new Set<string>();
+  
+  // Helper function to add photo if valid
+  const addPhotoIfValid = (photo: any, source: string) => {
+    // Log the photo object to debug
+    if (source.includes('[0]') || source.includes('cache[0]')) {
+      console.log(`Photo object from ${source}:`, photo);
+      // If it's a Vue proxy, try to access the properties directly
+      if (photo && typeof photo === 'object') {
+        console.log(`Photo reference:`, photo.reference);
+        console.log(`Photo width:`, photo.width);
+        console.log(`Photo height:`, photo.height);
+      }
+    }
+    
+    // Access the reference directly - Vue proxies will return the value
+    let ref = null;
+    if (photo && typeof photo === 'object') {
+      // Try different property names
+      ref = photo.reference || photo.photo_reference || photo.photoReference || photo.photo_ref;
+    }
+    
+    if (!ref && photo) {
+      // If no ref found, log all properties of the photo object
+      console.log(`No reference found in photo from ${source}. Photo:`, photo);
+      try {
+        console.log(`Photo keys:`, Object.keys(photo));
+      } catch (e) {
+        console.log('Could not get keys');
+      }
+    }
+    
+    if (isValidPhotoReference(ref) && !addedRefs.has(ref) && photosToProcess.length < MAX_PHOTOS) {
+      photosToProcess.push({
+        reference: ref,
+        width: photo.width ?? 450,
+        height: photo.height ?? 350
+      });
+      addedRefs.add(ref);
+      console.log(`Added photo from ${source}: ${ref.substring(0, 20)}...`);
+    } else if (ref && !isValidPhotoReference(ref)) {
+      console.log(`Invalid reference from ${source}: length=${ref.length}`);
+    }
+  };
+  
+  // Add primary photo
+  if (props.restaurantData.primary_photo) {
+    addPhotoIfValid(props.restaurantData.primary_photo, 'primary_photo');
+  }
+  
+  // Add other photos
+  if (props.restaurantData.photos && Array.isArray(props.restaurantData.photos)) {
+    console.log(`Checking ${props.restaurantData.photos.length} photos from restaurant.photos`);
+    // Log the first photo to see its structure
+    if (props.restaurantData.photos.length > 0) {
+      console.log('First photo structure:', props.restaurantData.photos[0]);
+    }
+    props.restaurantData.photos.forEach((photo, index) => {
+      addPhotoIfValid(photo, `photos[${index}]`);
+    });
+  }
+  
+  // Check cache for additional photos if we don't have enough
+  if (photosToProcess.length < MAX_PHOTOS && props.restaurantData.place_id && restaurantStore.photoCache[props.restaurantData.place_id]) {
+    const cachedPhotos = restaurantStore.photoCache[props.restaurantData.place_id];
+    console.log(`Checking ${cachedPhotos.length} photos from cache`);
+    cachedPhotos.forEach((photo, index) => {
+      addPhotoIfValid(photo, `cache[${index}]`);
+    });
+  }
+  
+  console.log(`Found ${photosToProcess.length} photos to process`);
+  
+  // If no photos found, try to load them
+  if (photosToProcess.length === 0 && props.restaurantData.place_id) {
+    console.log('No photos found, will wait for loadAdditionalPhotos to complete');
+    return;
+  }
+  
+  // Process photos
+  processedPhotos.value = await Promise.all(
+    photosToProcess.map(async (photo) => {
+      const id = `${uniqueComponentId.value}-${photo.reference}`;
+      loadingStates.value[id] = true;
+
+      const url = await fetchPhotoUrl(photo.reference);
+
+      return {
+        id,
+        reference: photo.reference,
+        url,
+        width: photo.width ?? 450,
+        height: photo.height ?? 350,
+        failed: !url
+      };
+    })
+  );
+  
+  console.log(`Processed ${processedPhotos.value.length} photos, ${validPhotos.value.length} are valid`);
+  
+  // Update swiper after processing
+  updateSwiper();
+}
+
+function isValidPhotoReference(ref: any): boolean {
+  // Google's new photo references can be much longer than the old ones
+  // Old references were ~100-300 chars, new ones can be 600+ chars
+  return ref && typeof ref === 'string' && ref.length > 10 && ref.length < 1000;
+}
+
+function handleImageLoad(photoId: string) {
+  loadingStates.value[photoId] = false;
+}
+
+function handleImageError(event: Event, photoId: string) {
   const img = event.target as HTMLImageElement;
+  loadingStates.value[photoId] = false;
   
-  // Mark as failed in cache
-  if (visiblePhotos.value[index]) {
-    const photoRef = visiblePhotos.value[index].reference;
-    imageCache.value.set(photoRef, 'error');
+  // Mark photo as failed
+  const photo = processedPhotos.value.find(p => p.id === photoId);
+  if (photo) {
+    photo.failed = true;
   }
   
-  // Replace with placeholder
+  // Set placeholder
   img.src = placeholderImage;
+  
+  // Update swiper if needed
+  if (validPhotos.value.length === 0) {
+    updateSwiper();
+  }
 }
 
 const navigatePrev = (event: Event) => {
@@ -323,101 +418,107 @@ const loadAdditionalPhotos = async () => {
 
   const placeId = props.restaurantData.place_id;
   
-  // Check if we already have enough photos
   if (props.restaurantData.photos && props.restaurantData.photos.length >= MAX_PHOTOS) {
     console.log(`Already have ${props.restaurantData.photos.length} photos, not loading more`);
     return;
   }
   
-  console.log(`Loading additional photos for restaurant ${props.restaurantData.name} (${placeId})`);
   isLoadingMorePhotos.value = true;
 
   try {
-    // First, check if we already have photos in the store cache
+    let photosUpdated = false;
+    
     if (restaurantStore.photoCache[placeId] && restaurantStore.photoCache[placeId].length > 0) {
-      console.log(`Found ${restaurantStore.photoCache[placeId].length} cached photos in store`);
       updateRestaurantPhotos(restaurantStore.photoCache[placeId]);
+      photosUpdated = true;
     } else {
-      // If not in cache, fetch from API through store
-      console.log(`Fetching photos from API for ${placeId}`);
       const photos = await restaurantStore.getRestaurantPhotos(placeId);
       
       if (photos && photos.length > 0) {
-        console.log(`Received ${photos.length} photos from API`);
         updateRestaurantPhotos(photos);
-      } else {
-        console.log('No photos received from API');
+        photosUpdated = true;
       }
+    }
+    
+    // Process photos after updating restaurant photos
+    // Use nextTick to ensure Vue has updated the reactive data
+    if (photosUpdated) {
+      await nextTick();
+      await processPhotos();
     }
   } catch (error) {
     console.error("Error fetching photos:", error);
   } finally {
+    // Ensure loading indicator is hidden after all processing is complete
     isLoadingMorePhotos.value = false;
-    // Force swiper to update after photos are loaded
-    updateSwiper();
   }
 };
+
 const updateRestaurantPhotos = (photos: any[]) => {
   if (!props.restaurantData) return;
   
-  console.log(`Updating restaurant photos for ${props.restaurantData.name}, received ${photos.length} new photos`);
-  
-  // Initialize photos array if it doesn't exist
   if (!props.restaurantData.photos) {
     props.restaurantData.photos = [];
   }
   
-  // Convert photo format 
   const newPhotos = photos
     .filter(photo => photo && (photo.reference || photo.photo_reference))
-    .map(photo => {
-      // Handle different photo formats - the API might return either reference or photo_reference
-      const photoRef = photo.reference || photo.photo_reference;
-      
-      return {
-        reference: photoRef,
-        width: photo.width || 450,
-        height: photo.height || 350
-      };
-    });
+    .map(photo => ({
+      reference: photo.reference || photo.photo_reference,
+      width: photo.width || 450,
+      height: photo.height || 350
+    }));
   
-  console.log(`Processed ${newPhotos.length} photos with valid references`);
-  
-  // Add the new photos to the restaurant
   if (newPhotos.length > 0) {
-    // Ensure we're not adding duplicates
     const existingRefs = props.restaurantData.photos?.map(p => p.reference) || [];
     const uniqueNewPhotos = newPhotos.filter(p => !existingRefs.includes(p.reference));
     
-    // Add the unique new photos
     props.restaurantData.photos = [...props.restaurantData.photos, ...uniqueNewPhotos];
-    console.log(`Added ${uniqueNewPhotos.length} unique new photos, total: ${props.restaurantData.photos.length}`);
   }
-  
-  // Update the swiper to show the new photos
-  updateSwiper();
 };
+
 const calculateYellowWidth = (rating: number) => {
-  // Convert rating to percentage (e.g., 3.7/5 = 74%)
   return Math.min(Math.max(Math.floor((rating / 5) * 100), 0), 100);
 };
 
 onMounted(() => {
   if (props.restaurantData) {
-    loadAdditionalPhotos();
+    // Process initial photos immediately
+    processPhotos().then(() => {
+      // Then load additional photos
+      loadAdditionalPhotos();
+    });
   }
 });
-
-// Watch for restaurant data changes to load photos for new restaurants
-watch(() => props.restaurantData?.place_id, (newPlaceId) => {
-  if (newPlaceId) {
-    // Generate a new component ID when restaurant changes
+watch(() => props.restaurantData?.place_id, async (newPlaceId, oldPlaceId) => {
+  if (newPlaceId && newPlaceId !== oldPlaceId) {
+    // Cancel any ongoing fetches from previous restaurant
+    if (fetchController.value) {
+      fetchController.value.abort();
+    }
+    
     uniqueComponentId.value = Math.random().toString(36).substring(2, 10);
-    // Clear cache when restaurant changes
-    imageCache.value = new Map<string, string>();
-    loadAdditionalPhotos();
+    processedPhotos.value = [];
+    loadingStates.value = {};
+    
+    // Don't auto-update swiper for winner cards
+    if (!props.isWinner) {
+      // Process initial photos first
+      await processPhotos();
+      // Then load additional photos
+      loadAdditionalPhotos();
+    } else {
+      // For winner, just process existing photos without loading more
+      await processPhotos();
+    }
   }
 }, { immediate: true });
+
+onUnmounted(() => {
+  if (fetchController.value) {
+    fetchController.value.abort();
+  }
+});
 </script>
 
 <style scoped>
@@ -446,6 +547,23 @@ watch(() => props.restaurantData?.place_id, (newPlaceId) => {
 :deep(.swiper-button-prev), 
 :deep(.swiper-pagination) {
   display: none;
+}
+
+/* Fix swiper sizing issues */
+:deep(.swiper) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+:deep(.swiper-wrapper) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+:deep(.swiper-slide) {
+  width: 100% !important;
+  height: 100% !important;
+  flex-shrink: 0;
 }
 
 .loading-spinner {
