@@ -110,7 +110,7 @@ export const useMeasurementStore = defineStore('measurement', () => {
     try {
       if (!name.trim()) return null;
       
-      const response = await api.post('/measurement', { name: name.trim() });
+      const response = await api.post('/measurements', { name: name.trim() });
       await fetchMeasurement(meta.value.current_page);
       return response.data;
     } catch (error) {
@@ -123,7 +123,7 @@ export const useMeasurementStore = defineStore('measurement', () => {
     try {
       if (!name.trim()) return false;
       
-      await api.put(`/measurement/${id}`, { name: name.trim() });
+      await api.put(`/measurements/${id}`, { name: name.trim() });
       await fetchMeasurement(meta.value.current_page);
       return true;
     } catch (error) {
@@ -134,7 +134,7 @@ export const useMeasurementStore = defineStore('measurement', () => {
 
   async function deleteMeasurement(id: number) {
     try {
-      await api.delete(`/measurement/${id}`);
+      await api.delete(`/measurements/${id}`);
       await fetchMeasurement(meta.value.current_page);
       return true;
     } catch (error) {

@@ -77,6 +77,7 @@ import { useRoute } from 'vue-router';
 import api from '@/api/axios';
 import MealCard from '@/components/MealCard.vue';
 import BackArrow from '@/components/navigation/BackArrow.vue';
+import { decimalToFraction } from '@/utils/fractionHelpers';
 import { 
   IonPage, IonContent, IonHeader, IonToolbar, IonTitle, 
   IonButtons, IonButton, IonIcon, IonSpinner, IonGrid, IonRow, IonCol,
@@ -96,27 +97,34 @@ const mealData = ref<Recipe | Meal | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
+// Updated formatRecipeLine function with fraction conversion
 const formatRecipeLine = (line: RecipeLine): string => {
   let result = '';
   
-  if (line.quantity) {
-    result += line.quantity;
+  // Handle quantity - check for valid number and convert to fraction
+  if (line.quantity !== undefined && line.quantity !== null && line.quantity > 0) {
+    result += decimalToFraction(line.quantity);
   }
   
+  // Handle measurement
   if (line.measurement && line.measurement.name) {
-    if(line.measurement.name !== 'Units'){
-      result += ' ' + (line.measurement.abbreviation || line.measurement.name) + ' ';
-    } else{
-      result += ' ';
+    if (line.measurement.name !== 'Units') {
+      result += ` ${line.measurement.abbreviation || line.measurement.name}`;
     }
-  }   
+    result += ' ';
+  } else if (result) {
+    // If we have a quantity but no measurement, add a space
+    result += ' ';
+  }
   
+  // Handle ingredient name
   if (line.ingredient && line.ingredient.name) {
     result += line.ingredient.name;
   } else if (line.ingredient_name) {
     result += line.ingredient_name;
   }
   
+  // Handle notes
   if (line.notes) {
     result += `, ${line.notes}`;
   }

@@ -42,7 +42,7 @@
 
           <div v-else class="space-y-4">
             <div v-for="(topMeal, index) in topMeals" :key="index">
-              <div class="border-2 border-purple-500 rounded-lg">
+              <div class="border-2 border-yellow-500 rounded-lg">
                 <ion-card v-if="isMealValid(topMeal)" class="overflow-hidden mx-2 my-2" @click="router.push(`/user-meals/${topMeal.meal.id}`)">
                   <img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${topMeal.meal.image_name}.jpg`"
                     :alt="topMeal.meal.title" class="w-full h-48 object-cover">

@@ -77,6 +77,7 @@ import { refresh, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline
 import { useMealStore } from '@/store/useMealStore';
 import { useUser } from '@clerk/vue';
 import { useRouter, useRoute } from 'vue-router';
+import { decimalToFraction } from '@/utils/fractionHelpers';
 import MealCard from '@/components/MealCard.vue';
 import BackArrow from '@/components/navigation/BackArrow.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
@@ -120,20 +121,24 @@ const getFiltersFromRoute = () => {
 
   return filters;
 };
+
+// Updated formatRecipeLine function with fraction conversion
 const formatRecipeLine = (line: RecipeLine): string => {
   let result = '';
   
   if (line.quantity) {
-    result += line.quantity;
+    // Convert quantity to fraction format
+    result += decimalToFraction(line.quantity);
   }
   
   if (line.measurement && line.measurement.name) {
     if(line.measurement.name !== 'Units'){
-      result += line.measurement.abbreviation + ' ';
+      result += ' ' + line.measurement.abbreviation + ' ';
     } else{
       result += ' ';
     }
   }   
+  
   if (line.ingredient && line.ingredient.name) {
     result += line.ingredient.name;
   } else if (line.ingredient_name) {
