@@ -311,6 +311,7 @@ interface RecipeLine {
   quantity: number | null;
   measurement_id?: number;
   measurement_name: string;
+  measurement_abbreviation: string;
   notes?: string;
   sort_order: number;
   created_at?: string;
@@ -363,6 +364,7 @@ watch(
           quantity: line.quantity,
           measurement_id: line.measurement_id,
           measurement_name: line.measurement?.name || line.measurement_name || '',
+          measurement_abbreviation: line.measurement?.abbreviation || '',
           notes: line.notes || '',
           sort_order: line.sort_order
         }));

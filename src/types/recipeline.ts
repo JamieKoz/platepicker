@@ -10,6 +10,7 @@ export interface RecipeLine {
   quantity: number | null;
   measurement_id?: number;
   measurement_name: string;
+  measurement_abbreviation: string;
   notes?: string;
   sort_order: number;
   created_at?: string;
