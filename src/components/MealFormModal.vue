@@ -16,7 +16,6 @@
           <ion-input v-model="mealForm.title" required placeholder="Pasta Bolognese"></ion-input>
         </ion-item>
 
-        <RecipeLine v-model="mealForm.recipe_lines" />
 
         <ion-item>
           <ion-label position="stacked">Instructions</ion-label>
@@ -64,6 +63,8 @@
             </ion-select-option>
           </ion-select>
         </ion-item>
+
+        <RecipeLine v-model="mealForm.recipe_lines" />
 
         <ion-item>
           <ion-label>Active</ion-label>

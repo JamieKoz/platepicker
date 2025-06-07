@@ -40,8 +40,8 @@
             </div>
 
             <div>
-              <button type="submit" :disabled="isSubmitting">
-                {{ isSubmitting ? 'Sending...' : 'Submit Feedback' }}
+              <button class="w-full" type="submit" :disabled="isSubmitting">
+                {{ isSubmitting ? 'Sending...' : 'Submit' }}
               </button>
             </div>
 
