@@ -124,11 +124,6 @@ const formatRecipeLine = (line: RecipeLine): string => {
     result += line.ingredient_name;
   }
   
-  // Handle notes
-  if (line.notes) {
-    result += `, ${line.notes}`;
-  }
-  
   return result.trim();
 };
 

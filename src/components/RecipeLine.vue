@@ -1,59 +1,46 @@
 <!-- RecipeLineComponent.vue -->
 <template>
   <div class="mt-5">
-    <div class="flex justify-between">
+    <div class="flex justify-between items-center mb-4">
       <ion-label class="opacity-70 text-sm font-medium block">Ingredients</ion-label>
-      <!-- Reorder mode toggle -->
-      <div v-if="savedLines.length > 1">
-        <ion-button @click="reorderMode = !reorderMode" size="small" fill="clear">
+
+      <!-- Manage Groups button -->
+      <div v-if="savedLines.length > 0 || showNewLine" class="flex gap-2">
+
+        <ion-button @click="showGroupManager = !showGroupManager" size="small" fill="clear" color="primary">
+          <ion-icon name="layers-outline" slot="start"></ion-icon>
+          {{ showGroupManager ? 'Close' : 'Manage Groups' }}
+        </ion-button>
+
+        <ion-button v-if="savedLines.length > 1" @click="reorderMode = !reorderMode" size="small" fill="clear">
           <ion-icon :name="reorderMode ? 'checkmark-done' : 'swap-vertical'" slot="start"></ion-icon>
-          {{ reorderMode ? 'Done Reordering' : 'Reorder' }}
+          {{ reorderMode ? 'Done' : 'Reorder' }}
         </ion-button>
       </div>
     </div>
-    <!-- Saved ingredients list -->
-    <div v-if="savedLines.length > 0" class="space-y-2 mb-4">
-      <div v-for="(line, index) in savedLines" :key="index" class="group">
-        <!-- Display mode -->
-        <div v-if="editingIndex !== index" @click="editLine(index)"
-          class="flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 border-1 border-gray-300 hover:border-gray-400">
-          <div class="flex-1 flex items-center gap-1">
-            <span class="font-medium">
-              {{ formatRecipeLine(line) }}
-            </span>
-            <span v-if="line.notes" class="text-sm italic">({{ line.notes }})</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <ion-icon name="create-outline" class="text-gray-400"></ion-icon>
-            <ion-button fill="clear" size="small" color="danger" @click.stop="deleteLine(index)" class="ml-1">
-              <ion-icon name="trash" size="small"></ion-icon>
-            </ion-button>
-          </div>
-        </div>
 
-        <!-- Edit mode (inline) -->
-        <div v-else class="p-3 rounded-lg border-2 border-blue-200 dark:border-blue-700">
-          <RecipeLineEditor v-if="editingIndex !== null" v-model="currentLine" @save="saveLine" @cancel="cancelEdit" />
+    <!-- Group Manager - Simple input to create groups -->
+      <div v-if="showGroupManager" class="mb-4 p-3 border-1 border-gray-300 rounded-lg">
+        <div v-if="!props.recipeId" class="text-sm text-gray-600 mb-2">
+          Save the recipe first to create ingredient groups
         </div>
+        <div v-else class="flex items-center gap-2">
+        <ion-input 
+          v-model="newGroupName" 
+          placeholder="Create new group"
+          class="flex-1"
+          @keyup.enter="createGroup"
+        ></ion-input>
+        <ion-button @click="createGroup" size="small" :disabled="!newGroupName">
+          <ion-icon name="add" slot="start"></ion-icon>
+          Create Group
+        </ion-button>
       </div>
     </div>
 
-    <!-- New ingredient form (only shown when adding new) -->
-    <div v-if="showNewLine">
-      <RecipeLineEditor v-if="showNewLine" v-model="currentLine"
-        container-class="mb-4 p-3 rounded-lg border-2 border-green-200 dark:border-green-700" @save="saveLine"
-        @cancel="cancelEdit" />
-    </div>
-
-    <!-- Add ingredient button -->
-    <ion-button v-if="!showNewLine && editingIndex === null" @click="addNewLine" fill="outline" size="small"
-      class="w-full">
-      <ion-icon name="add" slot="start"></ion-icon> Add {{ savedLines.length > 0 ? 'Another' : '' }} Ingredient
-    </ion-button>
-
-
     <!-- Reorderable list -->
-    <div v-if="reorderMode && savedLines.length > 1" class="mt-2 space-y-2">
+    <div v-if="reorderMode && savedLines.length > 1" class="mt-4 space-y-2">
+      <div class="text-sm font-medium mb-2">Drag to reorder ingredients:</div>
       <div v-for="(line, index) in savedLines" :key="index" class="flex items-center gap-2">
         <div class="flex flex-col">
           <ion-button fill="clear" size="small" @click="moveLine(index, -1)" :disabled="index === 0">
@@ -65,54 +52,92 @@
         </div>
         <div class="flex-1 p-2 border-1 border-gray-300 rounded-lg">
           <div class="m-2">
-            {{ line.quantity || '' }} {{ line.measurement_name }} {{ line.ingredient_name }}
+            <div class="font-medium">{{ line.quantity || '' }} {{ line.measurement_name }} {{ line.ingredient_name }}
+            </div>
+            <div v-if="line.recipe_group_name" class="text-xs text-gray-500">Group: {{ line.recipe_group_name }}</div>
           </div>
         </div>
-
       </div>
     </div>
+
+    <!-- Ingredients grouped by their groups -->
+    <div v-if="savedLines.length > 0" class="space-y-4 mb-4">
+      <div v-for="(group, groupName) in groupedIngredients" :key="groupName" class="group-section">
+        <!-- Group header -->
+        <div v-if="groupName !== 'Main Ingredients'" class="group-header mb-2">
+          <h3 class="text-lg font-semibold text-primary border-b border-gray-300 pb-1">
+            {{ groupName }}
+          </h3>
+        </div>
+        <div v-else class="group-header mb-2">
+          <h3 class="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-1">
+            {{ groupName }}
+          </h3>
+        </div>
+
+        <!-- Ingredients in this group -->
+        <div class="space-y-2" :class="{ 'ml-4': groupName !== 'Main Ingredients' }">
+          <div v-for="(line, index) in group" :key="line.originalIndex" class="group">
+            <!-- Display mode -->
+            <div v-if="editingIndex !== line.originalIndex" @click="editLine(line.originalIndex)"
+              class="flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 border-1 border-gray-300 hover:border-gray-400">
+              <div class="flex-1 flex items-center gap-1">
+                <span class="font-medium">{{ formatRecipeLine(line) }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <ion-icon name="create-outline" class="text-gray-400"></ion-icon>
+                <ion-button fill="clear" size="small" color="danger" @click.stop="deleteLine(line.originalIndex)"
+                  class="ml-1">
+                  <ion-icon name="trash" size="small"></ion-icon>
+                </ion-button>
+              </div>
+            </div>
+
+            <!-- Edit mode -->
+            <div v-else class="p-3 rounded-lg border-2 border-blue-200 dark:border-blue-700">
+              <RecipeLineEditor v-model="currentLine" :recipe-id="recipeId" :available-groups="availableGroups"
+                @save="saveLine" @cancel="cancelEdit" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New ingredient form -->
+    <div v-if="showNewLine">
+      <RecipeLineEditor v-model="currentLine" :recipe-id="recipeId" :available-groups="availableGroups"
+        container-class="mb-4 p-3 rounded-lg border-2 border-green-200 dark:border-green-700" @save="saveLine"
+        @cancel="cancelEdit" />
+    </div>
+
+    <!-- Add ingredient button -->
+    <ion-button v-if="!showNewLine && editingIndex === null" @click="addNewLine" fill="outline" size="small"
+      class="w-full">
+      <ion-icon name="add" slot="start"></ion-icon> Add {{ savedLines.length > 0 ? 'Another' : '' }} Ingredient
+    </ion-button>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import {
   IonButton,
   IonIcon,
-  IonLabel
+  IonLabel,
+  IonInput
 } from '@ionic/vue';
-import { addIcons } from 'ionicons';
 import { decimalToFraction } from '@/utils/fractionHelpers';
-import {
-  add,
-  createOutline,
-  checkmarkCircle,
-  closeCircle,
-  trash,
-  chevronUp,
-  chevronDown,
-  swapVertical,
-  checkmarkDone
-} from 'ionicons/icons';
 import type { RecipeLine } from '@/types/recipeline';
 import { useMeasurementStore } from '@/store/useMeasurementStore';
+import { useRecipeGroupsStore } from '@/store/useRecipeGroupsStore';
 import RecipeLineEditor from '@/components/RecipeLineEditor.vue';
+import { RecipeGroup } from '@/types/recipeGroup';
 
-// Register icons
-addIcons({
-  add,
-  'create-outline': createOutline,
-  'checkmark-circle': checkmarkCircle,
-  'close-circle': closeCircle,
-  trash,
-  'chevron-up': chevronUp,
-  'chevron-down': chevronDown,
-  'swap-vertical': swapVertical,
-  'checkmark-done': checkmarkDone
-});
 
 const props = defineProps<{
   modelValue: RecipeLine[];
+  recipeId?: number;
 }>();
 
 const emit = defineEmits<{
@@ -121,6 +146,7 @@ const emit = defineEmits<{
 
 // Initialize stores
 const measurementStore = useMeasurementStore();
+const recipeGroupsStore = useRecipeGroupsStore();
 
 // State
 const savedLines = ref<RecipeLine[]>([]);
@@ -130,22 +156,78 @@ const currentLine = ref<RecipeLine>({
   measurement_name: '',
   measurement_abbreviation: '',
   measurement_id: undefined,
+  recipe_group_id: undefined,
   sort_order: 0,
-  notes: ''
 });
 const editingIndex = ref<number | null>(null);
 const showNewLine = ref(false);
-const showNotesField = ref(false);
+const showGroupManager = ref(false);
+const newGroupName = ref('');
 const reorderMode = ref(false);
 
-// Search state
-const showSuggestions = ref(false);
+// Available groups for the select
+const availableGroups = computed(() => recipeGroupsStore.groups);
 
-// Initialize from props
+// Group ingredients by their group names
+const groupedIngredients = computed(() => {
+  const groups: Record<string, Array<RecipeLine & { originalIndex: number }>> = {};
+  
+  savedLines.value.forEach((line, index) => {
+    let groupName = 'Main Ingredients';
+    
+    if (line.recipe_group_id) {
+      const group = recipeGroupsStore.groups.find((g: RecipeGroup) => g.id === line.recipe_group_id);
+      groupName = group?.name || 'Main Ingredients';
+    }
+    
+    if (!groups[groupName]) {
+      groups[groupName] = [];
+    }
+    groups[groupName].push({ ...line, originalIndex: index });
+  });
+  
+  // Sort groups so "Main Ingredients" comes first
+  const sortedGroups: Record<string, Array<RecipeLine & { originalIndex: number }>> = {};
+  
+  if (groups['Main Ingredients']) {
+    sortedGroups['Main Ingredients'] = groups['Main Ingredients'];
+  }
+  
+  Object.keys(groups)
+    .filter(key => key !== 'Main Ingredients')
+    .sort()
+    .forEach(key => {
+      sortedGroups[key] = groups[key];
+    });
+  
+  return sortedGroups;
+});
+
+// Move line up or down
+const moveLine = (index: number, direction: number) => {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= savedLines.value.length) return;
+
+  const temp = savedLines.value[index];
+  savedLines.value[index] = savedLines.value[newIndex];
+  savedLines.value[newIndex] = temp;
+
+  // Update sort orders
+  savedLines.value.forEach((line, idx) => {
+    line.sort_order = idx;
+  });
+  emitUpdate();
+};
+// Initialize
 onMounted(async () => {
-  // Load measurements if not already loaded
+  // Load measurements
   if (measurementStore.measurement.length === 0) {
     await measurementStore.fetchMeasurement();
+  }
+
+  // Load groups for this recipe
+  if (props.recipeId) {
+    await recipeGroupsStore.fetchGroups(props.recipeId);
   }
 
   // Initialize saved lines from props
@@ -167,7 +249,26 @@ watch(() => props.modelValue, (newValue) => {
   }
 }, { deep: true });
 
-// Add new line
+// Create a new group
+const createGroup = async () => {
+  if (!newGroupName.value.trim()) return;
+
+  if (!props.recipeId) {
+    console.warn('Cannot create group: Recipe must be saved first');
+    return;
+  } 
+
+  try {
+    await recipeGroupsStore.createGroup(props.recipeId, { 
+      name: newGroupName.value.trim() 
+    });
+    newGroupName.value = '';
+  } catch (error) {
+    console.error('Failed to create group:', error);
+  }
+};
+
+// Add new ingredient
 const addNewLine = () => {
   showNewLine.value = true;
   editingIndex.value = null;
@@ -177,24 +278,20 @@ const addNewLine = () => {
     measurement_name: '',
     measurement_abbreviation: '',
     measurement_id: undefined,
+    recipe_group_id: undefined,
     sort_order: savedLines.value.length,
-    notes: ''
   };
-  showNotesField.value = false;
 };
 
-// Edit existing line
+// Edit existing ingredient
 const editLine = (index: number) => {
-  if (reorderMode.value) return;
-
   editingIndex.value = index;
   showNewLine.value = false;
   const line = savedLines.value[index];
   currentLine.value = { ...line };
-  showNotesField.value = !!line.notes;
 };
 
-// Save current line
+// Save ingredient
 const saveLine = () => {
   if (!currentLine.value.ingredient_name) return;
 
@@ -222,14 +319,12 @@ const cancelEdit = () => {
     measurement_name: '',
     measurement_abbreviation: '',
     measurement_id: undefined,
+    recipe_group_id: undefined,
     sort_order: savedLines.value.length,
-    notes: ''
   };
-  showSuggestions.value = false;
-  showNotesField.value = false;
 };
 
-// Delete line
+// Delete ingredient
 const deleteLine = (index: number) => {
   savedLines.value.splice(index, 1);
   // Update sort orders
@@ -239,51 +334,27 @@ const deleteLine = (index: number) => {
   emitUpdate();
 };
 
-// Move line up or down
-const moveLine = (index: number, direction: number) => {
-  const newIndex = index + direction;
-  if (newIndex < 0 || newIndex >= savedLines.value.length) return;
-
-  const temp = savedLines.value[index];
-  savedLines.value[index] = savedLines.value[newIndex];
-  savedLines.value[newIndex] = temp;
-
-  // Update sort orders
-  savedLines.value.forEach((line, idx) => {
-    line.sort_order = idx;
-  });
-  emitUpdate();
-};
-
+// Format recipe line for display
 const formatRecipeLine = (line: RecipeLine): string => {
   let result = '';
 
-  // Handle quantity - check for valid number and convert to fraction
   if (line.quantity !== undefined && line.quantity !== null && line.quantity > 0) {
     result += decimalToFraction(line.quantity);
   }
 
-  // Handle measurement
   if (line.measurement_name) {
     if (line.measurement_name !== 'Units') {
       result += ` ${line.measurement_abbreviation || line.measurement_name}`;
     }
     result += ' ';
   } else if (result) {
-    // If we have a quantity but no measurement, add a space
     result += ' ';
   }
 
-  // Handle ingredient name
   if (line.ingredient && line.ingredient.name) {
     result += line.ingredient.name;
   } else if (line.ingredient_name) {
     result += line.ingredient_name;
-  }
-
-  // Handle notes
-  if (line.notes) {
-    result += `, ${line.notes}`;
   }
 
   return result.trim();
@@ -294,4 +365,3 @@ const emitUpdate = () => {
   emit('update:modelValue', [...savedLines.value]);
 };
 </script>
-

@@ -11,7 +11,8 @@ export interface RecipeLine {
   measurement_id?: number;
   measurement_name: string;
   measurement_abbreviation: string;
-  notes?: string;
+  recipe_group_id?: number;
+  recipe_group_name?: string;
   sort_order: number;
   created_at?: string;
   updated_at?: string;

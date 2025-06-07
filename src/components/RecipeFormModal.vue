@@ -199,7 +199,7 @@
           </div>
         </div>
 
-        <RecipeLine v-model="mealForm.recipe_lines" />
+        <RecipeLine v-model="mealForm.recipe_lines" :recipe-id="editingMeal?.id ?? undefined"/>
 
         <div class="border-1 border-gray-300 rounded-lg my-4">
           <div class="mx-2 my-2">
@@ -260,14 +260,17 @@ import {
   IonIcon
 } from '@ionic/vue';
 import { addIcons } from 'ionicons';
-import { camera, closeCircle, add } from 'ionicons/icons';
+import { camera, add, trash, createOutline, layersOutline, swapVertical } from 'ionicons/icons';
 import RecipeLine from './RecipeLine.vue';
 
 // Register the icons
 addIcons({
   camera,
-  'close-circle': closeCircle,
-  add
+  add,
+  trash,
+  createOutline,
+  layersOutline,
+  swapVertical
 });
 
 import { useCategoryStore } from '@/store/useCategoryStore';
@@ -312,7 +315,7 @@ interface RecipeLine {
   measurement_id?: number;
   measurement_name: string;
   measurement_abbreviation: string;
-  notes?: string;
+  recipe_group_id: number;
   sort_order: number;
   created_at?: string;
   updated_at?: string;
@@ -357,7 +360,7 @@ watch(
       
       // Handle recipe lines if they exist
       if (meal.recipe_lines && meal.recipe_lines.length) {
-        recipeLines = meal.recipe_lines.map(line => ({
+        recipeLines = meal.recipe_lines.map((line: any) => ({
           id: line.id,
           ingredient_id: line.ingredient_id,
           ingredient_name: line.ingredient?.name || line.ingredient_name,
@@ -365,7 +368,7 @@ watch(
           measurement_id: line.measurement_id,
           measurement_name: line.measurement?.name || line.measurement_name || '',
           measurement_abbreviation: line.measurement?.abbreviation || '',
-          notes: line.notes || '',
+          recipe_group_id: line.recipe_group_id,
           sort_order: line.sort_order
         }));
       }
@@ -538,66 +541,68 @@ async function saveMeal() {
     const formData = new FormData();
     formData.append('title', mealForm.value.title);
     formData.append('instructions', mealForm.value.instructions);
-    
+
     if (mealForm.value.cooking_time) {
       formData.append('cooking_time', mealForm.value.cooking_time.toString());
     }
-    
+
     if (mealForm.value.serves) {
       formData.append('serves', mealForm.value.serves.toString());
     }
-    
+
     if (mealForm.value.category_ids && mealForm.value.category_ids.length > 0) {
       mealForm.value.category_ids.forEach(id => {
         formData.append('categories[]', id.toString());
       });
     }
-    
+
     if (mealForm.value.cuisine_ids && mealForm.value.cuisine_ids.length > 0) {
       mealForm.value.cuisine_ids.forEach(id => {
         formData.append('cuisines[]', id.toString());
       });
     }
-    
+
     if (mealForm.value.dietary_ids && mealForm.value.dietary_ids.length > 0) {
       mealForm.value.dietary_ids.forEach(id => {
         formData.append('dietary[]', id.toString());
       });
     }
-    
+
     // Handle recipe lines
     if (mealForm.value.recipe_lines && mealForm.value.recipe_lines.length > 0) {
       mealForm.value.recipe_lines.forEach((line, index) => {
         // Skip empty lines
         if (!line.ingredient_name) return;
-        
+
         formData.append(`recipe_lines[${index}][ingredient_name]`, line.ingredient_name);
-        
+
         if (line.quantity !== null) {
           formData.append(`recipe_lines[${index}][quantity]`, line.quantity.toString());
         }
-        
-        formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name || '');
-        
-        if (line.notes) {
-          formData.append(`recipe_lines[${index}][notes]`, line.notes);
+
+        if (line.measurement_id) {
+          formData.append(`recipe_lines[${index}][measurement_id]`, line.measurement_id.toString());
         }
-        
+
+        formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name || '');
+
+        if (line.recipe_group_id) {
+          formData.append(`recipe_lines[${index}][recipe_group_id]`, line.recipe_group_id.toString());
+        }
         formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());
-        
+
         // Include IDs if available for updating
         if (line.id) {
           formData.append(`recipe_lines[${index}][id]`, line.id.toString());
         }
       });
     }
-    
     if (mealForm.value.image) {
       formData.append('image', mealForm.value.image);
     }
-    
+
     formData.append('active', mealForm.value.active ? '1' : '0');
-    
+
     // Log formdata entries for debugging
     let response;
     if (props.editingMeal) {
@@ -605,7 +610,7 @@ async function saveMeal() {
     } else {
       response = await api.post('/recipes', formData);
     }
-    
+
     emit('saved');
     close();
   } catch (error) {

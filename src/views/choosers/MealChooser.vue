@@ -145,10 +145,6 @@ const formatRecipeLine = (line: RecipeLine): string => {
     result += line.ingredient_name;
   }
   
-  if (line.notes) {
-    result += `, ${line.notes}`;
-  }
-  
   return result.trim();
 };
 // Fetch initial meals on mount

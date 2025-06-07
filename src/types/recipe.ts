@@ -3,6 +3,7 @@ import { Category } from '@/types/category';
 import { Cuisine } from '@/types/cuisine';
 import { Dietary } from '@/types/dietary';
 import { RecipeLine } from './recipeline';
+import { RecipeGroup } from './recipeGroup';
 export interface Recipe {
   id: number;
   title: string;
@@ -26,4 +27,8 @@ export interface Recipe {
   category_ids?: number[];
   cuisine_ids?: number[];
   dietary_ids?: number[];
+
+  recipe_groups?: RecipeGroup[];
+  ungrouped_recipe_lines?: RecipeLine[];
+  all_recipe_lines?: RecipeLine[];
 }
