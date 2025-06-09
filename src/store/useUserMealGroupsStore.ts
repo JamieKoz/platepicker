@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/api/axios';
-import type { RecipeGroup } from '@/types';
+import type { RecipeGroup } from '@/types/recipeGroup';
 
 export const useUserMealGroupsStore = defineStore('userMealGroups', () => {
   // State
@@ -12,21 +12,23 @@ export const useUserMealGroupsStore = defineStore('userMealGroups', () => {
   const currentUserMealId = ref<number | null>(null);
 
   // Getters
-  const groupOptions = computed(() => {
-    const options = [
-      { id: null, name: 'Main Ingredients', value: null }
-    ];
-    
-    groups.value.forEach(group => {
-      options.push({
-        id: group.id,
-        name: group.name,
-        value: group.id
-      });
+    const groupOptions = computed(() => {
+        const options: Array<{ id: number | null; name: string; value: number | null }> = [
+            { id: null, name: 'Main Ingredients', value: null }
+        ];
+
+        groups.value.forEach((group: RecipeGroup) => {
+            if (group.id !== undefined) {  // Only add groups that have an ID
+                options.push({
+                    id: group.id,
+                    name: group.name,
+                    value: group.id
+                });
+            }
+        });
+
+        return options;
     });
-    
-    return options;
-  });
 
   const getGroupById = computed(() => {
     return (groupId: number | null) => {
