@@ -1,39 +1,37 @@
-// stores/useRecipeGroupsStore.ts
+// stores/useUserMealGroupsStore.ts
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/api/axios';
-import type { RecipeGroup } from '@/types/recipeGroup';
+import type { RecipeGroup } from '@/types';
 
-export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
+export const useUserMealGroupsStore = defineStore('userMealGroups', () => {
   // State
   const groups = ref<RecipeGroup[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const currentRecipeId = ref<number | null>(null);
+  const currentUserMealId = ref<number | null>(null);
 
   // Getters
-    const groupOptions = computed(() => {
-        const options: Array<{ id: number | null; name: string; value: number | null }> = [
-            { id: null, name: 'Main Ingredients', value: null }
-        ];
-
-        groups.value.forEach((group: RecipeGroup) => {
-            if (group.id !== undefined) {  // Only add groups that have an ID
-                options.push({
-                    id: group.id,
-                    name: group.name,
-                    value: group.id
-                });
-            }
-        });
-
-        return options;
+  const groupOptions = computed(() => {
+    const options = [
+      { id: null, name: 'Main Ingredients', value: null }
+    ];
+    
+    groups.value.forEach(group => {
+      options.push({
+        id: group.id,
+        name: group.name,
+        value: group.id
+      });
     });
+    
+    return options;
+  });
 
   const getGroupById = computed(() => {
     return (groupId: number | null) => {
       if (!groupId) return null;
-      return groups.value.find((g: RecipeGroup) => g.id === groupId) || null;
+      return groups.value.find(g => g.id === groupId) || null;
     };
   });
 
@@ -46,40 +44,40 @@ export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
   });
 
   // Actions
-  const setRecipeId = (recipeId: number) => {
-    if (currentRecipeId.value !== recipeId) {
-      currentRecipeId.value = recipeId;
-      groups.value = []; // Clear groups when recipe changes
+  const setUserMealId = (userMealId: number) => {
+    if (currentUserMealId.value !== userMealId) {
+      currentUserMealId.value = userMealId;
+      groups.value = []; // Clear groups when user meal changes
     }
   };
 
-  const fetchGroups = async (recipeId: number) => {
-    if (!recipeId) return;
+  const fetchGroups = async (userMealId: number) => {
+    if (!userMealId) return;
     
-    setRecipeId(recipeId);
+    setUserMealId(userMealId);
     loading.value = true;
     error.value = null;
     
     try {
-      const response = await api.get(`/recipes/${recipeId}/groups`);
+      const response = await api.get(`/user-meals/${userMealId}/groups`);
       groups.value = response.data.data || [];
     } catch (err: any) {
       error.value = err.response?.data?.error || 'Failed to fetch groups';
-      console.error('Failed to fetch groups:', err);
+      console.error('Failed to fetch user meal groups:', err);
     } finally {
       loading.value = false;
     }
   };
 
-  const createGroup = async (recipeId: number, groupData: { name: string; description?: string }) => {
-    if (!recipeId) throw new Error('Recipe ID is required');
+  const createGroup = async (userMealId: number, groupData: { name: string; description?: string }) => {
+    if (!userMealId) throw new Error('User Meal ID is required');
     
-    setRecipeId(recipeId);
+    setUserMealId(userMealId);
     loading.value = true;
     error.value = null;
     
     try {
-      const response = await api.post(`/recipes/${recipeId}/groups`, groupData);
+      const response = await api.post(`/user-meals/${userMealId}/groups`, groupData);
       const newGroup = response.data.data;
       groups.value.push(newGroup);
       return newGroup;
@@ -91,17 +89,17 @@ export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
     }
   };
 
-  const updateGroup = async (recipeId: number, groupId: number, groupData: { name: string; description?: string }) => {
-    if (!recipeId || !groupId) throw new Error('Recipe ID and Group ID are required');
+  const updateGroup = async (userMealId: number, groupId: number, groupData: { name: string; description?: string }) => {
+    if (!userMealId || !groupId) throw new Error('User Meal ID and Group ID are required');
     
     loading.value = true;
     error.value = null;
     
     try {
-      const response = await api.put(`/recipes/${recipeId}/groups/${groupId}`, groupData);
+      const response = await api.put(`/user-meals/${userMealId}/groups/${groupId}`, groupData);
       const updatedGroup = response.data.data;
       
-      const index = groups.value.findIndex((g: RecipeGroup) => g.id === groupId);
+      const index = groups.value.findIndex(g => g.id === groupId);
       if (index !== -1) {
         groups.value[index] = updatedGroup;
       }
@@ -115,15 +113,15 @@ export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
     }
   };
 
-  const deleteGroup = async (recipeId: number, groupId: number) => {
-    if (!recipeId || !groupId) throw new Error('Recipe ID and Group ID are required');
+  const deleteGroup = async (userMealId: number, groupId: number) => {
+    if (!userMealId || !groupId) throw new Error('User Meal ID and Group ID are required');
     
     loading.value = true;
     error.value = null;
     
     try {
-      await api.delete(`/recipes/${recipeId}/groups/${groupId}`);
-      groups.value = groups.value.filter((g: RecipeGroup) => g.id !== groupId);
+      await api.delete(`/user-meals/${userMealId}/groups/${groupId}`);
+      groups.value = groups.value.filter(g => g.id !== groupId);
     } catch (err: any) {
       error.value = err.response?.data?.error || 'Failed to delete group';
       throw err;
@@ -132,19 +130,19 @@ export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
     }
   };
 
-  const reorderGroups = async (recipeId: number, reorderedGroups: { id: number; sort_order: number }[]) => {
-    if (!recipeId) throw new Error('Recipe ID is required');
+  const reorderGroups = async (userMealId: number, reorderedGroups: { id: number; sort_order: number }[]) => {
+    if (!userMealId) throw new Error('User Meal ID is required');
     
     loading.value = true;
     error.value = null;
     
     try {
-      await api.post(`/recipes/${recipeId}/groups/reorder`, {
+      await api.post(`/user-meals/${userMealId}/groups/reorder`, {
         groups: reorderedGroups
       });
       
       // Update local state
-      groups.value.sort((a: RecipeGroup, b: RecipeGroup) => {
+      groups.value.sort((a, b) => {
         const aOrder = reorderedGroups.find(g => g.id === a.id)?.sort_order || 0;
         const bOrder = reorderedGroups.find(g => g.id === b.id)?.sort_order || 0;
         return aOrder - bOrder;
@@ -165,7 +163,7 @@ export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
     groups.value = [];
     loading.value = false;
     error.value = null;
-    currentRecipeId.value = null;
+    currentUserMealId.value = null;
   };
 
   return {
@@ -173,7 +171,7 @@ export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
     groups,
     loading,
     error,
-    currentRecipeId,
+    currentUserMealId,
     
     // Getters
     groupOptions,
@@ -181,7 +179,7 @@ export const useRecipeGroupsStore = defineStore('recipeGroups', () => {
     getGroupName,
     
     // Actions
-    setRecipeId,
+    setUserMealId,
     fetchGroups,
     createGroup,
     updateGroup,

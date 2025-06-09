@@ -55,10 +55,14 @@
       </div>
 
       <!-- Group -->
-      <div class="col-span-5" v-if="props.recipeId">
+      <div class="col-span-5">
         <ion-label class="text-xs text-gray-500 block mb-1">Group (optional)</ion-label>
-        <ion-select v-model="line.recipe_group_id" placeholder="Select group">
-          <ion-select-option :value="undefined">Main Ingredients</ion-select-option>
+        <ion-select 
+          v-model="groupId" 
+          placeholder="Select group"
+          interface="popover"
+        >
+          <ion-select-option :value="null">Main Ingredients</ion-select-option>
           <ion-select-option 
             v-for="group in availableGroups" 
             :key="group.id" 
@@ -67,15 +71,16 @@
             {{ group.name }}
           </ion-select-option>
         </ion-select>
+        <div v-if="!entityId" class="text-xs text-gray-500 mt-1">
+          Save first to create custom groups
+        </div>
       </div>
-     <div class="col-span-5" v-else></div>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue';
+import { ref, nextTick, watch, computed } from 'vue';
 import { 
   IonInput, 
   IonButton, 
@@ -95,11 +100,12 @@ import type { RecipeGroup } from '@/types/recipeGroup';
 
 const props = defineProps<{
   modelValue: RecipeLine;
-  containerClass?: string;
   recipeId?: number;
+  userMealId?: number;
+  storeType?: 'recipe' | 'userMeal';
   availableGroups: RecipeGroup[];
+  containerClass?: string;
 }>();
-
 
 addIcons({
   add,
@@ -118,6 +124,34 @@ const line = ref<RecipeLine>({ ...props.modelValue });
 const searchResults = ref<Ingredient[]>([]);
 const showSuggestions = ref(false);
 let searchTimeout: number | null = null;
+
+// Determine which entity ID we're working with
+const entityId = computed(() => {
+  const id = props.recipeId || props.userMealId;
+  return id;
+});
+
+// Computed property for the group ID that handles both recipe and user meal contexts
+const groupId = computed({
+  get: () => {
+    const storeType = props.storeType || (props.recipeId ? 'recipe' : 'userMeal');
+    return storeType === 'recipe' 
+      ? line.value.recipe_group_id 
+      : line.value.user_meal_group_id;
+  },
+  set: (value: number | undefined) => {
+    const storeType = props.storeType || (props.recipeId ? 'recipe' : 'userMeal');
+    if (storeType === 'recipe') {
+      line.value.recipe_group_id = value;
+      // Clear the other field to avoid conflicts
+      delete line.value.user_meal_group_id;
+    } else {
+      line.value.user_meal_group_id = value;
+      // Clear the other field to avoid conflicts
+      delete line.value.recipe_group_id;
+    }
+  }
+});
 
 // Watch for changes in the line and emit updates
 watch(line, (newValue) => {
@@ -147,6 +181,7 @@ const updateMeasurementName = () => {
   const m = measurementStore.measurement.find(m => m.id === line.value.measurement_id);
   if (m) {
     line.value.measurement_name = m.name;
+    line.value.measurement_abbreviation = m.abbreviation || '';
   }
 };
 

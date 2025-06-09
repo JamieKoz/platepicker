@@ -1,6 +1,7 @@
 import { Category } from './category';
 import { Cuisine } from './cuisine';
 import { Dietary } from './dietary';
+import { RecipeGroup } from './recipeGroup';
 import { RecipeLine } from './recipeline';
 
 export interface Meal {
@@ -27,4 +28,9 @@ export interface Meal {
   category_ids?: number[];
   cuisine_ids?: number[];
   dietary_ids?: number[];
+
+
+  user_meal_groups?: RecipeGroup[];
+  ungrouped_user_meal_lines?: RecipeLine[];
+  all_user_meal_lines?: RecipeLine[];
 }

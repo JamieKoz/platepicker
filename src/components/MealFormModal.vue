@@ -11,65 +11,146 @@
     </ion-header>
     <ion-content class="ion-padding">
       <form @submit.prevent="saveMeal">
-        <ion-item>
-          <ion-label position="stacked">Title</ion-label>
-          <ion-input v-model="mealForm.title" required placeholder="Pasta Bolognese"></ion-input>
-        </ion-item>
 
+        <!-- Avatar Image Section -->
+        <div class="flex justify-center mb-6">
+          <div @click="triggerImageUpload"
+            class="relative w-32 h-32 rounded-full border-4 border-gray-300 overflow-hidden cursor-pointer hover:border-blue-500 transition-colors duration-200 bg-gray-100 flex items-center justify-center">
+            <img v-if="imagePreview || (editingMeal && editingMeal.image_name)"
+              :src="imagePreview || (editingMeal?.image_name ? `https://dy9kit23m04xx.cloudfront.net/food-images/${editingMeal.image_name}.jpg` : '')"
+              alt="Meal image" class="w-full h-full object-cover" />
+            <div v-else class="text-center text-gray-500">
+              <ion-icon name="camera" class="text-3xl mb-2"></ion-icon>
+              <div class="text-xs">Upload Image</div>
+            </div>
 
-        <ion-item>
-          <ion-label position="stacked">Instructions</ion-label>
-          <ion-textarea v-model="mealForm.instructions" class="min-h-[150px]" placeholder="Stir for 20 mins"></ion-textarea>
-        </ion-item>
+            <!-- Hidden file input -->
+            <input ref="fileInput" type="file" @change="handleImageChange" accept="image/*" class="hidden">
 
-        <ion-item>
-          <ion-label position="stacked">Image</ion-label>
-          <input type="file" @change="handleImageChange" accept="image/*" class="py-4">
-        </ion-item>
+            <!-- Edit overlay on hover -->
+            <div
+              class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
+              <ion-icon name="camera" class="text-white text-2xl"></ion-icon>
+            </div>
+          </div>
+        </div>
 
-        <ion-item>
-          <ion-label position="stacked">Cooking Time (minutes)</ion-label>
-          <ion-input type="number" step="5" v-model="mealForm.cooking_time" placeholder="time in minutes eg. 30"></ion-input>
-        </ion-item>
+        <div class="flex items-center justify-end py-4 rounded-lg">
+          <ion-toggle v-model="mealForm.active"></ion-toggle>
+        </div>
+        <div class="border-1 border-gray-300 rounded-lg">
+          <ion-input v-model="mealForm.title" required placeholder="Title" class="mx-2"></ion-input>
+        </div>
 
-        <ion-item>
-          <ion-label position="stacked">Serves</ion-label>
-          <ion-input type="number" v-model="mealForm.serves" placeholder="no. of servings e.g. 4"></ion-input>
-        </ion-item>
+        <!-- Compact row for cooking time and serves -->
+        <div class="grid grid-cols-2 gap-4 py-3">
+          <div class="rounded-lg border-1 border-gray-300">
+            <ion-label position="stacked" class="px-2 opacity-50">Cooking Time (min)</ion-label>
+            <div class="mx-2">
+              <ion-input type="number" step="5" v-model="mealForm.cooking_time" class="px-2"
+                placeholder="30"></ion-input>
+            </div>
+          </div>
 
-        <ion-item>
-          <ion-label position="stacked">Categories</ion-label>
-            <ion-select :multiple="true" v-model="mealForm.category_ids">
+          <div class="rounded-lg border-1 border-gray-300">
+            <ion-label position="stacked" class="px-2 opacity-50">Serves</ion-label>
+            <div class="mx-2">
+              <ion-input type="number" v-model="mealForm.serves" placeholder="4"></ion-input>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <ion-label class="opacity-70 text-sm font-medium block mb-2">Categories</ion-label>
+          <ion-select ref="categorySelectRef" :multiple="true" v-model="mealForm.category_ids"
+            placeholder="Select categories" class="hidden" interface="popover" @ionChange="onCategoryChange">
             <ion-select-option v-for="category in categoryStore.categories" :key="category.id" :value="category.id">
               {{ category.name }}
             </ion-select-option>
           </ion-select>
-        </ion-item>
 
-        <ion-item>
-          <ion-label position="stacked">Cuisine</ion-label>
-          <ion-select :multiple="true" v-model="mealForm.cuisine_ids" placeholder="Select cuisine">
+          <div class="flex flex-wrap gap-2 mb-2">
+            <div v-for="categoryId in mealForm.category_ids" :key="categoryId"
+              class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+              {{ getCategoryName(categoryId) }}
+              <button @click="removeCategory(categoryId)" type="button" class="text-blue-600 hover:text-blue-800">
+                <ion-icon name="close-circle"></ion-icon>
+              </button>
+            </div>
+          </div>
+
+          <ion-button fill="outline" size="small" @click="openCategorySelect" class="w-full">
+            <ion-icon name="add" slot="start"></ion-icon>
+            Add Categories
+          </ion-button>
+        </div>
+
+        <!-- Cuisine with pills -->
+        <div class="mb-4">
+          <ion-label class="opacity-70 text-sm font-medium block mb-2">Cuisine</ion-label>
+          <ion-select ref="cuisineSelectRef" :multiple="true" v-model="mealForm.cuisine_ids"
+            placeholder="Select cuisine" class="hidden" interface="popover" @ionChange="onCuisineChange">
             <ion-select-option v-for="cuisine in cuisineStore.cuisine" :key="cuisine.id" :value="cuisine.id">
               {{ cuisine.name }}
             </ion-select-option>
           </ion-select>
-        </ion-item>
 
-        <ion-item>
-          <ion-label position="stacked">Dietary Requirements</ion-label>
-          <ion-select :multiple="true" v-model="mealForm.dietary_ids"  placeholder="Select dietary requirements">
+          <div class="flex flex-wrap gap-2 mb-2">
+            <div v-for="cuisineId in mealForm.cuisine_ids" :key="cuisineId"
+              class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+              {{ getCuisineName(cuisineId) }}
+              <button @click="removeCuisine(cuisineId)" type="button" class="text-green-600 hover:text-green-800">
+                <ion-icon name="close-circle"></ion-icon>
+              </button>
+            </div>
+          </div>
+
+          <ion-button fill="outline" size="small" @click="openCuisineSelect" class="w-full">
+            <ion-icon name="add" slot="start"></ion-icon>
+            Add Cuisine
+          </ion-button>
+        </div>
+
+        <!-- Dietary Requirements with pills -->
+        <div class="mb-4">
+          <ion-label class="opacity-70 text-sm font-medium block mb-2">Dietary Requirements (max 3)</ion-label>
+          <ion-select ref="dietarySelectRef" :multiple="true" v-model="mealForm.dietary_ids"
+            placeholder="Select dietary requirements" class="hidden" interface="popover" @ionChange="onDietaryChange">
             <ion-select-option v-for="dietary in dietaryStore.dietary" :key="dietary.id" :value="dietary.id">
               {{ dietary.name }}
             </ion-select-option>
           </ion-select>
-        </ion-item>
 
-        <RecipeLine v-model="mealForm.recipe_lines" />
+          <div class="flex flex-wrap gap-2 mb-2">
+            <div v-for="dietaryId in mealForm.dietary_ids" :key="dietaryId"
+              class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+              {{ getDietaryName(dietaryId) }}
+              <button @click="removeDietary(dietaryId)" type="button" class="text-purple-600 hover:text-purple-800">
+                <ion-icon name="close-circle"></ion-icon>
+              </button>
+            </div>
+          </div>
 
-        <ion-item>
-          <ion-label>Active</ion-label>
-          <ion-toggle v-model="mealForm.active" class="py-4"></ion-toggle>
-        </ion-item>
+          <ion-button fill="outline" size="small" @click="openDietarySelect" class="w-full"
+            :disabled="mealForm.dietary_ids.length >= 3">
+            <ion-icon name="add" slot="start"></ion-icon>
+            Add Dietary Requirements
+          </ion-button>
+
+          <div v-if="dietaryError" class="text-red-500 text-sm mt-2">
+            {{ dietaryError }}
+          </div>
+        </div>
+
+        <RecipeLine v-model="mealForm.recipe_lines" :user-meal-id="editingMeal?.id" store-type="userMeal" />
+
+        <div class="border-1 border-gray-300 rounded-lg my-4">
+          <div class="mx-2 my-2">
+            <ion-label position="stacked" class="opacity-70">Instructions</ion-label>
+            <ion-textarea v-model="mealForm.instructions" :rows="20" class="min-h-[150px]"
+              placeholder="Stir for 20 mins"></ion-textarea>
+          </div>
+        </div>
 
         <div class="ion-padding">
           <ion-button type="submit" expand="block">
@@ -99,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import type { Meal } from '@/types/meal';
 import type { Measurement } from '@/types/measurement';
 import { Ingredient } from '@/types/ingredient';
@@ -120,7 +201,8 @@ import {
   IonToggle,
   IonAlert,
   IonSelect,
-  IonSelectOption
+  IonSelectOption,
+  IonIcon
 } from '@ionic/vue';
 
 // Import stores
@@ -130,7 +212,22 @@ import { useDietaryStore } from '@/store/useDietaryStore';
 import { useMeasurementStore } from '@/store/useMeasurementStore';
 import api from '@/api/axios';
 import { Dietary } from '@/types/dietary';
+import { addIcons } from 'ionicons';
+import { camera, add, trash, createOutline, layersOutline, swapVertical, closeCircle, chevronDown, chevronUp, checkmarkDone } from 'ionicons/icons';
 
+addIcons({
+  camera,
+  add,
+  trash,
+  createOutline,
+  layersOutline,
+  swapVertical,
+  closeCircle,
+  'chevron-down': chevronDown,
+  'chevron-up': chevronUp,
+  'swap-vertical': swapVertical,
+  'checkmark-done': checkmarkDone
+});
 const props = defineProps<{
   isOpen: boolean;
   editingMeal: Meal | null;
@@ -146,8 +243,16 @@ const categoryStore = useCategoryStore();
 const cuisineStore = useCuisineStore();
 const dietaryStore = useDietaryStore();
 const measurementStore = useMeasurementStore();
+const dietaryError = ref('');
+
+// Add refs for select elements
+const categorySelectRef = ref<typeof IonSelect | null>(null);
+const cuisineSelectRef = ref<typeof IonSelect | null>(null);
+const dietarySelectRef = ref<typeof IonSelect | null>(null);
 
 const showDeleteConfirm = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
+const imagePreview = ref<string | null>(null);
 
 interface RecipeLine {
   id?: number;
@@ -158,6 +263,8 @@ interface RecipeLine {
   quantity: number | null;
   measurement_id?: number;
   measurement_name: string;
+  measurement_abbreviation: string;
+  user_meal_group_id: number;
   sort_order: number;
   created_at?: string;
   updated_at?: string;
@@ -199,13 +306,15 @@ watch(
       
       // Handle recipe lines if they exist
       if (meal.recipe_lines && meal.recipe_lines.length) {
-        recipeLines = meal.recipe_lines.map(line => ({
+        recipeLines = meal.recipe_lines.map((line: any) => ({
           id: line.id,
           ingredient_id: line.ingredient_id,
           ingredient_name: line.ingredient?.name || line.ingredient_name,
           quantity: line.quantity,
           measurement_id: line.measurement_id,
           measurement_name: line.measurement?.name || line.measurement_name || '',
+          measurement_abbreviation: line.measurement?.abbreviation || '',
+          user_meal_group_id: line.user_meal_group_id,
           sort_order: line.sort_order
         }));
       }
@@ -259,7 +368,15 @@ function close() {
 function handleImageChange(event: Event) {
   const input = event.target as HTMLInputElement;
   if (input.files && input.files[0]) {
-    mealForm.value.image = input.files[0];
+    const file = input.files[0];
+    mealForm.value.image = file;
+    
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   }
 }
 
@@ -281,6 +398,78 @@ async function deleteMeal() {
   }
 }
 
+function getCategoryName(id: number): string {
+  return categoryStore.categories.find(cat => cat.id === id)?.name || '';
+}
+
+function getCuisineName(id: number): string {
+  return cuisineStore.cuisine.find(cuisine => cuisine.id === id)?.name || '';
+}
+
+function getDietaryName(id: number): string {
+  return dietaryStore.dietary.find(dietary => dietary.id === id)?.name || '';
+}
+
+function removeCategory(id: number) {
+  mealForm.value.category_ids = mealForm.value.category_ids.filter(catId => catId !== id);
+}
+
+function removeCuisine(id: number) {
+  mealForm.value.cuisine_ids = mealForm.value.cuisine_ids.filter(cuisineId => cuisineId !== id);
+}
+
+function removeDietary(id: number) {
+  mealForm.value.dietary_ids = mealForm.value.dietary_ids.filter(dietaryId => dietaryId !== id);
+  validateDietarySelection();
+}
+
+async function openCategorySelect() {
+  await nextTick();
+  const selectEl = categorySelectRef.value?.$el;
+  if (selectEl && selectEl.open) {
+    selectEl.open();
+  }
+}
+
+async function openCuisineSelect() {
+  await nextTick();
+  const selectEl = cuisineSelectRef.value?.$el;
+  if (selectEl && selectEl.open) {
+    selectEl.open();
+  }
+}
+
+async function openDietarySelect() {
+  await nextTick();
+  const selectEl = dietarySelectRef.value?.$el;
+  if (selectEl && selectEl.open) {
+    selectEl.open();
+  }
+}
+function validateDietarySelection() {
+  if (mealForm.value.dietary_ids.length > 3) {
+    dietaryError.value = 'You can only select up to 3 dietary requirements';
+    // Trim the selection to the first 3 items
+    mealForm.value.dietary_ids = mealForm.value.dietary_ids.slice(0, 3);
+  } else {
+    dietaryError.value = '';
+  }
+}
+function triggerImageUpload() {
+  fileInput.value?.click();
+}
+
+function onCategoryChange() {
+  // Handle category selection change if needed
+}
+
+function onCuisineChange() {
+  // Handle cuisine selection change if needed
+}
+
+function onDietaryChange() {
+  validateDietarySelection();
+}
 async function saveMeal() {
   try {
     const formData = new FormData();
@@ -327,6 +516,10 @@ async function saveMeal() {
         
         formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name || '');
         
+        if (line.user_meal_group_id) {
+          formData.append(`recipe_lines[${index}][user_meal_group_id]`, line.user_meal_group_id.toString());
+        }
+
         formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());
         
         // Include IDs if available for updating

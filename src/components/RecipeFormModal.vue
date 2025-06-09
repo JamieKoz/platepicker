@@ -15,51 +15,41 @@
 
         <!-- Avatar Image Section -->
         <div class="flex justify-center mb-6">
-          <div 
-            @click="triggerImageUpload"
-            class="relative w-32 h-32 rounded-full border-4 border-gray-300 overflow-hidden cursor-pointer hover:border-blue-500 transition-colors duration-200 bg-gray-100 flex items-center justify-center"
-          >
-            <img 
-              v-if="imagePreview || (editingMeal && editingMeal.image_name)"
-              :src="imagePreview || (editingMeal?.image_name ? `https://dy9kit23m04xx.cloudfront.net/food-images/${editingMeal.image_name}.jpg` : '')" 
-              alt="Meal image"
-              class="w-full h-full object-cover"
-            />
+          <div @click="triggerImageUpload"
+            class="relative w-32 h-32 rounded-full border-4 border-gray-300 overflow-hidden cursor-pointer hover:border-blue-500 transition-colors duration-200 bg-gray-100 flex items-center justify-center">
+            <img v-if="imagePreview || (editingMeal && editingMeal.image_name)"
+              :src="imagePreview || (editingMeal?.image_name ? `https://dy9kit23m04xx.cloudfront.net/food-images/${editingMeal.image_name}.jpg` : '')"
+              alt="Meal image" class="w-full h-full object-cover" />
             <div v-else class="text-center text-gray-500">
               <ion-icon name="camera" class="text-3xl mb-2"></ion-icon>
               <div class="text-xs">Upload Image</div>
             </div>
-            
+
             <!-- Hidden file input -->
-            <input 
-              ref="fileInput"
-              type="file" 
-              @change="handleImageChange" 
-              accept="image/*" 
-              class="hidden"
-            >
-            
+            <input ref="fileInput" type="file" @change="handleImageChange" accept="image/*" class="hidden">
+
             <!-- Edit overlay on hover -->
-            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
+            <div
+              class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
               <ion-icon name="camera" class="text-white text-2xl"></ion-icon>
             </div>
           </div>
         </div>
 
-          <div class="flex items-center justify-end py-4 rounded-lg">
-            <ion-toggle v-model="mealForm.active"></ion-toggle>
-          </div>
-          <div class="border-1 border-gray-300 rounded-lg">
-            <ion-input v-model="mealForm.title" required placeholder="Title" class="mx-2"></ion-input>
-          </div>
+        <div class="flex items-center justify-end py-4 rounded-lg">
+          <ion-toggle v-model="mealForm.active"></ion-toggle>
+        </div>
+        <div class="border-1 border-gray-300 rounded-lg">
+          <ion-input v-model="mealForm.title" required placeholder="Title" class="mx-2"></ion-input>
+        </div>
 
         <!-- Compact row for cooking time and serves -->
         <div class="grid grid-cols-2 gap-4 py-3">
           <div class="rounded-lg border-1 border-gray-300">
             <ion-label position="stacked" class="px-2 opacity-50">Cooking Time (min)</ion-label>
             <div class="mx-2">
-            <ion-input type="number" step="5" v-model="mealForm.cooking_time" class="px-2"
-              placeholder="30"></ion-input>
+              <ion-input type="number" step="5" v-model="mealForm.cooking_time" class="px-2"
+                placeholder="30"></ion-input>
             </div>
           </div>
 
@@ -74,39 +64,24 @@
         <!-- Categories with pills -->
         <div class="mb-4">
           <ion-label class="opacity-70 text-sm font-medium block mb-2">Categories</ion-label>
-          <ion-select 
-            ref="categorySelectRef"
-            :multiple="true" 
-            v-model="mealForm.category_ids" 
-            placeholder="Select categories"
-            class="hidden"
-            interface="popover"
-            @ionChange="onCategoryChange"
-          >
+          <ion-select ref="categorySelectRef" :multiple="true" v-model="mealForm.category_ids"
+            placeholder="Select categories" class="hidden" interface="popover" @ionChange="onCategoryChange">
             <ion-select-option v-for="category in categoryStore.categories" :key="category.id" :value="category.id">
               {{ category.name }}
             </ion-select-option>
           </ion-select>
-          
+
           <div class="flex flex-wrap gap-2 mb-2">
-            <div 
-              v-for="categoryId in mealForm.category_ids" 
-              :key="categoryId"
-              class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-            >
+            <div v-for="categoryId in mealForm.category_ids" :key="categoryId"
+              class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
               {{ getCategoryName(categoryId) }}
               <button @click="removeCategory(categoryId)" type="button" class="text-blue-600 hover:text-blue-800">
                 <ion-icon name="close-circle"></ion-icon>
               </button>
             </div>
           </div>
-          
-          <ion-button 
-            fill="outline" 
-            size="small" 
-            @click="openCategorySelect"
-            class="w-full"
-          >
+
+          <ion-button fill="outline" size="small" @click="openCategorySelect" class="w-full">
             <ion-icon name="add" slot="start"></ion-icon>
             Add Categories
           </ion-button>
@@ -115,39 +90,24 @@
         <!-- Cuisine with pills -->
         <div class="mb-4">
           <ion-label class="opacity-70 text-sm font-medium block mb-2">Cuisine</ion-label>
-          <ion-select 
-            ref="cuisineSelectRef"
-            :multiple="true" 
-            v-model="mealForm.cuisine_ids" 
-            placeholder="Select cuisine"
-            class="hidden"
-            interface="popover"
-            @ionChange="onCuisineChange"
-          >
+          <ion-select ref="cuisineSelectRef" :multiple="true" v-model="mealForm.cuisine_ids"
+            placeholder="Select cuisine" class="hidden" interface="popover" @ionChange="onCuisineChange">
             <ion-select-option v-for="cuisine in cuisineStore.cuisine" :key="cuisine.id" :value="cuisine.id">
               {{ cuisine.name }}
             </ion-select-option>
           </ion-select>
-          
+
           <div class="flex flex-wrap gap-2 mb-2">
-            <div 
-              v-for="cuisineId in mealForm.cuisine_ids" 
-              :key="cuisineId"
-              class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-            >
+            <div v-for="cuisineId in mealForm.cuisine_ids" :key="cuisineId"
+              class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
               {{ getCuisineName(cuisineId) }}
               <button @click="removeCuisine(cuisineId)" type="button" class="text-green-600 hover:text-green-800">
                 <ion-icon name="close-circle"></ion-icon>
               </button>
             </div>
           </div>
-          
-          <ion-button 
-            fill="outline" 
-            size="small" 
-            @click="openCuisineSelect"
-            class="w-full"
-          >
+
+          <ion-button fill="outline" size="small" @click="openCuisineSelect" class="w-full">
             <ion-icon name="add" slot="start"></ion-icon>
             Add Cuisine
           </ion-button>
@@ -156,56 +116,41 @@
         <!-- Dietary Requirements with pills -->
         <div class="mb-4">
           <ion-label class="opacity-70 text-sm font-medium block mb-2">Dietary Requirements (max 3)</ion-label>
-          <ion-select 
-            ref="dietarySelectRef"
-            :multiple="true" 
-            v-model="mealForm.dietary_ids" 
-            placeholder="Select dietary requirements"
-            class="hidden"
-            interface="popover"
-            @ionChange="onDietaryChange"
-          >
+          <ion-select ref="dietarySelectRef" :multiple="true" v-model="mealForm.dietary_ids"
+            placeholder="Select dietary requirements" class="hidden" interface="popover" @ionChange="onDietaryChange">
             <ion-select-option v-for="dietary in dietaryStore.dietary" :key="dietary.id" :value="dietary.id">
               {{ dietary.name }}
             </ion-select-option>
           </ion-select>
-          
+
           <div class="flex flex-wrap gap-2 mb-2">
-            <div 
-              v-for="dietaryId in mealForm.dietary_ids" 
-              :key="dietaryId"
-              class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-            >
+            <div v-for="dietaryId in mealForm.dietary_ids" :key="dietaryId"
+              class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
               {{ getDietaryName(dietaryId) }}
               <button @click="removeDietary(dietaryId)" type="button" class="text-purple-600 hover:text-purple-800">
                 <ion-icon name="close-circle"></ion-icon>
               </button>
             </div>
           </div>
-          
-          <ion-button 
-            fill="outline" 
-            size="small" 
-            @click="openDietarySelect"
-            class="w-full"
-            :disabled="mealForm.dietary_ids.length >= 3"
-          >
+
+          <ion-button fill="outline" size="small" @click="openDietarySelect" class="w-full"
+            :disabled="mealForm.dietary_ids.length >= 3">
             <ion-icon name="add" slot="start"></ion-icon>
             Add Dietary Requirements
           </ion-button>
-          
+
           <div v-if="dietaryError" class="text-red-500 text-sm mt-2">
             {{ dietaryError }}
           </div>
         </div>
 
-        <RecipeLine v-model="mealForm.recipe_lines" :recipe-id="editingMeal?.id ?? undefined"/>
+        <RecipeLine v-model="mealForm.recipe_lines" :recipe-id="editingMeal?.id ?? undefined" store-type="recipe" />
 
         <div class="border-1 border-gray-300 rounded-lg my-4">
           <div class="mx-2 my-2">
-          <ion-label position="stacked" class="opacity-70">Instructions</ion-label>
-          <ion-textarea v-model="mealForm.instructions" :rows="20" class="min-h-[150px]"
-            placeholder="Stir for 20 mins"></ion-textarea>
+            <ion-label position="stacked" class="opacity-70">Instructions</ion-label>
+            <ion-textarea v-model="mealForm.instructions" :rows="20" class="min-h-[150px]"
+              placeholder="Stir for 20 mins"></ion-textarea>
           </div>
         </div>
 
@@ -249,7 +194,6 @@ import {
   IonContent,
   IonButtons,
   IonButton,
-  IonItem,
   IonLabel,
   IonInput,
   IonTextarea,
@@ -260,7 +204,7 @@ import {
   IonIcon
 } from '@ionic/vue';
 import { addIcons } from 'ionicons';
-import { camera, add, trash, createOutline, layersOutline, swapVertical } from 'ionicons/icons';
+import { camera, add, trash, createOutline, layersOutline, swapVertical, closeCircle, chevronDown, chevronUp, checkmarkDone } from 'ionicons/icons';
 import RecipeLine from './RecipeLine.vue';
 
 // Register the icons
@@ -270,7 +214,12 @@ addIcons({
   trash,
   createOutline,
   layersOutline,
-  swapVertical
+  swapVertical,
+  closeCircle,
+  'chevron-down': chevronDown,
+  'chevron-up': chevronUp,
+  'swap-vertical': swapVertical,
+  'checkmark-done': checkmarkDone
 });
 
 import { useCategoryStore } from '@/store/useCategoryStore';

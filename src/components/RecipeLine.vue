@@ -20,17 +20,13 @@
     </div>
 
     <!-- Group Manager - Simple input to create groups -->
-      <div v-if="showGroupManager" class="mb-4 p-3 border-1 border-gray-300 rounded-lg">
-        <div v-if="!props.recipeId" class="text-sm text-gray-600 mb-2">
-          Save the recipe first to create ingredient groups
-        </div>
-        <div v-else class="flex items-center gap-2">
-        <ion-input 
-          v-model="newGroupName" 
-          placeholder="Create new group"
-          class="flex-1"
-          @keyup.enter="createGroup"
-        ></ion-input>
+    <div v-if="showGroupManager" class="mb-4 p-3 border-1 border-gray-300 rounded-lg">
+      <div v-if="!entityId" class="text-sm text-gray-600 mb-2">
+        Save the {{ storeType === 'recipe' ? 'recipe' : 'meal' }} first to create ingredient groups
+      </div>
+      <div v-else class="flex items-center gap-2">
+        <ion-input v-model="newGroupName" placeholder="Create new group" class="flex-1"
+          @keyup.enter="createGroup"></ion-input>
         <ion-button @click="createGroup" size="small" :disabled="!newGroupName">
           <ion-icon name="add" slot="start"></ion-icon>
           Create Group
@@ -95,8 +91,8 @@
 
             <!-- Edit mode -->
             <div v-else class="p-3 rounded-lg border-2 border-blue-200 dark:border-blue-700">
-              <RecipeLineEditor v-model="currentLine" :recipe-id="recipeId" :available-groups="availableGroups"
-                @save="saveLine" @cancel="cancelEdit" />
+              <RecipeLineEditor v-model="currentLine" :recipe-id="props.recipeId" :user-meal-id="props.userMealId"
+                :store-type="storeType" :available-groups="availableGroups" @save="saveLine" @cancel="cancelEdit" />
             </div>
           </div>
         </div>
@@ -105,9 +101,12 @@
 
     <!-- New ingredient form -->
     <div v-if="showNewLine">
-      <RecipeLineEditor v-model="currentLine" :recipe-id="recipeId" :available-groups="availableGroups"
-        container-class="mb-4 p-3 rounded-lg border-2 border-green-200 dark:border-green-700" @save="saveLine"
-        @cancel="cancelEdit" />
+      <div v-if="showNewLine">
+        <RecipeLineEditor v-model="currentLine" :recipe-id="props.recipeId" :user-meal-id="props.userMealId"
+          :store-type="storeType" :available-groups="availableGroups"
+          container-class="mb-4 p-3 rounded-lg border-2 border-green-200 dark:border-green-700" @save="saveLine"
+          @cancel="cancelEdit" />
+      </div>
     </div>
 
     <!-- Add ingredient button -->
@@ -131,13 +130,15 @@ import { decimalToFraction } from '@/utils/fractionHelpers';
 import type { RecipeLine } from '@/types/recipeline';
 import { useMeasurementStore } from '@/store/useMeasurementStore';
 import { useRecipeGroupsStore } from '@/store/useRecipeGroupsStore';
+import { useUserMealGroupsStore } from '@/store/useUserMealGroupsStore';
 import RecipeLineEditor from '@/components/RecipeLineEditor.vue';
 import { RecipeGroup } from '@/types/recipeGroup';
-
 
 const props = defineProps<{
   modelValue: RecipeLine[];
   recipeId?: number;
+  userMealId?: number;
+  storeType?: 'recipe' | 'userMeal'; // New prop to determine which store to use
 }>();
 
 const emit = defineEmits<{
@@ -147,6 +148,23 @@ const emit = defineEmits<{
 // Initialize stores
 const measurementStore = useMeasurementStore();
 const recipeGroupsStore = useRecipeGroupsStore();
+const userMealGroupsStore = useUserMealGroupsStore();
+
+// Determine which store and ID to use
+const storeType = computed(() => {
+  if (props.storeType) return props.storeType;
+  // Auto-detect based on props
+  return props.recipeId ? 'recipe' : 'userMeal';
+});
+
+const entityId = computed(() => {
+  const id = storeType.value === 'recipe' ? props.recipeId : props.userMealId;
+  return id;
+});
+
+const groupsStore = computed(() => {
+  return storeType.value === 'recipe' ? recipeGroupsStore : userMealGroupsStore;
+});
 
 // State
 const savedLines = ref<RecipeLine[]>([]);
@@ -166,7 +184,10 @@ const newGroupName = ref('');
 const reorderMode = ref(false);
 
 // Available groups for the select
-const availableGroups = computed(() => recipeGroupsStore.groups);
+const availableGroups = computed(() => {
+  const storeGroups = groupsStore.value.groups;
+  return Array.isArray(storeGroups) ? storeGroups : [];
+});
 
 // Group ingredients by their group names
 const groupedIngredients = computed(() => {
@@ -175,8 +196,11 @@ const groupedIngredients = computed(() => {
   savedLines.value.forEach((line, index) => {
     let groupName = 'Main Ingredients';
     
-    if (line.recipe_group_id) {
-      const group = recipeGroupsStore.groups.find((g: RecipeGroup) => g.id === line.recipe_group_id);
+    const groupIdField = storeType.value === 'recipe' ? 'recipe_group_id' : 'user_meal_group_id';
+    const groupId = (line as any)[groupIdField];
+    
+    if (groupId && Array.isArray(groupsStore.value.groups)) {
+      const group = groupsStore.value.groups.find((g: RecipeGroup) => g.id === groupId);
       groupName = group?.name || 'Main Ingredients';
     }
     
@@ -218,6 +242,7 @@ const moveLine = (index: number, direction: number) => {
   });
   emitUpdate();
 };
+
 // Initialize
 onMounted(async () => {
   // Load measurements
@@ -225,9 +250,17 @@ onMounted(async () => {
     await measurementStore.fetchMeasurement();
   }
 
-  // Load groups for this recipe
-  if (props.recipeId) {
-    await recipeGroupsStore.fetchGroups(props.recipeId);
+  // Load groups for this entity
+  if (entityId.value) {
+    try {
+      if (storeType.value === 'recipe') {
+        await recipeGroupsStore.fetchGroups(entityId.value);
+      } else {
+        await userMealGroupsStore.fetchGroups(entityId.value);
+      }
+    } catch (error) {
+      console.error('Failed to load groups:', error);
+    }
   }
 
   // Initialize saved lines from props
@@ -253,15 +286,21 @@ watch(() => props.modelValue, (newValue) => {
 const createGroup = async () => {
   if (!newGroupName.value.trim()) return;
 
-  if (!props.recipeId) {
-    console.warn('Cannot create group: Recipe must be saved first');
+  if (!entityId.value) {
+    console.warn(`Cannot create group: ${storeType.value === 'recipe' ? 'Recipe' : 'User meal'} must be saved first`);
     return;
   } 
 
   try {
-    await recipeGroupsStore.createGroup(props.recipeId, { 
-      name: newGroupName.value.trim() 
-    });
+    if (storeType.value === 'recipe') {
+      await recipeGroupsStore.createGroup(entityId.value, { 
+        name: newGroupName.value.trim() 
+      });
+    } else {
+      await userMealGroupsStore.createGroup(entityId.value, { 
+        name: newGroupName.value.trim() 
+      });
+    }
     newGroupName.value = '';
   } catch (error) {
     console.error('Failed to create group:', error);
@@ -272,15 +311,28 @@ const createGroup = async () => {
 const addNewLine = () => {
   showNewLine.value = true;
   editingIndex.value = null;
-  currentLine.value = {
+  
+  const baseLineData = {
     ingredient_name: '',
     quantity: null,
     measurement_name: '',
     measurement_abbreviation: '',
     measurement_id: undefined,
-    recipe_group_id: undefined,
     sort_order: savedLines.value.length,
   };
+
+  // Set the appropriate group ID field based on store type
+  if (storeType.value === 'recipe') {
+    currentLine.value = {
+      ...baseLineData,
+      recipe_group_id: undefined,
+    };
+  } else {
+    currentLine.value = {
+      ...baseLineData,
+      user_meal_group_id: undefined,
+    };
+  }
 };
 
 // Edit existing ingredient
@@ -313,15 +365,28 @@ const saveLine = () => {
 const cancelEdit = () => {
   editingIndex.value = null;
   showNewLine.value = false;
-  currentLine.value = {
+  
+  const baseLineData = {
     ingredient_name: '',
     quantity: null,
     measurement_name: '',
     measurement_abbreviation: '',
     measurement_id: undefined,
-    recipe_group_id: undefined,
     sort_order: savedLines.value.length,
   };
+
+  // Set the appropriate group ID field based on store type
+  if (storeType.value === 'recipe') {
+    currentLine.value = {
+      ...baseLineData,
+      recipe_group_id: undefined,
+    };
+  } else {
+    currentLine.value = {
+      ...baseLineData,
+      user_meal_group_id: undefined,
+    };
+  }
 };
 
 // Delete ingredient
