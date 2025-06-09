@@ -1,7 +1,10 @@
 export function decimalToFraction(decimal: number): string {
-  // Handle edge cases
-  if (typeof decimal !== 'string' || isNaN(decimal)) {
-    return '0';
+  if(typeof decimal !== 'number'){
+    if (typeof decimal === 'string') {
+      decimal = parseFloat(decimal);
+    } else {
+      return '0';
+    }
   }
   
   // Use epsilon for floating-point comparison
