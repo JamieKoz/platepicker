@@ -422,9 +422,13 @@ const formatRecipeLine = (line: RecipeLine): string => {
     result += line.ingredient_name;
   }
 
+  // Add notes if they exist
+  if (line.notes) {
+    result += ` (${line.notes})`;
+  }
+
   return result.trim();
 };
-
 // Emit update
 const emitUpdate = () => {
   emit('update:modelValue', [...savedLines.value]);

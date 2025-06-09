@@ -15,6 +15,7 @@ export interface RecipeLine {
   recipe_group_name?: string;
   user_meal_group_id?: number;
   user_meal_group_name?: string;
+  notes?: string; 
   sort_order: number;
   created_at?: string;
   updated_at?: string;

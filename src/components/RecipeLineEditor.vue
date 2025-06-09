@@ -7,7 +7,7 @@
       <div class="flex-grow relative">
         <ion-input v-model="line.ingredient_name" placeholder="Ingredient name" class="ingredient-input"
           @ionInput="handleIngredientInput" @ionFocus="activateSearch" @ionBlur="handleBlur"></ion-input>
-        
+
         <!-- Ingredient suggestions dropdown -->
         <div v-if="showSuggestions && searchResults.length"
           class="absolute z-50 mt-1 w-full border bg-gray-900 dark:bg-gray-900 border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -35,13 +35,8 @@
       <!-- Quantity -->
       <div class="col-span-3">
         <ion-label class="text-xs text-gray-500 block mb-1">Quantity</ion-label>
-        <ion-input 
-          :value="line.quantity !== null ? line.quantity : ''" 
-          @ionInput="handleQuantityInput" 
-          type="number"
-          step="any" 
-          placeholder="Qty"
-        ></ion-input>
+        <ion-input :value="line.quantity !== null ? line.quantity : ''" @ionInput="handleQuantityInput" type="number"
+          step="any" placeholder="Qty"></ion-input>
       </div>
 
       <!-- Unit -->
@@ -57,23 +52,19 @@
       <!-- Group -->
       <div class="col-span-5">
         <ion-label class="text-xs text-gray-500 block mb-1">Group (optional)</ion-label>
-        <ion-select 
-          v-model="groupId" 
-          placeholder="Select group"
-          interface="popover"
-        >
+        <ion-select v-model="groupId" placeholder="Select group" interface="popover">
           <ion-select-option :value="null">Main Ingredients</ion-select-option>
-          <ion-select-option 
-            v-for="group in availableGroups" 
-            :key="group.id" 
-            :value="group.id"
-          >
+          <ion-select-option v-for="group in availableGroups" :key="group.id" :value="group.id">
             {{ group.name }}
           </ion-select-option>
         </ion-select>
         <div v-if="!entityId" class="text-xs text-gray-500 mt-1">
           Save first to create custom groups
         </div>
+      </div>
+      <div class="col-span-12 mt-2">
+        <ion-label class="text-xs text-gray-500 block mb-1">Notes (optional)</ion-label>
+        <ion-input v-model="line.notes" placeholder="e.g., optional, to taste, etc." class="text-sm"></ion-input>
       </div>
     </div>
   </div>

@@ -265,6 +265,7 @@ interface RecipeLine {
   measurement_name: string;
   measurement_abbreviation: string;
   recipe_group_id: number;
+  notes?: string;
   sort_order: number;
   created_at?: string;
   updated_at?: string;
@@ -318,6 +319,7 @@ watch(
           measurement_name: line.measurement?.name || line.measurement_name || '',
           measurement_abbreviation: line.measurement?.abbreviation || '',
           recipe_group_id: line.recipe_group_id,
+          notes: line.notes,
           sort_order: line.sort_order
         }));
       }
@@ -535,6 +537,9 @@ async function saveMeal() {
 
         formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name || '');
 
+        if (line.notes) {
+          formData.append(`recipe_lines[${index}][notes]`, line.notes);
+        }
         formData.append(`recipe_lines[${index}][recipe_group_id]`, line.recipe_group_id?.toString() || '');
 
         formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());

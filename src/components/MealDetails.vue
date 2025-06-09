@@ -63,7 +63,7 @@
                     <!-- Ingredients in this group -->
                     <ul class="ingredient-list mb-4">
                       <li v-for="line in ingredients" :key="line.id || line.ingredient_name" class="ingredient-item mb-2">
-                        {{ formatRecipeLine(line) }}
+                        <input type="checkbox"><span class="ml-4">{{ formatRecipeLine(line) }}</span></input>
                       </li>
                     </ul>
                   </div>
@@ -189,6 +189,13 @@ const formatRecipeLine = (line: RecipeLine): string => {
     result += line.ingredient_name;
   }
   
+  if(line.notes){
+    let notes = ' ';
+    notes += '(';
+    notes += line.notes;
+    notes += ')';
+    result += notes;
+  }
   return result.trim();
 };
 
@@ -259,7 +266,7 @@ onMounted(() => {
 }
 
 .ingredient-item::before {
-  content: "•";
+  /* content: "•"; */
   position: absolute;
   left: 0.5rem;
   color: #666;
