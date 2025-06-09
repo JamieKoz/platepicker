@@ -1,7 +1,8 @@
+// types/meal.ts
 import { Category } from './category';
 import { Cuisine } from './cuisine';
 import { Dietary } from './dietary';
-import { RecipeGroup } from './recipeGroup';
+import { RecipeGroup } from './recipeGroup';  // This can represent both recipe groups and user meal groups
 import { RecipeLine } from './recipeline';
 
 export interface Meal {
@@ -24,13 +25,13 @@ export interface Meal {
   dietary_items?: Dietary[];
   dietary?: Dietary[];
   
+  // Group-related fields (using same naming as Recipe for consistency)
+  recipe_groups?: RecipeGroup[];  // Contains user meal groups for user meals
+  ungrouped_recipe_lines?: RecipeLine[];
+  all_recipe_lines?: RecipeLine[];
+  
   // ID arrays for form submission
   category_ids?: number[];
   cuisine_ids?: number[];
   dietary_ids?: number[];
-
-
-  user_meal_groups?: RecipeGroup[];
-  ungrouped_user_meal_lines?: RecipeLine[];
-  all_user_meal_lines?: RecipeLine[];
 }

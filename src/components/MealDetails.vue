@@ -48,11 +48,28 @@
               
               <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-gray-900">
                 <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
-                <ul v-if="mealData.recipe_lines && mealData.recipe_lines.length > 0" class="ingredient-list">
-                  <li v-for="line in mealData.recipe_lines" :key="line.id" class="ingredient-item mb-2">
-                    {{ formatRecipeLine(line) }}
-                  </li>
-                </ul>
+                
+                <!-- Grouped ingredients display -->
+                <div v-if="groupedIngredients && Object.keys(groupedIngredients).length > 0" class="space-y-4">
+                  <div v-for="(ingredients, groupName) in groupedIngredients" :key="groupName" class="mb-2">
+                    <!-- Group header -->
+                    <h4 v-if="groupName !== 'Main Ingredients'" class="text-lg font-medium mb-2 border-b border-blue-400 pb-1">
+                      {{ groupName }}
+                    </h4>
+                    <h4 v-else class="text-lg font-medium mb-2 border-b border-blue-400 pb-1">
+                      {{ groupName }}
+                    </h4>
+                    
+                    <!-- Ingredients in this group -->
+                    <ul class="ingredient-list mb-4">
+                      <li v-for="line in ingredients" :key="line.id || line.ingredient_name" class="ingredient-item mb-2">
+                        {{ formatRecipeLine(line) }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <!-- Fallback for no ingredients -->
                 <p v-else class="text-gray-400">No ingredients listed</p>
               </div>
 
@@ -72,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '@/api/axios';
 import MealCard from '@/components/MealCard.vue';
@@ -97,6 +114,51 @@ const mealData = ref<Recipe | Meal | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
+// Computed property to group ingredients by their groups
+const groupedIngredients = computed(() => {
+  if (!mealData.value?.recipe_lines) return {};
+  
+  const groups: Record<string, RecipeLine[]> = {};
+  
+  mealData.value.recipe_lines.forEach(line => {
+    let groupName = 'Main Ingredients';
+    
+    // Determine group name based on endpoint type
+    if (props.endpoint === 'recipes') {
+      // For recipes, check recipe_group_id
+      if (line.recipe_group_id && mealData.value?.recipe_groups) {
+        const group = mealData.value.recipe_groups.find(g => g.id === line.recipe_group_id);
+        groupName = group?.name || 'Main Ingredients';
+      }
+    } else {
+      // For user meals, check user_meal_group_id
+      if (line.user_meal_group_id && mealData.value?.recipe_groups) {
+        const group = mealData.value.recipe_groups.find(g => g.id === line.user_meal_group_id);
+        groupName = group?.name || 'Main Ingredients';
+      }
+    }
+    
+    if (!groups[groupName]) {
+      groups[groupName] = [];
+    }
+    groups[groupName].push(line);
+  });
+  
+  const sortedGroups: Record<string, RecipeLine[]> = {};
+  
+  Object.keys(groups)
+    .filter(key => key !== 'Main Ingredients')
+    .sort()
+    .forEach(key => {
+      sortedGroups[key] = groups[key];
+    });
+  
+  if (groups['Main Ingredients']) {
+    sortedGroups['Main Ingredients'] = groups['Main Ingredients'];
+  }
+  return sortedGroups;
+});
+
 // Updated formatRecipeLine function with fraction conversion
 const formatRecipeLine = (line: RecipeLine): string => {
   let result = '';
@@ -111,6 +173,9 @@ const formatRecipeLine = (line: RecipeLine): string => {
     if (line.measurement.name !== 'Units') {
       result += ` ${line.measurement.abbreviation || line.measurement.name}`;
     }
+    result += ' ';
+  } else if (line.measurement_name && line.measurement_name !== 'Units') {
+    result += ` ${line.measurement_abbreviation || line.measurement_name}`;
     result += ' ';
   } else if (result) {
     // If we have a quantity but no measurement, add a space

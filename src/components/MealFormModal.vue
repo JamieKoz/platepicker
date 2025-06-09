@@ -281,7 +281,7 @@ const mealForm = ref({
   image: null as File | null,
   active: true,
   recipe_lines: [] as RecipeLine[],
-  
+
   // Relationship IDs for form submission
   category_ids: [] as number[],
   cuisine_ids: [] as number[],
@@ -303,7 +303,7 @@ watch(
   (meal) => {
     if (meal) {
       let recipeLines: RecipeLine[] = [];
-      
+
       // Handle recipe lines if they exist
       if (meal.recipe_lines && meal.recipe_lines.length) {
         recipeLines = meal.recipe_lines.map((line: any) => ({
@@ -320,13 +320,13 @@ watch(
       }
 
       let dietaryIds: number[] = [];
-      
+
       const mealWithDietary = meal as unknown as { dietary?: Dietary[] };
-      
+
       if (mealWithDietary.dietary && Array.isArray(mealWithDietary.dietary)) {
         dietaryIds = mealWithDietary.dietary.map(item => item.id);
       }
-      
+
 
       mealForm.value = {
         title: meal.title,
@@ -341,7 +341,7 @@ watch(
         active: Boolean(meal.active),
         recipe_lines: recipeLines
       };
-      
+
     } else {
       // Reset form for new meal
       mealForm.value = {
@@ -370,7 +370,7 @@ function handleImageChange(event: Event) {
   if (input.files && input.files[0]) {
     const file = input.files[0];
     mealForm.value.image = file;
-    
+
     // Create preview URL
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -475,66 +475,68 @@ async function saveMeal() {
     const formData = new FormData();
     formData.append('title', mealForm.value.title);
     formData.append('instructions', mealForm.value.instructions);
-    
+
     if (mealForm.value.cooking_time) {
       formData.append('cooking_time', mealForm.value.cooking_time.toString());
     }
-    
+
     if (mealForm.value.serves) {
       formData.append('serves', mealForm.value.serves.toString());
     }
-    
+
     if (mealForm.value.category_ids && mealForm.value.category_ids.length > 0) {
       mealForm.value.category_ids.forEach(id => {
         formData.append('categories[]', id.toString());
       });
     }
-    
+
     if (mealForm.value.cuisine_ids && mealForm.value.cuisine_ids.length > 0) {
       mealForm.value.cuisine_ids.forEach(id => {
         formData.append('cuisines[]', id.toString());
       });
     }
-    
+
     if (mealForm.value.dietary_ids && mealForm.value.dietary_ids.length > 0) {
       mealForm.value.dietary_ids.forEach(id => {
         formData.append('dietary[]', id.toString());
       });
     }
-    
+
     // Handle recipe lines
     if (mealForm.value.recipe_lines && mealForm.value.recipe_lines.length > 0) {
       mealForm.value.recipe_lines.forEach((line, index) => {
         // Skip empty lines
         if (!line.ingredient_name) return;
-        
+
         formData.append(`recipe_lines[${index}][ingredient_name]`, line.ingredient_name);
-        
+
         if (line.quantity !== null) {
           formData.append(`recipe_lines[${index}][quantity]`, line.quantity.toString());
         }
-        
+
         formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name || '');
-        
-        if (line.user_meal_group_id) {
-          formData.append(`recipe_lines[${index}][user_meal_group_id]`, line.user_meal_group_id.toString());
+
+        formData.append(`recipe_lines[${index}][user_meal_group_id]`, line.user_meal_group_id?.toString() || '');
+
+        if (line.measurement_id) {
+          formData.append(`recipe_lines[${index}][measurement_id]`, line.measurement_id.toString());
         }
 
         formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());
-        
+
         // Include IDs if available for updating
         if (line.id) {
           formData.append(`recipe_lines[${index}][id]`, line.id.toString());
         }
       });
     }
-    
+
     if (mealForm.value.image) {
       formData.append('image', mealForm.value.image);
     }
-    
+
     formData.append('active', mealForm.value.active ? '1' : '0');
-    
+
     // Log formdata entries for debugging
     let response;
     if (props.editingMeal) {
@@ -542,7 +544,7 @@ async function saveMeal() {
     } else {
       response = await api.post('/user-meals', formData);
     }
-    
+
     emit('saved');
     close();
   } catch (error) {

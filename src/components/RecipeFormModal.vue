@@ -535,9 +535,8 @@ async function saveMeal() {
 
         formData.append(`recipe_lines[${index}][measurement_name]`, line.measurement_name || '');
 
-        if (line.recipe_group_id) {
-          formData.append(`recipe_lines[${index}][recipe_group_id]`, line.recipe_group_id.toString());
-        }
+        formData.append(`recipe_lines[${index}][recipe_group_id]`, line.recipe_group_id?.toString() || '');
+
         formData.append(`recipe_lines[${index}][sort_order]`, line.sort_order.toString());
 
         // Include IDs if available for updating
