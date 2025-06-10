@@ -19,18 +19,69 @@
       </div>
     </div>
 
-    <!-- Group Manager - Simple input to create groups -->
+    <!-- Group Manager -->
     <div v-if="showGroupManager" class="mb-4 p-3 border-1 border-gray-300 rounded-lg">
       <div v-if="!entityId" class="text-sm text-gray-600 mb-2">
         Save the {{ storeType === 'recipe' ? 'recipe' : 'meal' }} first to create ingredient groups
       </div>
-      <div v-else class="flex items-center gap-2">
-        <ion-input v-model="newGroupName" placeholder="Create new group" class="flex-1"
-          @keyup.enter="createGroup"></ion-input>
-        <ion-button @click="createGroup" size="small" :disabled="!newGroupName">
-          <ion-icon name="add" slot="start"></ion-icon>
-          Create Group
-        </ion-button>
+      <div v-else>
+        <!-- Existing groups list -->
+        <div v-if="availableGroups.length > 0" class="space-y-2 mb-4">
+          <div class="text-sm font-medium text-gray-600 mb-2">Existing Groups:</div>
+          <div v-for="group in availableGroups" :key="group.id" class="p-2 rounded">
+
+            <!-- Normal display mode -->
+            <div v-if="editingGroupId !== group.id" class="flex items-center justify-between">
+              <span class="font-medium">{{ group.name }}</span>
+              <div class="flex gap-1">
+                <ion-button @click="editGroup(group)" size="small" fill="clear" color="primary">
+                  <ion-icon name="create-outline" size="small"></ion-icon>
+                </ion-button>
+                <ion-button @click="deleteGroup(group)" size="small" fill="clear" color="danger">
+                  <ion-icon name="trash" size="small"></ion-icon>
+                </ion-button>
+              </div>
+            </div>
+
+            <!-- Inline edit mode -->
+            <div v-else class="flex items-center gap-2">
+              <ion-input v-model="newGroupName" placeholder="Update group name" class="flex-1"
+                @keyup.enter="createGroup"></ion-input>
+              <ion-button @click="cancelGroupEdit" size="small" fill="clear">
+                <ion-icon name="close-circle" slot="start"></ion-icon>
+                Cancel
+              </ion-button>
+              <ion-button @click="createGroup" size="small" :disabled="!newGroupName.trim()" color="success">
+                <ion-icon name="checkmark-done" size="small"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create new group form - only show when creating new -->
+        <div v-if="showCreateForm" class="space-y-2 mb-4">
+          <div class="flex items-center gap-2 p-2 rounded">
+            <ion-input v-model="newGroupName" placeholder="Enter group name" class="flex-1"
+              @keyup.enter="createGroup"></ion-input>
+            <ion-button @click="cancelGroupEdit" size="small" fill="clear">
+              <ion-icon name="close-circle" slot="start"></ion-icon>
+              Cancel
+            </ion-button>
+            <ion-button @click="createGroup" size="small" :disabled="!newGroupName.trim()" color="success">
+              <ion-icon name="add" slot="start"></ion-icon>
+              Create
+            </ion-button>
+
+          </div>
+        </div>
+
+        <!-- New Group button - only show when not creating/editing -->
+        <div v-if="!showCreateForm && !editingGroupId" class="mt-2">
+          <ion-button @click="showCreateForm = true" size="small" fill="outline" class="w-full">
+            <ion-icon name="add" slot="start"></ion-icon>
+            New Group
+          </ion-button>
+        </div>
       </div>
     </div>
 
@@ -182,6 +233,9 @@ const showNewLine = ref(false);
 const showGroupManager = ref(false);
 const newGroupName = ref('');
 const reorderMode = ref(false);
+const editingGroupId = ref<number | null>(null);
+const editingGroupName = ref('');
+const showCreateForm = ref(false);
 
 // Available groups for the select
 const availableGroups = computed(() => {
@@ -282,7 +336,57 @@ watch(() => props.modelValue, (newValue) => {
   }
 }, { deep: true });
 
-// Create a new group
+const editGroup = (group: RecipeGroup) => {
+  editingGroupId.value = group.id!;
+  newGroupName.value = group.name;
+  showCreateForm.value = false;
+};
+
+const cancelGroupEdit = () => {
+  editingGroupId.value = null;
+  editingGroupName.value = '';
+  newGroupName.value = '';
+  showCreateForm.value = false;
+};
+
+const updateGroup = async () => {
+  if (!editingGroupId.value || !newGroupName.value.trim() || !entityId.value) return;
+
+  try {
+    if (storeType.value === 'recipe') {
+      await recipeGroupsStore.updateGroup(entityId.value, editingGroupId.value, { 
+        name: newGroupName.value.trim() 
+      });
+    } else {
+      await userMealGroupsStore.updateGroup(entityId.value, editingGroupId.value, { 
+        name: newGroupName.value.trim() 
+      });
+    }
+  } catch (error) {
+    console.error('Failed to update group:', error);
+    throw error; // Re-throw so createGroup can handle it
+  }
+};
+
+const deleteGroup = async (group: RecipeGroup) => {
+  if (!group.id || !entityId.value) return;
+  
+  if (!confirm(`Are you sure you want to delete the group "${group.name}"? Ingredients in this group will be moved to "Main Ingredients".`)) {
+    return;
+  }
+
+  try {
+    if (storeType.value === 'recipe') {
+      await recipeGroupsStore.deleteGroup(entityId.value, group.id);
+    } else {
+      await userMealGroupsStore.deleteGroup(entityId.value, group.id);
+    }
+  } catch (error) {
+    console.error('Failed to delete group:', error);
+  }
+};
+
+// Update the createGroup method to handle editing
 const createGroup = async () => {
   if (!newGroupName.value.trim()) return;
 
@@ -292,18 +396,26 @@ const createGroup = async () => {
   } 
 
   try {
-    if (storeType.value === 'recipe') {
-      await recipeGroupsStore.createGroup(entityId.value, { 
-        name: newGroupName.value.trim() 
-      });
+    if (editingGroupId.value) {
+      // Update existing group
+      await updateGroup();
     } else {
-      await userMealGroupsStore.createGroup(entityId.value, { 
-        name: newGroupName.value.trim() 
-      });
+      // Create new group
+      if (storeType.value === 'recipe') {
+        await recipeGroupsStore.createGroup(entityId.value, { 
+          name: newGroupName.value.trim() 
+        });
+      } else {
+        await userMealGroupsStore.createGroup(entityId.value, { 
+          name: newGroupName.value.trim() 
+        });
+      }
     }
-    newGroupName.value = '';
+    
+    // Reset all form state after successful create/update
+    cancelGroupEdit();
   } catch (error) {
-    console.error('Failed to create group:', error);
+    console.error('Failed to create/update group:', error);
   }
 };
 
