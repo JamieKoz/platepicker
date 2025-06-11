@@ -96,6 +96,7 @@ export const useUserStore = defineStore('user', {
         
         // Save user data to localStorage
         localStorage.setItem('clerkUserData', JSON.stringify(this.userData));
+        localStorage.setItem('clerkUserId', clerkUser.id); 
         
         // If this is a new user, assign initial recipes
         if (isNewUserRegistration && !this.userData.initialRecipesAssigned) {

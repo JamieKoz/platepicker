@@ -14,7 +14,10 @@ api.interceptors.request.use((config) => {
   }
   if (userData) {
     config.headers['X-User-Data'] = userData;
+    const encodedUserData = btoa(userData);
+    config.headers['Authorization'] = `Bearer ${encodedUserData}`;
   }
+
   return config;
 });
 
