@@ -33,7 +33,7 @@
                 </ion-badge>
               </div>
 
-              <ion-img :src="`https://dy9kit23m04xx.cloudfront.net/food-images/${favourite.meal.image_name}.jpg`"
+              <ion-img :src="favourite.meal.image_url"
                 class="w-full h-48 object-cover"></ion-img>
             </div>
 

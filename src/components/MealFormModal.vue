@@ -16,8 +16,8 @@
         <div class="flex justify-center mb-6">
           <div @click="triggerImageUpload"
             class="relative w-32 h-32 rounded-full border-4 border-gray-300 overflow-hidden cursor-pointer hover:border-blue-500 transition-colors duration-200 bg-gray-100 flex items-center justify-center">
-            <img v-if="imagePreview || (editingMeal && editingMeal.image_name)"
-              :src="imagePreview || (editingMeal?.image_name ? `https://dy9kit23m04xx.cloudfront.net/food-images/${editingMeal.image_name}.jpg` : '')"
+            <img v-if="imagePreview || (editingMeal && editingMeal.image_url)"
+              :src="imagePreview || editingMeal?.image_url || ''"
               alt="Meal image" class="w-full h-full object-cover" />
             <div v-else class="text-center text-gray-500">
               <ion-icon name="camera" class="text-3xl mb-2"></ion-icon>

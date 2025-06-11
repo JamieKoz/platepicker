@@ -12,6 +12,7 @@ export interface Meal {
   title: string;
   instructions?: string | null;
   image_name?: string | null;
+  image_url?: string;
   cooking_time?: string | number;
   serves?: string | number;
   active: boolean | number;
