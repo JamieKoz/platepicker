@@ -8,7 +8,14 @@
         </ion-toolbar>
 
       </ion-header>
-      <RetryConnection v-if="loadError" message="Unable to load meals. Please check your connection."
+      <div v-if="isLoading" class="h-full flex items-center justify-center">
+        <div class="text-center">
+          <ion-spinner name="crescent" class="w-12 h-12 mb-4"></ion-spinner>
+          <p class="text-gray-400">Loading delicious meals...</p>
+        </div>
+      </div>
+      
+      <RetryConnection v-else-if="loadError" message="Unable to load meals. Please check your connection."
         @retry="handleRetry" />
       <ion-content v-else class="ion-no-padding !overflow-hidden">
         <ion-grid class="h-full ion-no-padding">
@@ -104,8 +111,8 @@ import BackArrow from '@/components/navigation/BackArrow.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { 
   IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, 
-  IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonCard, 
-  IonCardHeader, IonCardTitle, toastController, actionSheetController 
+  IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonCard, IonSpinner,
+  IonCardHeader, IonCardTitle, toastController, actionSheetController
 } from '@ionic/vue';
 import type { Meal } from '@/types/meal';
 // Add this import for the type
@@ -122,6 +129,7 @@ const animateMeal1 = ref(false);
 const animateMeal2 = ref(false);
 const newMealAnimation1 = ref(false);
 const newMealAnimation2 = ref(false);
+const isLoading = ref(true);
 const { user } = useUser();
 const router = useRouter();
 
@@ -187,6 +195,7 @@ async function fetchInitialMeals() {
     const newMeal2 = mealStore.getNewMeal();
     if (newMeal1) meal1.value = newMeal1;
     if (newMeal2) meal2.value = newMeal2;
+    isLoading.value = false;
   } catch (error) {
     console.error('Error fetching meals:', error);
     loadError.value = true;
@@ -270,6 +279,7 @@ const handleRefresh = async () => {
   } catch (error) {
     console.error("Error during refresh: ", error);
   }
+  isLoading.value = true;
   await fetchInitialMeals();
 };
 

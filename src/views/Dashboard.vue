@@ -155,10 +155,6 @@ const fetchTopMeal = async () => {
   }
 };
 
-// const toggleExpand = (mealId: number) => {
-//   expandedMeals[mealId] = !expandedMeals[mealId];
-// };
-
 const navigateTo = async (path: string) => {
   try {
     await router.push(path);
