@@ -10,7 +10,17 @@
 
         <!-- Quick Actions -->
         <div class="mb-8">
-          <div class="grid grid-cols-2 gap-4">
+          <div v-if="!user">
+            <ion-card class="min-height-[120px] border-solid border-1 border-purple-500"
+            @click="user ? navigateTo('/list') : navigateTo('sign-in')">
+            <ion-card-content class="flex flex-col items-center justify-center p-4">
+              <ion-icon :icon="user ? listOutline : personOutline" class="text-4xl mb-2 text-purple-500"></ion-icon>
+              <h2 class="text-lg font-semibold text-purple-500">{{ user ? 'Configure your meal list' : 'Sign In for more features' }}</h2>
+            </ion-card-content>
+          </ion-card>
+          </div>
+
+          <div v-else class="grid grid-cols-2 gap-4">
             <ion-card class="min-height-[120px] border-solid border-1 border-yellow-500"
               @click="router.push('/buy-or-cook')">
               <ion-card-content class="flex flex-col items-center justify-center p-4">
@@ -73,13 +83,14 @@
         </ion-card>
           </div>
 
-        <div class="mb-8">
+        
+        <div v-if="user" class="mb-8">
           <h2 class="text-xl font-semibold mb-4">Explore Meals</h2>
           <ion-card class="min-height-[120px] border-solid border-1 border-purple-500"
-            @click="user ? navigateTo('/list') : navigateTo('sign-in')">
+            @click="navigateTo('/list')">
             <ion-card-content class="flex flex-col items-center justify-center p-4">
-              <ion-icon :icon="user ? listOutline : personOutline" class="text-4xl mb-2 text-purple-500"></ion-icon>
-              <h2 class="text-lg font-semibold text-purple-500">{{ user ? 'Configure your meal list' : 'Sign In for more features' }}</h2>
+              <ion-icon :icon="listOutline" class="text-4xl mb-2 text-purple-500"></ion-icon>
+              <h2 class="text-lg font-semibold text-purple-500">{{ 'Configure your meal list' }}</h2>
             </ion-card-content>
           </ion-card>
         </div>

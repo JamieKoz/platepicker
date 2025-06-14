@@ -1,5 +1,5 @@
 <template>
-  <ion-card class="w-full h-full flex items-center justify-center m-0" @click="$emit('click')">
+  <ion-card class="w-full h-full flex items-center justify-center m-0 border-1 border-yellow-200" @click="$emit('click')">
     <ion-ripple-effect></ion-ripple-effect>
     <div class="w-full flex flex-col items-center justify-center p-1">
       <div class="mb-1" v-html="optionIcons[icon]"></div>

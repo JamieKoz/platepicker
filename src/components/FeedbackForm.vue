@@ -12,7 +12,7 @@
 
           <form @submit.prevent="submitFeedback" class="flex flex-col gap-3">
             <div class="flex flex-col gap-2">
-              <label>Rating</label>
+              <ion-label>Rating</ion-label>
               <div class="flex gap-2">
                 <button v-for="star in 5" :key="star" type="button" @click="feedback.rating = star" class="star-button"
                   :class="{ 'active': star <= feedback.rating }">
@@ -22,27 +22,26 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="feedbackType">Type of Feedback</label>
-              <select v-model="feedback.type" id="feedbackType"
+              <ion-select v-model="feedback.type" id="feedbackType"
                 class="p-2 border-solid border-1 border-white rounded-lg" required>
-                <option value="suggestion">Suggestion</option>
-                <option value="bug">Bug Report</option>
-                <option value="compliment">Compliment</option>
-                <option value="other">Other</option>
-              </select>
+                <ion-select-option value="suggestion">Suggestion</ion-select-option>
+                <ion-select-option value="bug">Bug Report</ion-select-option>
+                <ion-select-option value="compliment">Compliment</ion-select-option>
+                <ion-select-option value="other">Other</ion-select-option>
+              </ion-select>
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="feedbackMessage">Your Feedback</label>
-              <textarea v-model="feedback.message" id="feedbackMessage" rows="12" required
+              <ion-label for="feedbackMessage">Your Feedback</ion-label>
+              <ion-textarea v-model="feedback.message" id="feedbackMessage" :rows="12" required
                 placeholder="Tell us what you think..."
-                class="resize-y p-2 border-solid border-1 border-white rounded-lg"></textarea>
+                class="resize-y p-2 border-solid border-1 border-white rounded-lg"></ion-textarea>
             </div>
 
             <div>
-              <button class="w-full" type="submit" :disabled="isSubmitting">
+              <ion-button class="w-full" type="submit" :disabled="isSubmitting">
                 {{ isSubmitting ? 'Sending...' : 'Submit' }}
-              </button>
+              </ion-button>
             </div>
 
             <div v-if="submitStatus" :class="['status-message', submitStatus.type]">
@@ -60,7 +59,12 @@ import { ref } from 'vue'
 
 import { 
   IonPage, 
-  IonContent, 
+  IonContent,
+  IonLabel,
+  IonSelect,
+  IonSelectOption,
+  IonButton,
+  IonTextarea
 } from '@ionic/vue';
 import BackArrow from '@/components/navigation/BackArrow.vue';
 import api from '@/api/axios';
