@@ -28,6 +28,7 @@ export interface Meal {
   
   // Group-related fields (using same naming as Recipe for consistency)
   recipe_groups?: RecipeGroup[];  // Contains user meal groups for user meals
+  user_meal_groups?: RecipeGroup[];
   ungrouped_recipe_lines?: RecipeLine[];
   all_recipe_lines?: RecipeLine[];
   

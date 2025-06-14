@@ -46,13 +46,34 @@
               </div>
 
               <div class="mt-4 mb-16">
-                <div class="rounded-md mb-6 mx-6">
+                <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-gray-900">
                   <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
-                    <ul v-if="winner.recipe_lines && winner.recipe_lines.length > 0" class="ingredient-list">
-                      <li v-for="line in winner.recipe_lines" :key="line.id" class="ingredient-item">
-                        {{ formatRecipeLine(line) }}
-                      </li>
+                  
+                  <!-- Grouped ingredients display -->
+                  <div v-if="Object.keys(groupedIngredients).length > 0" class="space-y-4">
+                    <div v-for="(ingredients, groupName) in groupedIngredients" :key="groupName" class="mb-2">
+                      <!-- Group header -->
+                      <h4 class="text-lg font-medium mb-2 border-b border-gray-300 pb-1">
+                        {{ groupName }}
+                      </h4>
+                      
+                      <!-- Ingredients in this group -->
+                      <ul class="ingredient-list mb-4">
+                        <li v-for="(line, index) in ingredients" :key="`${groupName}-line-${index}`" class="ingredient-item mb-2">
+                          <input type="checkbox"><span class="ml-4">{{ formatRecipeLine(line) }}</span></input>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <!-- Fallback to flat list if no groups -->
+                  <ul v-else-if="winner.recipe_lines && winner.recipe_lines.length > 0" class="ingredient-list">
+                    <li v-for="(line, index) in winner.recipe_lines" :key="`line-${index}`" class="ingredient-item">
+                      {{ formatRecipeLine(line) }}
+                    </li>
                   </ul>
+                  
+                  <p v-else class="text-gray-500">No ingredients available</p>
                 </div>
                 <div class="rounded-md mb-6 mx-6">
                   <h3 class="text-xl font-semibold mb-4">Instructions</h3>
@@ -71,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, toRaw } from 'vue';
 import api from '@/api/axios';
 import { refresh, clipboardOutline, mailOutline, chatbubbleOutline, closeOutline, shareSocialOutline, shareOutline } from 'ionicons/icons';
 import { useMealStore } from '@/store/useMealStore';
@@ -81,17 +102,21 @@ import { decimalToFraction } from '@/utils/fractionHelpers';
 import MealCard from '@/components/MealCard.vue';
 import BackArrow from '@/components/navigation/BackArrow.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
-import { IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, toastController, actionSheetController, IonActionSheet } from '@ionic/vue';
+import { 
+  IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, 
+  IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonCard, 
+  IonCardHeader, IonCardTitle, toastController, actionSheetController 
+} from '@ionic/vue';
 import type { Meal } from '@/types/meal';
+// Add this import for the type
 import { RecipeLine } from '@/types/recipeline';
 
 const route = useRoute();
 const mealStore = useMealStore();
-let meal1 = ref<Meal | null>(null);
-let meal2 = ref<Meal | null>(null);
+const meal1 = ref<Meal | null>(null);
+const meal2 = ref<Meal | null>(null);
 const winner = ref<Meal | null>(null);
 const loadError = ref(false);
-
 // Animation states
 const animateMeal1 = ref(false);
 const animateMeal2 = ref(false);
@@ -115,25 +140,24 @@ const getFiltersFromRoute = () => {
     filters.dietary = route.query.dietary as string;
   }
 
-   if (route.query.cooking_time) {
+  if (route.query.cooking_time) {
     filters.cooking_time = route.query.cooking_time;
   }
 
   return filters;
 };
 
-// Updated formatRecipeLine function with fraction conversion
+// Updated formatRecipeLine function with better error handling
 const formatRecipeLine = (line: RecipeLine): string => {
   let result = '';
   
   if (line.quantity) {
-    // Convert quantity to fraction format
     result += decimalToFraction(line.quantity);
   }
   
   if (line.measurement && line.measurement.name) {
     if(line.measurement.name !== 'Units'){
-      result += ' ' + line.measurement.abbreviation + ' ';
+      result += ' ' + (line.measurement.abbreviation || line.measurement.name) + ' ';
     } else{
       result += ' ';
     }
@@ -145,10 +169,14 @@ const formatRecipeLine = (line: RecipeLine): string => {
     result += line.ingredient_name;
   }
   
-  return result.trim();
+  return result.trim() || 'Unknown ingredient';
 };
+
 // Fetch initial meals on mount
-onMounted(() => fetchInitialMeals());
+onMounted(() => {
+  fetchInitialMeals();
+  
+});
 
 async function fetchInitialMeals() {
   try {
@@ -175,6 +203,10 @@ async function handleRetry() {
   await fetchInitialMeals();
 }
 
+function handleImageError(event: any) {
+  console.error('Image failed to load:', event);
+}
+
 async function trackMealSelection(meal: Meal) {
   try {
     const mealId = meal.id;
@@ -188,37 +220,30 @@ const handleMealSelected = async (clickedMeal: Meal) => {
   await trackMealSelection(clickedMeal);
 
   if (mealStore.mealCounter === 0) {
-    winner.value = clickedMeal;
+    const rawMeal = toRaw(clickedMeal);
+    winner.value = JSON.parse(JSON.stringify(rawMeal));
     meal1.value = null;
     meal2.value = null;
     return;
   }
 
-  // Determine which meal was clicked and which needs to be replaced
+  // Rest of the animation logic remains the same
   const isMeal1Clicked = clickedMeal.id === meal1.value?.id;
   const mealToAnimate = isMeal1Clicked ? animateMeal2 : animateMeal1;
   const newMealAnimation = isMeal1Clicked ? newMealAnimation2 : newMealAnimation1;
   const mealToReplace = isMeal1Clicked ? meal2 : meal1;
 
-  // Animate the other meal sliding out
   mealToAnimate.value = true;
 
-  // After animation completes, replace the meal and animate in
   setTimeout(async () => {
     try {
       const newMeal = mealStore.getNewMeal();
       if (!newMeal) return;
 
-      // Reset animation state
       mealToAnimate.value = false;
-
-      // Replace the meal
       mealToReplace.value = newMeal;
-
-      // Animate the new meal sliding in
       newMealAnimation.value = true;
 
-      // Remove the slide-in class after animation completes
       setTimeout(() => {
         newMealAnimation.value = false;
       }, 500);
@@ -252,12 +277,49 @@ const formattedIngredients = computed(() => {
   if (!winner.value?.recipe_lines || !winner.value.recipe_lines.length) {
     return [];
   }
-
-  // Format each recipe line to a readable string
   return winner.value.recipe_lines.map(line => formatRecipeLine(line));
 });
 
-// Update share handlers to use the new formatting
+// Group ingredients by their user_meal_group
+const groupedIngredients = computed(() => {
+  if (!winner.value?.recipe_lines || !winner.value.recipe_lines.length) {
+    return {};
+  }
+
+  const groups: { [key: string]: RecipeLine[] } = {};
+  
+  // First, check if the meal has user_meal_groups
+  const mealGroups = winner.value.user_meal_groups || [];
+  
+  // Create a map of group IDs to group names
+  const groupMap: { [key: number]: string } = {};
+  mealGroups.forEach((group: any) => {
+    groupMap[group.id] = group.name || group.title || `Group ${group.id}`;
+  });
+
+  // Sort recipe lines by sort_order
+  const sortedLines = [...winner.value.recipe_lines].sort((a, b) => {
+    const orderA = typeof a.sort_order === 'string' ? parseInt(a.sort_order) : (a.sort_order || 0);
+    const orderB = typeof b.sort_order === 'string' ? parseInt(b.sort_order) : (a.sort_order || 0);
+    return orderA - orderB;
+  });
+
+  // Group the recipe lines
+  sortedLines.forEach(line => {
+    let groupName = 'Main Ingredients';
+    
+    if (line.user_meal_group_id && groupMap[line.user_meal_group_id]) {
+      groupName = groupMap[line.user_meal_group_id];
+    }
+    
+    if (!groups[groupName]) {
+      groups[groupName] = [];
+    }
+    groups[groupName].push(line);
+  });
+
+  return groups;
+});
 
 const handleShare = async () => {
   if (!winner.value) return;
@@ -275,8 +337,21 @@ const handleShare = async () => {
         },
         icon: clipboardOutline,
         handler: async () => {
-          // Create a formatted recipe text
-          const shareText = `${winner.value?.title}\n\nIngredients:\n${formattedIngredients.value.join('\n')}\n\nInstructions:\n${winner.value?.instructions}`;
+          // Create a formatted recipe text with groups
+          let ingredientsText = '';
+          
+          if (Object.keys(groupedIngredients.value).length > 0) {
+            for (const [groupName, ingredients] of Object.entries(groupedIngredients.value)) {
+              ingredientsText += `\n${groupName}:\n`;
+              ingredients.forEach(line => {
+                ingredientsText += `${formatRecipeLine(line as RecipeLine)}\n`;
+              });
+            }
+          } else {
+            ingredientsText = formattedIngredients.value.join('\n');
+          }
+          
+          const shareText = `${winner.value?.title}\n\nIngredients:${ingredientsText}\n\nInstructions:\n${winner.value?.instructions}`;
           
           try {
             await navigator.clipboard.writeText(shareText);
@@ -322,7 +397,6 @@ const handleShare = async () => {
               text: text
             });
           } else {
-            // Fallback for browsers that don't support Web Share API
             const toast = toastController.create({
               message: 'Social sharing not supported on this device',
               duration: 2000,
@@ -388,12 +462,13 @@ const handleShare = async () => {
   padding: 0;
 }
 
-.ingredient-list li {
+.ingredient-item {
   position: relative;
   padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
-.ingredient-list li::before {
+.ingredient-item::before {
   content: "•";
   position: absolute;
   left: 0.5rem;

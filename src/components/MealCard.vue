@@ -45,7 +45,7 @@ import type { Meal } from '@/types/meal';
 import type { Recipe } from '@/types/recipe';
 import type { Dietary } from '@/types/dietary';
 
-defineProps<{
+const props = defineProps<{
   mealData: Meal | Recipe | null
 }>();
 
@@ -53,28 +53,9 @@ const emit = defineEmits<{
   (e: 'replaceMeal', meal: Meal): void
 }>();
 
-const isMeal = (data: Meal | Recipe): data is Meal => {
-  // Add logic to determine if it's a Meal
-  // This depends on what properties distinguish a Meal from a Recipe
-  // For example, if Meal has a specific property that Recipe doesn't:
-  return 'mealSpecificProperty' in data;
-};
-
 const chooseMeal = (data: Meal | Recipe | null) => {
- if (!data) return;
-
- if (isMeal(data)) {
-    emit('replaceMeal', data);
-  } else {
-    const mealFromRecipe: Meal = {
-      id: data.id,
-      title: data.title,
-      image_name: data.image_name,
-      instructions: data.instructions,
-    } as Meal;
-    
-    emit('replaceMeal', mealFromRecipe);
-  }
+  if (!data) return;
+  emit('replaceMeal', data as Meal);
 };
 
 const formatDietary = (dietary: string | string[] | Dietary[] | null | undefined): string => {
