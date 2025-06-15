@@ -30,7 +30,7 @@
             
             <div class="flex-1 flex justify-end">
               <ion-button fill="clear" @click="handleShare">
-                <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
+                <ion-icon :icon="shareOutline" class="bg-slate-200 dark:bg-gray-900 rounded-xl p-2 dark:text-white" />
               </ion-button>
             </div>
             
@@ -46,7 +46,7 @@
                 </span>
               </div>
               
-              <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-gray-900">
+              <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-amber-50 dark:bg-gray-900">
                 <h3 class="text-xl font-semibold mb-4">Ingredients</h3>
                 
                 <!-- Grouped ingredients display -->
@@ -70,15 +70,15 @@
                 </div>
                 
                 <!-- Fallback for no ingredients -->
-                <p v-else class="text-gray-400">No ingredients listed</p>
+                <p v-else class="dark:text-gray-400">No ingredients listed</p>
               </div>
 
-              <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-gray-900">
+              <div class="rounded-md mb-6 px-4 pt-1 pb-4 bg-amber-50 dark:bg-gray-900">
                 <h3 class="text-xl font-semibold mb-4">Instructions</h3>
-                <div v-if="mealData.instructions" class="whitespace-pre-wrap text-gray-200">
+                <div v-if="mealData.instructions" class="whitespace-pre-wrap dark:text-gray-200">
                   {{ mealData.instructions }}
                 </div>
-                <p v-else class="text-gray-400">No instructions provided</p>
+                <p v-else class="dark:text-gray-400">No instructions provided</p>
               </div>
             </div>
           </ion-col>

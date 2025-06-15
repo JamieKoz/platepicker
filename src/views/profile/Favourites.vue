@@ -37,8 +37,8 @@
                 class="w-full h-48 object-cover"></ion-img>
             </div>
 
-            <ion-card-title class="p-4 bg-gray-900 ">
-              <h2 class="text-xl text-white font-semibold mb-2">{{ favourite.meal.title }}</h2>
+            <ion-card-title class="p-4 bg-amber-50 dark:bg-slate-900">
+              <h2 class="text-xl dark:text-white font-semibold mb-2">{{ favourite.meal.title }}</h2>
               <div class="flex justify-between items-center text-sm opacity-60">
                 <ion-card-subtitle class="opacity-60">
                   Selected {{ favourite.tally }} times

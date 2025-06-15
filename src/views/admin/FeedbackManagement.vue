@@ -9,32 +9,32 @@
       <div class="container mx-auto p-4">
         <div class="flex">
           <Back-Arrow />
-          <h1 class="text-xl font-bold mb-6">Feedback</h1>
+          <h1 class="text-xl font-bold my-6">Feedback</h1>
         </div>
         <!-- Feedback Filters -->
         <div class="mb-6 flex flex-wrap gap-2">
-          <select v-model="typeFilter" class="p-2 rounded border border-gray-300">
-            <option value="">All Types</option>
-            <option value="suggestion">Suggestions</option>
-            <option value="bug">Bug Reports</option>
-            <option value="compliment">Compliments</option>
-            <option value="other">Other</option>
-          </select>
+          <ion-select v-model="typeFilter" class="p-2 rounded border border-gray-300">
+            <ion-select-option value="">All Types</ion-select-option>
+            <ion-select-option value="suggestion">Suggestions</ion-select-option>
+            <ion-select-option value="bug">Bug Reports</ion-select-option>
+            <ion-select-option value="compliment">Compliments</ion-select-option>
+            <ion-select-option value="other">Other</ion-select-option>
+          </ion-select>
 
-          <select v-model="statusFilter" class="p-2 rounded border border-gray-300">
-            <option value="">All Status</option>
-            <option value="true">Resolved</option>
-            <option value="false">Unresolved</option>
-          </select>
+          <ion-select v-model="statusFilter" class="p-2 rounded border border-gray-300">
+            <ion-select-option value="">All Status</ion-select-option>
+            <ion-select-option value="true">Resolved</ion-select-option>
+            <ion-select-option value="false">Unresolved</ion-select-option>
+          </ion-select>
 
-          <select v-model="sortBy" class="p-2 rounded border border-gray-300">
-            <option value="created_at">Sort by Date</option>
-            <option value="rating">Sort by Rating</option>
-            <option value="type">Sort by Type</option>
-          </select>
+          <ion-select v-model="sortBy" class="p-2 rounded border border-gray-300">
+            <ion-select-option value="created_at">Sort by Date</ion-select-option>
+            <ion-select-option value="rating">Sort by Rating</ion-select-option>
+            <ion-select-option value="type">Sort by Type</ion-select-option>
+          </ion-select>
 
           <button @click="sortDirection = sortDirection === 'desc' ? 'asc' : 'desc'"
-            class="p-2 rounded bg-gray-200 hover:bg-gray-300">
+            class="p-2 rounded hover:bg-gray-300">
             {{ sortDirection === 'desc' ? '↓' : '↑' }}
           </button>
         </div>
@@ -51,7 +51,7 @@
         <div v-else class="grid gap-4">
           <div v-for="item in filteredFeedback" :key="item.id"
             class="p-4 border rounded shadow-sm hover:shadow-md transition"
-            :class="{'bg-green-500': item.is_resolved, 'bg-gray-800': !item.is_resolved}">
+            :class="{'bg-green-500': item.is_resolved, 'dark:bg-gray-800': !item.is_resolved}">
 
             <div class="flex justify-between mb-2">
               <div>
@@ -67,7 +67,7 @@
 
             <p class="mb-2">{{ item.message }}</p>
 
-            <div v-if="item.email" class="text-sm text-gray-200 mb-2">
+            <div v-if="item.email" class="text-sm dark:text-gray-200 mb-2">
               Contact: {{ item.email }}
             </div>
 
@@ -88,53 +88,54 @@
         </div>
 
         <!-- Feedback Detail Modal -->
-        <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div class="bg-gray-800 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+         <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6">
               <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Feedback Details</h2>
-                <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Feedback Details</h2>
+                <button @click="showModal = false" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-2xl">
                   &times;
                 </button>
               </div>
 
               <div v-if="selectedFeedback" class="space-y-4">
-                <div>
+                <div class="text-gray-900 dark:text-white">
                   <span class="font-semibold">Type:</span> {{ formatType(selectedFeedback.type) }}
                 </div>
 
-                <div>
+                <div class="text-gray-900 dark:text-white">
                   <span class="font-semibold">Rating:</span>
                   <span class="text-yellow-500">
                     {{ '★'.repeat(selectedFeedback.rating) }}{{ '☆'.repeat(5 - selectedFeedback.rating) }}
                   </span>
                 </div>
 
-                <div>
+                <div class="text-gray-900 dark:text-white">
                   <span class="font-semibold">Submitted:</span> {{ formatDate(selectedFeedback.created_at, true) }}
                 </div>
 
-                <div v-if="selectedFeedback.email">
+                <div v-if="selectedFeedback.email" class="text-gray-900 dark:text-white">
                   <span class="font-semibold">Contact:</span> {{ selectedFeedback.email }}
                 </div>
 
-                <div>
+                <div class="text-gray-900 dark:text-white">
                   <span class="font-semibold">Message:</span>
                   <p class="mt-1 whitespace-pre-wrap">{{ selectedFeedback.message }}</p>
                 </div>
 
-                <div class="border-t pt-4 mt-4">
+                <div class="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
                   <div class="mb-2 flex items-center">
-                    <span class="font-semibold mr-2">Status:</span>
-                    <select v-model="selectedFeedback.is_resolved" class="p-1 rounded border border-gray-300">
-                      <option :value="false">Unresolved</option>
-                      <option :value="true">Resolved</option>
-                    </select>
+                    <span class="font-semibold mr-2 text-gray-900 dark:text-white">Status:</span>
+                    <ion-select v-model="selectedFeedback.is_resolved" class="p-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                      <ion-select-option :value="false">Unresolved</ion-select-option>
+                      <ion-select-option :value="true">Resolved</ion-select-option>
+                    </ion-select>
                   </div>
 
                   <div class="mb-2">
-                    <span class="font-semibold">Resolution Notes:</span>
-                    <textarea v-model="selectedFeedback.resolution_notes" class="mt-1 p-2 w-full border rounded"
+                    <span class="font-semibold text-gray-900 dark:text-white">Resolution Notes:</span>
+                    <textarea v-model="selectedFeedback.resolution_notes" 
+                      class="mt-1 p-2 w-full border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       rows="3" placeholder="Add notes about how this feedback was resolved..."></textarea>
                   </div>
 
@@ -154,7 +155,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { IonPage, IonContent } from '@ionic/vue';
+import { IonPage, IonContent, IonSelect, IonSelectOption, IonHeader, IonToolbar } from '@ionic/vue';
 import api from '@/api/axios';
 import BackArrow from '@/components/navigation/BackArrow.vue';
 

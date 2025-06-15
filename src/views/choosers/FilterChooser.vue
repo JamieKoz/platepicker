@@ -35,7 +35,7 @@
           <ion-label class="text-lg font-medium mb-2 block">Categories</ion-label>
           <div v-if="categories.length > 0" class="flex flex-wrap gap-2">
             <ion-chip v-for="category in categories" :key="category.id"
-              :class="['m-0 h-8 text-white', selectedCategories.includes(category.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
+              :class="['m-0 h-8', selectedCategories.includes(category.id) ? 'bg-yellow-500 font-medium' : 'border border-gray-200 bg-transparent dark:text-white dark:bg-gray-800']"
               @click="toggleCategory(category.id)">
               {{ category.name }}
             </ion-chip>
@@ -50,7 +50,7 @@
           <ion-label class="text-lg font-medium mb-2 block">Cuisines</ion-label>
           <div v-if="cuisines.length > 0" class="flex flex-wrap gap-2">
             <ion-chip v-for="cuisine in cuisines" :key="cuisine.id"
-              :class="['m-0 h-8 text-white', selectedCuisines.includes(cuisine.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
+              :class="['m-0 h-8', selectedCuisines.includes(cuisine.id) ? 'bg-yellow-500 font-medium' : 'border border-gray-200 bg-transparent dark:text-white dark:bg-gray-800']"
               @click="toggleCuisine(cuisine.id)">
               {{ cuisine.name }}
             </ion-chip>
@@ -65,7 +65,7 @@
           <ion-label class="text-lg font-medium mb-2 block">Dietary Requirements</ion-label>
           <div v-if="dietary.length > 0" class="flex flex-wrap gap-2">
             <ion-chip v-for="diet in dietary" :key="diet.id"
-              :class="['m-0 h-8 text-white', selectedDietary.includes(diet.id) ? 'bg-yellow-500 font-medium' : 'bg-gray-800']"
+              :class="['m-0 h-8', selectedDietary.includes(diet.id) ? 'bg-yellow-500 font-medium' : 'border border-gray-200 bg-transparent dark:text-white dark:bg-gray-800']"
               @click="toggleDietary(diet.id)">
               {{ diet.name }}
             </ion-chip>

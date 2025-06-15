@@ -23,7 +23,7 @@
 
             <div class="flex flex-col gap-2">
               <ion-select v-model="feedback.type" id="feedbackType"
-                class="p-2 border-solid border-1 border-white rounded-lg" required>
+                class="p-2 border-solid border-2 dark:border-white rounded-lg" required>
                 <ion-select-option value="suggestion">Suggestion</ion-select-option>
                 <ion-select-option value="bug">Bug Report</ion-select-option>
                 <ion-select-option value="compliment">Compliment</ion-select-option>
@@ -35,7 +35,7 @@
               <ion-label for="feedbackMessage">Your Feedback</ion-label>
               <ion-textarea v-model="feedback.message" id="feedbackMessage" :rows="12" required
                 placeholder="Tell us what you think..."
-                class="resize-y p-2 border-solid border-1 border-white rounded-lg"></ion-textarea>
+                class="resize-y p-2 border-solid border-2 dark:border-white rounded-lg"></ion-textarea>
             </div>
 
             <div>

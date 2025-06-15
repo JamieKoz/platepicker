@@ -2,29 +2,29 @@
   <div v-if="mealData"
     class="relative overflow-hidden border-solid border-2 border-yellow-500 rounded-xl flex flex-col h-full"
     @click="chooseMeal(mealData)">
-    <ion-card class="flex flex-col justify-between h-full my-2 mx-2">
+    <ion-card class="flex flex-col justify-between h-full my-2 mx-2 bg-amber-50 dark:!bg-[var(--ion-card-background)]">
       <ion-ripple-effect></ion-ripple-effect>
       <div class="flex flex-1 items-center justify-center min-h-[65%] max-h-[65%]">
         <ion-img :src="mealData.image_url"
           class="h-full w-full object-cover object-center aspect-4/3"></ion-img>
       </div>
-      <ion-card-title class="py-2 overflow-hidden font-bold p-2 text-lg break-word white-space">
-        <ion-card-subtitle class="text-white text-center">{{ mealData.title }}</ion-card-subtitle>
+      <ion-card-title class="py-2 overflow-hidden font-bold p-2 text-lg break-word white-space dark:!bg-[var(--ion-card-background)]">
+        <ion-card-subtitle class="text-black dark:text-white text-center">{{ mealData.title }}</ion-card-subtitle>
         <ion-card-content class="p-2 overflow-y-auto">
           <div class="flex flex-col">
             <div class="flex justify-between w-full">
-              <span class="text-xs inline-flex items-center bg-blue-400 rounded-lg p-1">
-                <ion-icon :icon="alarmSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
+              <span class="text-xs inline-flex items-center bg-blue-400 rounded-lg p-1 text-white">
+                <ion-icon :icon="alarmSharp" class="mr-1" style="font-size: 12px;"></ion-icon>
                   {{ mealData.cooking_time ? `Under ${mealData.cooking_time} minutes` : 'N/A' }}
               </span>
-              <span class="text-xs inline-flex items-center bg-purple-900 rounded-lg p-1">
-                <ion-icon :icon="restaurantSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
+              <span class="text-xs inline-flex items-center bg-purple-900 rounded-lg p-1 text-white">
+                <ion-icon :icon="restaurantSharp" class="mr-1" style="font-size: 12px;"></ion-icon>
                 Serves {{ mealData.serves ?? '2+' }}
               </span>
             </div>
             <div v-if="mealData.dietary?.length !== undefined && mealData.dietary?.length > 0" class="mt-1">
-              <span class="text-xs inline-flex items-center bg-green-500 rounded-lg p-1">
-                <ion-icon :icon="leafSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
+              <span class="text-xs inline-flex items-center bg-green-500 rounded-lg p-1 text-white">
+                <ion-icon :icon="leafSharp" class="mr-1" style="font-size: 12px;"></ion-icon>
                   {{ formatDietary(mealData.dietary) }}
               </span>
             </div>
@@ -33,8 +33,8 @@
       </ion-card-title>
     </ion-card>
   </div>
-  <div v-else class="relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col h-full justify-center items-center">
-    <p class="text-gray-400">No meal data available</p>
+  <div v-else class="relative overflow-hidden border-solid border-2 dark:border-gray-500 rounded-xl flex flex-col h-full justify-center items-center">
+    <p class="dark:text-gray-400">No meal data available</p>
   </div>
 </template>
 

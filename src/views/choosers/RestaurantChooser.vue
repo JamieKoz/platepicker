@@ -12,7 +12,7 @@
 
           <div v-if="searchBarFocused || addressSuggestions.length > 0" class="absolute left-0 right-0 z-[1001]">
             <ion-list
-              class="mx-auto rounded-lg bg-[#1c1c1d] h-10 cursor-pointer w-[95%] shadow-md flex items-center gap-2"
+              class="mx-auto rounded-lg dark:bg-[#1c1c1d] h-10 cursor-pointer w-[95%] shadow-md flex items-center gap-2"
               @click="getUserLocation">
               <ion-icon :icon="locationOutline" class="text-[20px]"></ion-icon>
               <span>Use current location</span>
