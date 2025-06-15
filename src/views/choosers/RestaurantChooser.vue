@@ -28,7 +28,7 @@
           </div>
 
           <div class="flex items-center justify-center w-full px-4">
-            <span class="text-white text-lg" v-show="searchedValue !== null">
+            <span class="dark:text-white text-lg" v-show="searchedValue !== null">
               {{ !winner ? restaurantStore.restaurantCounter : '' }}
             </span>
           </div>
@@ -80,16 +80,16 @@
                 </div>
                 <div class="flex-1 flex justify-end">
                   <ion-button fill="clear" @click="handleShare">
-                    <ion-icon :icon="shareOutline" class="bg-gray-900 rounded-xl p-2 text-white" />
+                    <ion-icon :icon="shareOutline" class="bg-slate-200 dark:bg-gray-900 rounded-xl p-2 dark:text-white" />
                   </ion-button>
 
                   <ion-button v-if="showRefreshButton" @click="handleRefresh" fill="clear">
-                    <ion-icon :icon="refresh" class="bg-gray-900 rounded-xl p-2 text-white" />
+                    <ion-icon :icon="refresh" class="bg-slate-200 dark:bg-gray-900 rounded-xl p-2 dark:text-white" />
                   </ion-button>
                 </div>
-                <div class="mt-4 mb-16">
+                <div class="mt-4 mb-16 p-2 rounded-lg bg-amber-50 dark:!bg-[var(--ion-card-background)]">
                   <div class="rounded-md mb-6 mx-6">
-                    <h3 class="text-xl font-semibold mb-4">Details</h3>
+                    <h3 class="text-xl font-semibold mb-4 ">Details</h3>
                     <p><strong>Address:</strong> {{ winner.vicinity }}</p>
                     <p><strong>Rating:</strong> {{ winner.rating }} ⭐️ ({{ winner.user_ratings_total }} reviews)</p>
                     <p v-if="winner.opening_hours"><strong>Open now:</strong> {{ winner.opening_hours.open_now ? 'Yes' :
@@ -664,8 +664,13 @@ const getGeolocation = async (options: GeolocationOptions = {}): Promise<Geoloca
 }
 
 .address-searchbar {
-  --background: white;
+  --background: #d6dce64d;
+  --placeholder-color: black;
+}
+
+.dark .address-searchbar {
   --placeholder-color: #666;
+  --background: white;
 }
 
 .transparent-toolbar {

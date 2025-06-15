@@ -2,7 +2,7 @@
 <template>
   <div v-if="!restaurantData"
     class="relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col h-full">
-    <ion-card :key="`skeleton-${uniqueComponentId}`" class="h-full flex flex-col my-2 mx-2 bg-[#2a2a2a] rounded-xl overflow-hidden">
+    <ion-card :key="`skeleton-${uniqueComponentId}`" class="h-full flex flex-col my-2 mx-2 bg-[#e5e5e5] dark:bg-[#2a2a2a] rounded-xl overflow-hidden">
       <div class="h-[65%] min-h-[65%] max-h-[65%] flex items-center justify-center">
         <div class="w-full h-full bg-gradient-to-r from-[rgba(255,255,255,0.05)] via-[rgba(255,255,255,0.1)] to-[rgba(255,255,255,0.05)] bg-[length:1000px_100%] animate-shimmer-slow"></div>
       </div>
@@ -25,7 +25,7 @@
     @click="handleCardClick">
     <ion-card :key="`card-${uniqueComponentId}-${restaurantData.place_id}`" class="flex flex-col justify-between h-full my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
-      <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%] bg-gray-800">
+      <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%] dark:bg-gray-800">
         <vue-swiper 
           v-if="!props.isWinner && validPhotos.length > 0"
           :key="`swiper-${swiperKey}-${uniqueComponentId}`" 
@@ -37,18 +37,18 @@
           :lazy="false" 
           @swiper="setSwiper" 
           class="h-full w-full">
-          <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs bg-gray-900 opacity-70">
+          <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs dark:bg-gray-900 opacity-70">
             {{ currentSlideIndex !== undefined ? `${currentSlideIndex + 1}/${validPhotos.length}` : `${validPhotos.length}` }}
           </div>
 
           <vue-swiper-slide 
             v-for="(photo, index) in validPhotos" 
             :key="`slide-${photo.id}`"
-            class="h-full w-full flex items-center justify-center bg-gray-800"
+            class="h-full w-full flex items-center justify-center dark:bg-gray-800"
           >
             <div class="relative w-full h-full">
               <!-- Loading state -->
-              <div v-if="loadingStates[photo.id]" class="absolute inset-0 flex items-center justify-center bg-gray-800">
+              <div v-if="loadingStates[photo.id]" class="absolute inset-0 flex items-center justify-center dark:bg-gray-800">
                 <div class="loading-spinner"></div>
               </div>
               
@@ -76,8 +76,8 @@
         </div>
         
         <!-- No photos placeholder -->
-        <div v-else class="h-full w-full flex items-center justify-center bg-gray-800">
-          <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs max-w-4/5 bg-gray-900 opacity-70 text-nowrap overflow-hidden">No photos available</div>
+        <div v-else class="h-full w-full flex items-center justify-center dark:bg-gray-800">
+          <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs max-w-4/5 dark:bg-gray-900 opacity-70 text-nowrap overflow-hidden">No photos available</div>
           <img :src="placeholderImage" :alt="restaurantData.name" class="w-full h-full object-cover object-center" />
         </div>
 
@@ -96,8 +96,8 @@
           </button>
         </div>
       </div>
-      <ion-card-title class="py-2 overflow-hidden font-bold p-2 text-lg break-word white-space">
-        <ion-card-subtitle class="text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
+      <ion-card-title class="py-2 overflow-hidden font-bold p-2 text-lg break-word white-space bg-amber-50 dark:!bg-[var(--ion-card-background)]">
+        <ion-card-subtitle class="text-black dark:text-white text-center">{{ restaurantData.name }}</ion-card-subtitle>
         <ion-card-content class="p-2">
           <div class="flex justify-between w-full">
             <span>
@@ -105,7 +105,7 @@
               <!-- Full yellow stars -->
               <div class="relative inline-block">
                 <!-- Base layer - Gray stars -->
-                <div class="text-gray-200">★★★★★</div>
+                <div class="text-gray-400 dark:text-gray-200">★★★★★</div>
                 <!-- Overlay - Yellow stars with clipping -->
                 <div class="absolute top-0 left-0 text-yellow-300 overflow-hidden whitespace-nowrap"
                    :style="{ width: `${calculateYellowWidth(restaurantData.rating || 0)}%` }">★★★★★</div>
@@ -117,7 +117,7 @@
             <p v-if="restaurantData.price_level" class="text-right">
               <span class="text-yellow-300">{{ '$'.repeat(Math.min(Math.round(restaurantData.price_level || 0), 4))
                 }}</span>
-              <span class="text-gray-200">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
+              <span class="text-gray-400 dark:text-gray-200">{{ '$'.repeat(4 - Math.min(Math.round(restaurantData.price_level || 0), 4)) }}</span>
             </p>
           </div>
           <p class="mt-1" style="font-size: 0.5rem;">{{ restaurantData.vicinity }}</p>
