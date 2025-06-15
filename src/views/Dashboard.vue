@@ -11,29 +11,29 @@
         <!-- Quick Actions -->
         <div class="mb-8">
           <div v-if="!user">
-            <ion-card class="min-height-[120px] border-solid border-1 border-purple-500"
-            @click="user ? navigateTo('/list') : navigateTo('sign-in')">
+            <ion-card class="min-height-[120px] border border-2 border-purple-500"
+            @click="navigateTo('sign-in')">
             <ion-card-content class="flex flex-col items-center justify-center p-4">
-              <ion-icon :icon="user ? listOutline : personOutline" class="text-4xl mb-2 text-purple-500"></ion-icon>
-              <h2 class="text-lg font-semibold text-purple-500">{{ user ? 'Configure your meal list' : 'Sign In for more features' }}</h2>
+              <ion-icon :icon="personOutline" class="text-4xl mb-2 text-purple-500"></ion-icon>
+              <h2 class="text-sm font-semibold text-purple-500">Sign In for more features</h2>
             </ion-card-content>
           </ion-card>
           </div>
 
           <div v-else class="grid grid-cols-2 gap-4">
-            <ion-card class="min-height-[120px] border-solid border-1 border-yellow-500"
+            <ion-card class="min-height-[120px] border-2 border-yellow-500"
               @click="router.push('/buy-or-cook')">
               <ion-card-content class="flex flex-col items-center justify-center p-4">
                 <ion-icon :icon="restaurantOutline" class="text-4xl mb-2 text-yellow-500"></ion-icon>
-                <h2 class="text-lg font-semibold text-yellow-500">Find Food</h2>
+                <h2 class="text-yellow-500">Find Food</h2>
               </ion-card-content>
             </ion-card>
 
-            <ion-card class="min-height-[120px] border-solid border-1 border-blue-500"
-              @click="user ? router.push('/profile') : router.push('/sign-in')">
+            <ion-card class="min-height-[120px] border-2 border-blue-500"
+              @click="router.push('/profile')">
               <ion-card-content class="flex flex-col items-center justify-center p-4">
                 <ion-icon :icon="personOutline" class="text-4xl mb-2 text-blue-500"></ion-icon>
-                <h2 class="text-lg font-semibold text-blue-500">{{user ? 'Profile' : 'Sign In'}}</h2>
+                <h2 class="text-blue-500">Profile</h2>
               </ion-card-content>
             </ion-card>
           </div>
@@ -58,7 +58,7 @@
                     :alt="topMeal.meal.title" class="w-full h-48 object-cover">
                   <ion-card-content>
                     <div class="flex justify-between items-center mb-2">
-                      <h3 class="text-lg text-white font-semibold">{{ topMeal.meal.title }}</h3>
+                      <h3 class="text-gray-900 dark:text-white font-semibold">{{ topMeal.meal.title }}</h3>
                       <div class="text-sm text-gray-400">
                         {{ topMeal.total_tally }} picks
                       </div>
@@ -75,10 +75,10 @@
         
         <div v-if="user">
         <h2 class="text-xl font-semibold mb-4">We'd love your feedback!</h2>
-        <ion-card class="min-height-[120px] border-solid border-1 border-green-500" @click="navigateTo('/feedback')">
+        <ion-card class="min-height-[120px] border-2 border-green-500" @click="navigateTo('/feedback')">
           <ion-card-content class="flex flex-col items-center justify-center p-4">
             <ion-icon :icon="thumbsUpOutline" class="text-4xl mb-2 text-green-500"></ion-icon>
-            <h2 class="text-lg font-semibold text-green-500">Leave a review</h2>
+            <h2 class="text-lg text-green-500">Leave a review</h2>
           </ion-card-content>
         </ion-card>
           </div>
@@ -86,11 +86,11 @@
         
         <div v-if="user" class="mb-8">
           <h2 class="text-xl font-semibold mb-4">Explore Meals</h2>
-          <ion-card class="min-height-[120px] border-solid border-1 border-purple-500"
+          <ion-card class="min-height-[120px] border border-2 border-purple-500"
             @click="navigateTo('/list')">
             <ion-card-content class="flex flex-col items-center justify-center p-4">
               <ion-icon :icon="listOutline" class="text-4xl mb-2 text-purple-500"></ion-icon>
-              <h2 class="text-lg font-semibold text-purple-500">{{ 'Configure your meal list' }}</h2>
+              <h2 class="text-lg text-purple-500">Configure your meal list</h2>
             </ion-card-content>
           </ion-card>
         </div>
