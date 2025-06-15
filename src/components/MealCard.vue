@@ -22,7 +22,7 @@
                 Serves {{ mealData.serves ?? '2+' }}
               </span>
             </div>
-            <div class="mt-1">
+            <div v-if="mealData.dietary?.length !== undefined && mealData.dietary?.length > 0" class="mt-1">
               <span class="text-xs inline-flex items-center bg-green-500 rounded-lg p-1">
                 <ion-icon :icon="leafSharp" class="mr-1 text-white" style="font-size: 12px;"></ion-icon>
                   {{ formatDietary(mealData.dietary) }}

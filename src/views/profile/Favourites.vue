@@ -25,7 +25,7 @@
         <div v-else class="space-y-6">
           <div v-for="(favourite, index) in favourites" :key="favourite.id"
             class="border border-white rounded-lg shadow-md overflow-hidden">
-            <div class="relative" @click="router.push(`/user-meals/${favourite.id}`)">
+            <div class="relative" @click="router.push(`/user-meals/${favourite.meal.id}`)">
               <!-- Medal for top 3 -->
               <div class="absolute top-2 left-2 z-10">
                 <ion-badge :color="getMedalColor(index)" class="text-lg px-4 py-2">
