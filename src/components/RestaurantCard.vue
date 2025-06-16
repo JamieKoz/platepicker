@@ -1,4 +1,4 @@
-<!-- RestaurantCard.vue with improved image loading -->
+<!-- RestaurantCard.vue with fixed winner image sizing -->
 <template>
   <div v-if="!restaurantData"
     class="relative overflow-hidden border-solid border-2 border-gray-500 rounded-xl flex flex-col h-full">
@@ -25,7 +25,7 @@
     @click="handleCardClick">
     <ion-card :key="`card-${uniqueComponentId}-${restaurantData.place_id}`" class="flex flex-col justify-between h-full my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
-      <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%] dark:bg-gray-800">
+      <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%]">
         <vue-swiper 
           v-if="!props.isWinner && validPhotos.length > 0"
           :key="`swiper-${swiperKey}-${uniqueComponentId}`" 
@@ -48,7 +48,7 @@
           >
             <div class="relative w-full h-full">
               <!-- Loading state -->
-              <div v-if="loadingStates[photo.id]" class="absolute inset-0 flex items-center justify-center dark:bg-gray-800">
+              <div v-if="loadingStates[photo.id]" class="absolute inset-0 flex items-center justify-center">
                 <div class="loading-spinner"></div>
               </div>
               
@@ -65,15 +65,45 @@
           </vue-swiper-slide>
         </vue-swiper>
         
-        <!-- Static image for winner -->
-        <div v-else-if="props.isWinner && validPhotos.length > 0" class="h-full w-full flex items-center justify-center bg-gray-800">
-          <img 
-            :src="validPhotos[0].url || placeholderImage" 
-            :alt="`${restaurantData.name} photo`" 
-            class="w-full h-full object-cover object-center"
-            @error="handleImageError($event, validPhotos[0].id)" 
-          />
-        </div>
+        <!-- Winner view with swiper for multiple images -->
+        <vue-swiper 
+          v-else-if="props.isWinner && validPhotos.length > 0"
+          :key="`winner-swiper-${swiperKey}-${uniqueComponentId}`" 
+          :modules="swiperModules" 
+          :pagination="{ clickable: true }" 
+          :slides-per-view="1"
+          :space-between="0" 
+          :preload-images="false" 
+          :lazy="false" 
+          @swiper="setSwiper" 
+          class="h-full w-full">
+          <div class="absolute top-2 right-2 p-1 z-10 text-white rounded-md text-xs dark:bg-gray-900 opacity-70">
+            {{ currentSlideIndex !== undefined ? `${currentSlideIndex + 1}/${validPhotos.length}` : `${validPhotos.length}` }}
+          </div>
+
+          <vue-swiper-slide 
+            v-for="(photo, index) in validPhotos" 
+            :key="`winner-slide-${photo.id}`"
+            class="h-full w-full flex items-center justify-center dark:bg-gray-800"
+          >
+            <div class="relative w-full h-full">
+              <!-- Loading state -->
+              <div v-if="loadingStates[photo.id]" class="absolute inset-0 flex items-center justify-center">
+                <div class="loading-spinner"></div>
+              </div>
+              
+              <!-- Image -->
+              <img 
+                v-show="!loadingStates[photo.id]"
+                :src="photo.url || placeholderImage" 
+                :alt="`${restaurantData.name} photo ${index + 1}`" 
+                class="w-full h-full object-cover object-center"
+                @load="handleImageLoad(photo.id)"
+                @error="handleImageError($event, photo.id)" 
+              />
+            </div>
+          </vue-swiper-slide>
+        </vue-swiper>
         
         <!-- No photos placeholder -->
         <div v-else class="h-full w-full flex items-center justify-center dark:bg-gray-800">
@@ -86,8 +116,8 @@
           <div class="loading-spinner"></div>
         </div>
 
-        <!-- Custom navigation buttons outside Swiper -->
-        <div class="absolute top-0 left-0 right-0 bottom-0 flex justify-between items-center px-1" v-if="!props.isWinner && validPhotos.length > 1">
+        <!-- Custom navigation buttons for both competition and winner views -->
+        <div class="absolute top-0 left-0 right-0 bottom-0 flex justify-between items-center px-1" v-if="validPhotos.length > 1">
           <button class="pointer-events-auto bg-black opacity-30 w-10 h-10 rounded-full transition-colors duration-200 hover:bg-black/50 flex items-center justify-center cursor-pointer z-10 text-white border-none" @click.stop="navigatePrev">
             <ion-icon :icon="chevronBack"></ion-icon>
           </button>
@@ -501,16 +531,10 @@ watch(() => props.restaurantData?.place_id, async (newPlaceId, oldPlaceId) => {
     processedPhotos.value = [];
     loadingStates.value = {};
     
-    // Don't auto-update swiper for winner cards
-    if (!props.isWinner) {
-      // Process initial photos first
-      await processPhotos();
-      // Then load additional photos
-      loadAdditionalPhotos();
-    } else {
-      // For winner, just process existing photos without loading more
-      await processPhotos();
-    }
+    // Process initial photos first
+    await processPhotos();
+    // Then load additional photos
+    loadAdditionalPhotos();
   }
 }, { immediate: true });
 
