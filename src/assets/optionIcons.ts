@@ -202,6 +202,11 @@ bar: `<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:x
 		<polygon id="XMLID_1128_" style="fill:#FAE16E;" points="180.698,124.549 180.698,213.772 269.921,124.549 		"/>
 	</g>
 </g>
-</svg>`
+</svg>`,
 
+
+search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="11" cy="11" r="8"></circle>
+    <path d="m21 21-4.35-4.35"></path>
+  </svg>`
 };
