@@ -7,13 +7,17 @@
     </ion-header>
 
     <ion-content class="ion-padding">
-
       <div class="max-w-md mx-auto">
         <form @submit.prevent="updateProfile" class="space-y-4">
           <!-- Profile Section -->
           <div class="mb-6">
             <Back-Arrow />
+            <!-- Theme Section -->
+          <div class="flex justify-between">
             <h2 class="font-bold text-lg opacity-60 font-medium my-4 ml-4">Profile Details</h2>
+            <ion-icon :icon="isDark ? sunny : moon" @click="toggleTheme"
+              class="items theme-toggle-icon standalone p-4"></ion-icon>
+              </div>
 
             <ion-item>
               <ion-label position="stacked" class="font-bold opacity-40">Username</ion-label>
@@ -67,9 +71,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useUser } from '@clerk/vue';
 import { useRouter } from 'vue-router';
+import type { ToggleCustomEvent } from '@ionic/vue';
 import {
   IonPage,
   IonHeader,
@@ -82,14 +87,26 @@ import {
   IonButton,
   IonButtons,
   IonIcon,
+  IonToggle,
   IonLoading,
   toastController
 } from '@ionic/vue';
 import BackArrow from '@/components/navigation/BackArrow.vue';
+import { useThemeStore } from '@/store/useThemeStore';
 import { capitalizeFirstLetter } from '@/utils/string-utils';
+import { sunny, moon } from 'ionicons/icons'
+
 const { user } = useUser();
 const isLoading = ref(false);
 const passwordError = ref('');
+const themeStore = useThemeStore();
+
+const isDark = computed(() => themeStore.isDark);
+// Listen for the toggle check/uncheck to toggle the dark palette
+const toggleChange = (event: ToggleCustomEvent) => {
+  themeStore.toggleDarkPalette(event.detail.checked);
+  themeStore.setTheme(event.detail.checked);
+};
 
 const formData = ref({
   username: '',
@@ -212,6 +229,12 @@ const updateProfile = async () => {
   }
 };
 
+const toggleTheme = () => {
+  const newTheme = !isDark.value;
+  themeStore.toggleDarkPalette(newTheme);
+  themeStore.setTheme(newTheme);
+};
+
 watch(user, (newUser) => {
   if (newUser) {
     const username = newUser.username || '';
@@ -224,3 +247,18 @@ watch(user, (newUser) => {
   }
 }, { immediate: true });
 </script>
+<style>
+/* (Optional) This is added to prevent the flashing that happens when toggling between palettes */
+ion-item {
+  --transition: none;
+}
+.theme-toggle-icon {
+  font-size: 1.5rem;
+  transition: all transform 0.2s ease;
+}
+
+.theme-toggle-icon.standalone:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+</style>
