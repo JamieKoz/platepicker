@@ -36,6 +36,10 @@ themeStore.initTheme();
 
 app.use(clerkPlugin, {
   publishableKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ,
+  signInUrl: 'https://auth.platepicker.net/sign-in',
+  signUpUrl: 'https://auth.platepicker.net/sign-up',
+  fallBackRedirectUrl: '/dashboard', // Where to go after successful auth
+  // afterSignUpUrl: '/dashboard',
   appearance: {
     baseTheme: themeStore.isDark ? dark : undefined,
   },
