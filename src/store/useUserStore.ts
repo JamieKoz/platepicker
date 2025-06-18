@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import api from '@/api/axios'
 import type { UserResource } from '@clerk/types'
+
 // Define the organization member interface
 interface OrgMember {
   id: string;
@@ -46,6 +47,27 @@ export const useUserStore = defineStore('user', {
       if (clerkUser) {
         // Get previous stored user data if any
         const previousData = localStorage.getItem('clerkUserData');
+        let previousUserId = null;
+        let previousInitialRecipesAssigned = false;
+        
+        // Try to parse previous data to get the user ID
+        if (previousData) {
+          try {
+            const parsedData = JSON.parse(previousData);
+            previousUserId = parsedData.id;
+            previousInitialRecipesAssigned = parsedData.initialRecipesAssigned || false;
+          } catch (e) {
+            console.error('Error parsing previous user data', e);
+          }
+        }
+        
+        // Check if this is actually a new user by comparing IDs
+        if (!previousUserId || previousUserId !== clerkUser.id) {
+          isNewUserRegistration = true;
+          this.isNewUser = true;
+          // Clear any stale localStorage data from previous users
+          this.clearLocalStorage();
+        }
         
         // Set user data from Clerk
         this.userData = {
@@ -56,23 +78,7 @@ export const useUserStore = defineStore('user', {
           email: clerkUser.emailAddresses && clerkUser.emailAddresses.length > 0 ? 
                 clerkUser.emailAddresses[0].emailAddress : undefined,
           imageUrl: clerkUser.imageUrl,
-          initialRecipesAssigned: false
-        }
-        
-        if (!previousData || !previousData.includes(clerkUser.id)) {
-          isNewUserRegistration = true;
-          this.isNewUser = true;
-        } else {
-          // Try to parse previous data
-          try {
-            const parsedData = JSON.parse(previousData);
-            // Preserve the initialRecipesAssigned status if it exists
-            if (parsedData && parsedData.initialRecipesAssigned) {
-              this.userData.initialRecipesAssigned = true;
-            }
-          } catch (e) {
-            console.error('Error parsing previous user data', e);
-          }
+          initialRecipesAssigned: !isNewUserRegistration && previousInitialRecipesAssigned
         }
         
         // Check admin status and organization info
@@ -100,8 +106,8 @@ export const useUserStore = defineStore('user', {
         
         // If this is a new user, assign initial recipes
         if (isNewUserRegistration && !this.userData.initialRecipesAssigned) {
-          this.registerWithBackend();
-          this.assignInitialRecipes();
+          await this.registerWithBackend();
+          await this.assignInitialRecipes();
         }
         
         return {
@@ -110,41 +116,18 @@ export const useUserStore = defineStore('user', {
           organizationData: this.organizationData,
           isNewUser: isNewUserRegistration
         };
-      }
-      
-      // Try to get from localStorage as fallback
-      try {
-        this.userData = null;
-        this.isAdmin = false;
-        this.organizationData = null;
+      } else {
+        // No clerk user provided - clear everything
+        this.clearUser();
+        this.clearLocalStorage();
         
-        const storedData = JSON.parse(localStorage.getItem('clerkUserData') || '{}');
-        if (storedData && storedData.id) {
-          this.userData = storedData as UserData;
-          this.isAdmin = storedData.isAdmin === 1;
-          
-          // Try to load organization data from localStorage if admin
-          if (this.isAdmin && storedData.organizationId) {
-            const storedOrgData = JSON.parse(localStorage.getItem(`orgData_${storedData.organizationId}`) || '{}');
-            if (storedOrgData && storedOrgData.id) {
-              this.organizationData = storedOrgData as OrganizationData;
-              this.organizationMembers = storedOrgData.members || [];
-            }
-          }
-        } 
-      } catch (e) {
-        console.error('Error loading user data from localStorage', e);
-        this.userData = null;
-        this.isAdmin = false;
-        this.organizationData = null;
+        return {
+          userData: null,
+          isAdmin: false,
+          organizationData: null,
+          isNewUser: false
+        };
       }
-      
-      return {
-        userData: this.userData,
-        isAdmin: this.isAdmin,
-        organizationData: this.organizationData,
-        isNewUser: false
-      };
     },
     
     async assignInitialRecipes() {
@@ -181,7 +164,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-
     async registerWithBackend() {
       if (!this.userData) return;
 
@@ -202,11 +184,26 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    clearLocalStorage() {
+      // Clear all user-related localStorage items
+      localStorage.removeItem('clerkUserData');
+      localStorage.removeItem('clerkUserId');
+      
+      // Clear any organization data
+      if (this.organizationData?.id) {
+        localStorage.removeItem(`orgData_${this.organizationData.id}`);
+      }
+      
+      // You might want to clear other user-related keys here
+      // For example, if you store any other user preferences
+    },
+
     clearUser() {
       this.userData = null;
       this.isAdmin = false;
       this.organizationData = null;
       this.organizationMembers = [];
+      this.isNewUser = false;
     }
   },
 
