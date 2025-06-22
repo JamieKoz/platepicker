@@ -75,7 +75,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import '@/types/google-maps';
 import {
   IonPage,
   IonHeader,
@@ -107,8 +106,15 @@ interface Props {
 
 const props = defineProps<Props>();
 
-let map: google.maps.Map | null = null;
-let marker: google.maps.Marker | google.maps.marker.AdvancedMarkerElement | null = null;
+// Simple approach - using any types to avoid TypeScript issues
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
+let map: any = null;
+let marker: any = null;
 
 const closeModal = () => {
   modalController.dismiss();
@@ -116,65 +122,158 @@ const closeModal = () => {
 
 const initializeMap = () => {
   const mapElement = document.getElementById('restaurant-map');
-  if (!mapElement) return;
+  if (!mapElement || !window.google || !window.google.maps) {
+    console.error('Map element or Google Maps API not available');
+    return;
+  }
 
-  // Initialize Google Map
-  map = new google.maps.Map(mapElement, {
-    center: props.location,
-    zoom: 16,
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
-    styles: [
-      {
-        featureType: 'poi',
-        elementType: 'labels',
-        stylers: [{ visibility: 'on' }]
-      },
-      {
-        featureType: 'poi.business',
-        stylers: [{ visibility: 'simplified' }]
-      }
-    ],
-    mapTypeControl: true,
-    streetViewControl: true,
-    fullscreenControl: true,
-    zoomControl: true
-  });
+  console.log('Initializing map...');
 
-  // Add marker for the restaurant
-  marker = new google.maps.Marker({
-    position: props.location,
-    map: map,
-    title: props.restaurant.name,
-    icon: {
-      url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-      scaledSize: new google.maps.Size(32, 32)
-    },
-    animation: google.maps.Animation.DROP
-  });
+  try {
+    // Initialize Google Map with mapId for AdvancedMarkerElement
+    map = new window.google.maps.Map(mapElement, {
+      center: props.location,
+      zoom: 16,
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      mapId: 'DEMO_MAP_ID', // Required for AdvancedMarkerElement
+      styles: [
+        {
+          featureType: 'poi',
+          elementType: 'labels',
+          stylers: [{ visibility: 'on' }]
+        },
+        {
+          featureType: 'poi.business',
+          stylers: [{ visibility: 'simplified' }]
+        }
+      ],
+      mapTypeControl: true,
+      streetViewControl: true,
+      fullscreenControl: true,
+      zoomControl: true
+    });
 
-  // Add info window
-  const infoWindow = new google.maps.InfoWindow({
-    content: `
-      <div style="max-width: 200px;">
-        <h4 style="margin: 0 0 8px 0; font-weight: bold;">${props.restaurant.name}</h4>
-        ${props.address ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #666;">${props.address}</p>` : ''}
-        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
-          <span>${props.restaurant.rating?.toFixed(1) || 'N/A'} ⭐</span>
-          ${props.restaurant.price_level ? `<span>${'$'.repeat(props.restaurant.price_level)}</span>` : ''}
-        </div>
+    console.log('Map created successfully');
+
+    // Force use of AdvancedMarkerElement only - NO MORE DEPRECATED MARKER!
+    if (!window.google.maps.marker || !window.google.maps.marker.AdvancedMarkerElement) {
+      console.error('AdvancedMarkerElement not available. Make sure you have the marker library loaded and a valid mapId.');
+      return;
+    }
+
+    console.log('About to create AdvancedMarkerElement...');
+    
+    // Create custom marker content
+    const markerContent = document.createElement('div');
+    markerContent.innerHTML = `
+      <div style="
+        background: #dc2626;
+        width: 32px;
+        height: 32px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        border: 2px solid white;
+        cursor: pointer;
+      ">
+        <div style="
+          color: white;
+          font-size: 16px;
+          transform: rotate(45deg);
+          line-height: 1;
+        ">🍽️</div>
       </div>
-    `
-  });
+    `;
 
-  // Show info window when marker is clicked
-  marker.addListener('click', () => {
-    infoWindow.open(map, marker);
-  });
+    console.log('Creating AdvancedMarkerElement with position:', props.location);
+    
+    // Use the NEW AdvancedMarkerElement (no deprecation warning!)
+    marker = new window.google.maps.marker.AdvancedMarkerElement({
+      map: map,
+      position: props.location,
+      content: markerContent,
+      title: props.restaurant.name,
+    });
+    
+    console.log('AdvancedMarkerElement created successfully:', marker);
 
-  // Auto-open info window
-  setTimeout(() => {
-    infoWindow.open(map, marker);
-  }, 500);
+    // Create InfoWindow with proper styling
+    const infoWindow = new window.google.maps.InfoWindow({
+      content: `
+        <div style="
+          max-width: 250px;
+          padding: 12px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        ">
+          <h4 style="
+            margin: 0 0 8px 0;
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 16px;
+            line-height: 1.3;
+          ">${props.restaurant.name}</h4>
+          ${props.address ? `
+            <p style="
+              margin: 0 0 10px 0;
+              font-size: 13px;
+              color: #6b7280;
+              line-height: 1.4;
+            ">${props.address}</p>
+          ` : ''}
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+          ">
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              color: #f59e0b;
+              font-weight: 500;
+            ">
+              <span>⭐</span>
+              <span>${props.restaurant.rating?.toFixed(1) || 'N/A'}</span>
+            </div>
+            ${props.restaurant.price_level ? `
+              <div style="
+                color: #10b981;
+                font-weight: 500;
+              ">${'$'.repeat(props.restaurant.price_level)}</div>
+            ` : ''}
+          </div>
+        </div>
+      `
+    });
+
+    // Show info window when marker is clicked
+    marker.addListener('click', () => {
+      console.log('Marker clicked, opening InfoWindow...');
+      infoWindow.open({
+        map: map,
+        anchor: marker,
+      });
+    });
+
+    // Auto-open info window after a delay
+    setTimeout(() => {
+      console.log('Auto-opening InfoWindow...');
+      infoWindow.open({
+        map: map,
+        anchor: marker,
+      });
+    }, 1000);
+
+  } catch (error) {
+    console.error('Error initializing map:', error);
+  }
 };
 
 const getDirections = () => {
@@ -273,7 +372,7 @@ const loadGoogleMaps = () => {
 
     console.log('Loading Google Maps script...');
     
-    // Create script element
+    // Create script element - IMPORTANT: Include marker library for AdvancedMarkerElement
     const script = document.createElement('script');
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     
@@ -282,6 +381,7 @@ const loadGoogleMaps = () => {
       return;
     }
     
+    // This is the key - we need the marker library loaded
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker&v=weekly`;
     script.async = true;
     script.defer = true;
@@ -292,6 +392,7 @@ const loadGoogleMaps = () => {
       setTimeout(() => {
         if (window.google && window.google.maps && window.google.maps.Map) {
           console.log('Google Maps API ready');
+          console.log('Marker library available:', !!window.google.maps.marker);
           resolve(window.google.maps);
         } else {
           console.error('Google Maps API not ready after script load');

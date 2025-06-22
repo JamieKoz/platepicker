@@ -31,10 +31,10 @@
         <!-- Basic Info -->
         <ion-card>
           <ion-card-header>
-            <ion-card-title>{{ restaurant.name }}</ion-card-title>
             <ion-card-subtitle v-if="details.formatted_address">
               {{ details.formatted_address }}
             </ion-card-subtitle>
+            <ion-card-title class="mb-4">{{ restaurant.name }}</ion-card-title>
           </ion-card-header>
 
           <ion-card-content>
@@ -106,46 +106,6 @@
           </ion-card-content>
         </ion-card>
 
-        <!-- Reviews -->
-        <ion-card v-if="details.reviews && details.reviews.length > 0">
-          <ion-card-header>
-            <ion-card-title class="text-lg">Recent Reviews</ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <div class="space-y-4">
-              <div 
-                v-for="(review, index) in details.reviews.slice(0, 3)" 
-                :key="index"
-                class="border-b pb-4 last:border-b-0"
-              >
-                <div class="flex items-start space-x-3">
-                  <img 
-                    v-if="review.profile_photo_url"
-                    :src="review.profile_photo_url" 
-                    :alt="review.author_name"
-                    class="w-10 h-10 rounded-full object-cover"
-                  >
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between mb-1">
-                      <h4 class="font-medium text-sm">{{ review.author_name }}</h4>
-                      <div class="flex items-center space-x-1">
-                        <span class="text-xs">{{ review.rating }}</span>
-                        <div class="flex text-yellow-400 text-xs">
-                          <span v-for="i in 5" :key="i">
-                            {{ i <= review.rating ? '★' : '☆' }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-1">{{ review.text }}</p>
-                    <span class="text-xs text-gray-400">{{ formatDate(review.time) }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ion-card-content>
-        </ion-card>
-
         <!-- Action Buttons -->
         <div class="grid grid-cols-2 gap-4 mt-6">
           <ion-button 
@@ -187,6 +147,40 @@
             Get Directions
           </ion-button>
         </div>
+        
+        <!-- Reviews -->
+        <ion-card v-if="details.reviews && details.reviews.length > 0">
+          <ion-card-header>
+            <ion-card-title class="text-lg">Recent Reviews</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <div class="space-y-4">
+              <div 
+                v-for="(review, index) in details.reviews.slice(0, 10)" 
+                :key="index"
+                class="border-b pb-4 last:border-b-0"
+              >
+                <div class="flex items-start space-x-3">
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between mb-1">
+                      <h4 class="font-medium text-sm">{{ review.author_name }}</h4>
+                      <div class="flex items-center space-x-1">
+                        <span class="text-xs">{{ review.rating }}</span>
+                        <div class="flex text-yellow-400 text-xs">
+                          <span v-for="i in 5" :key="i">
+                            {{ i <= review.rating ? '★' : '☆' }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-white mb-1">{{ review.text }}</p>
+                    <span class="text-xs text-gray-400">{{ formatDate(review.time) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
       </div>
     </ion-content>
   </ion-page>
@@ -332,4 +326,3 @@ onMounted(() => {
   fetchDetails();
 });
 </script>
-
