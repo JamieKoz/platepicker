@@ -26,6 +26,13 @@
     <ion-card :key="`card-${uniqueComponentId}-${restaurantData.place_id}`" class="flex flex-col justify-between h-full my-2 mx-2">
       <ion-ripple-effect></ion-ripple-effect>
       <div class="flex flex-1 overflow-hidden items-center justify-center min-h-[65%] max-h-[65%]">
+
+              <button 
+                class="absolute top-2 left-2 bg-black/50 hover:bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center z-20 transition-colors duration-200"
+                @click.stop="showInfo"
+              >
+                <ion-icon :icon="informationCircleOutline" class="text-lg"></ion-icon>
+              </button>
         <vue-swiper 
           v-if="!props.isWinner && validPhotos.length > 0"
           :key="`swiper-${swiperKey}-${uniqueComponentId}`" 
@@ -159,7 +166,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
-import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon, IonRippleEffect } from '@ionic/vue';
+import { IonCard, IonCardTitle, IonCardSubtitle, IonCardContent, IonIcon, IonRippleEffect, modalController } from '@ionic/vue';
 import type { PhotoReference, Restaurant } from '@/types/restaurant';
 import type { Swiper } from 'swiper';
 import { Swiper as VueSwiper, SwiperSlide as VueSwiperSlide } from 'swiper/vue';
@@ -171,6 +178,8 @@ import 'swiper/css/navigation';
 import placeholderImage from '@/assets/meal-placeholder.png';
 import api from '@/api/axios';
 import { useRestaurantStore } from '@/store/useRestaurantStore';
+import { informationCircleOutline } from 'ionicons/icons';
+import RestaurantDetailsModal from '@/components/RestaurantDetailsModal.vue'; // We'll create this
 
 interface ProcessedPhoto {
   id: string;
@@ -511,6 +520,19 @@ const calculateYellowWidth = (rating: number) => {
   return Math.min(Math.max(Math.floor((rating / 5) * 100), 0), 100);
 };
 
+const showInfo = async () => {
+  if (!props.restaurantData) return;
+  
+  const modal = await modalController.create({
+    component: RestaurantDetailsModal,
+    componentProps: {
+      restaurant: props.restaurantData
+    },
+    cssClass: 'restaurant-details-modal'
+  });
+  
+  await modal.present();
+};
 onMounted(() => {
   if (props.restaurantData) {
     // Process initial photos immediately
