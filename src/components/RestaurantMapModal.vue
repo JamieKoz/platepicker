@@ -106,10 +106,22 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// Simple approach - using any types to avoid TypeScript issues
+// Simple Google Maps type declarations
 declare global {
   interface Window {
-    google: any;
+    google: {
+      maps: {
+        Map: any;
+        InfoWindow: any;
+        Size: any;
+        MapTypeId: {
+          ROADMAP: string;
+        };
+        marker: {
+          AdvancedMarkerElement: any;
+        };
+      };
+    };
   }
 }
 

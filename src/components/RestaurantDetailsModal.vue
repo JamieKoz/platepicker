@@ -222,6 +222,12 @@ interface RestaurantDetails {
   formatted_address?: string;
   formatted_phone_number?: string;
   website?: string;
+  geometry?: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
   opening_hours?: {
     open_now?: boolean;
     weekday_text?: string[];
