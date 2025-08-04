@@ -31,6 +31,21 @@
               @keyup.enter="performSearch"
             class="border-2 border-solid  dark:border-white rounded-lg p-2"
             ></ion-input>
+
+            <div class="mt-6">
+              <div v-if="dietary.length > 0" class="flex flex-wrap gap-2">
+                <ion-chip v-for="diet in dietary" :key="diet.id"
+                  :class="['m-0 h-8', selectedDietary.includes(diet.id) ? 'bg-yellow-500 font-medium' : 'border border-gray-200 bg-transparent dark:text-white dark:bg-gray-800']"
+                  @click="toggleDietary(diet.id)">
+                  {{ diet.name }}
+                </ion-chip>
+              </div>
+
+            <div v-else class="text-sm text-gray-400 p-2">
+              No dietary requirements available
+            </div>
+          </div>
+
           <ion-button expand="block" @click="performSearch" :disabled="!searchKeyword.trim()" class="mt-4">
             Search
           </ion-button>
@@ -40,18 +55,24 @@
   </ion-page>
 </template>
 
+
 <script setup lang="ts">
 import { useRestaurantStore, type DiningOption } from '@/store/useRestaurantStore';
-import { IonPage, IonContent, IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonItem, IonLabel, IonInput } from '@ionic/vue';
+import { useDietaryStore } from '@/store/useDietaryStore';
+import { IonPage, IonContent, IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonChip, IonLabel, IonInput } from '@ionic/vue';
 import { useRouter } from 'vue-router';
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import BackArrow from '@/components/navigation/BackArrow.vue';
 import DiningOptionCard from '@/components/DiningOptions.vue';
+import type { Dietary } from '@/types/dietary';
 
 const router = useRouter();
 const restaurantStore = useRestaurantStore();
+const dietaryStore = useDietaryStore();
+
 const isSearchModalOpen = ref(false);
 const searchKeyword = ref('');
+const selectedDietary = ref<number[]>([]);
 
 const handleBuy = (option: 'Dine In' | 'Takeaway' | 'Delivery' | 'Drive Thru' | 'Bars') => {
   const diningOptionMap: Record<string, DiningOption> = {
@@ -66,21 +87,51 @@ const handleBuy = (option: 'Dine In' | 'Takeaway' | 'Delivery' | 'Drive Thru' | 
   router.push('/restaurant-chooser/dine-in');
 };
 
-const handleCustomSearch = () => {
+const handleCustomSearch = async() => {
+  if (dietaryStore.dietary.length === 0 && !dietaryStore.isLoading) {
+    await dietaryStore.fetchDietary();
+  }
   isSearchModalOpen.value = true;
 };
 
 const closeSearchModal = () => {
   isSearchModalOpen.value = false;
   searchKeyword.value = '';
+  selectedDietary.value = [];
 };
 
 const performSearch = () => {
-  if (searchKeyword.value.trim()) {
+ if (searchKeyword.value.trim()) {
+    const selectedDietaryNames = selectedDietary.value
+      .map(id => dietary.value.find(diet => diet.id === id)?.name)
+      .filter(name => name !== undefined)
+      .map(name => name!.toLowerCase().replace(/\s+/g, '-')) as string[];
+
     restaurantStore.setDiningOption('custom');
     restaurantStore.setSearchKeyword(searchKeyword.value.trim());
+    restaurantStore.setSelectedDietary(selectedDietaryNames);
+
     closeSearchModal();
     router.push('/restaurant-chooser/dine-in');
   }
 };
+
+const dietary = computed<Dietary[]>(() => {
+  return Array.isArray(dietaryStore.dietary) ? dietaryStore.dietary : [];
+});
+
+const toggleDietary = (id: number) => {
+  const index = selectedDietary.value.indexOf(id);
+  if (index === -1) {
+    selectedDietary.value.push(id);
+  } else {
+    selectedDietary.value.splice(index, 1);
+  }
+};
+
+onMounted(async () => {
+  if (dietaryStore.dietary.length === 0) {
+    await dietaryStore.fetchDietary();
+  }
+});
 </script>

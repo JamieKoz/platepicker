@@ -14,6 +14,7 @@ export const useRestaurantStore = defineStore('restaurant', () => {
   const isLoadingAdditionalPhotos = ref(false);
   const currentDiningOption = ref<DiningOption>('delivery');
   const searchKeyword = ref<string | null>(null);
+  const selectedDietary = ref<string[]>([]);
 
   /**
    * Set the current dining option
@@ -27,6 +28,15 @@ export const useRestaurantStore = defineStore('restaurant', () => {
    */
   const setSearchKeyword = (keyword: string | null) => {
     searchKeyword.value = keyword;
+  };
+
+  const setSelectedDietary = (dietary: string[]) => {
+    selectedDietary.value = dietary;
+  };
+
+  const clearSearchFilters = () => {
+    searchKeyword.value = null;
+    selectedDietary.value = [];
   };
 
   /**
@@ -43,6 +53,10 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       // Add keyword if it's a custom search
       if (currentDiningOption.value === 'custom' && searchKeyword.value) {
         params.keyword = searchKeyword.value;
+      }
+
+      if (selectedDietary.value.length > 0) {
+        params.dietary = selectedDietary.value.join(',');
       }
 
       const response = await api.get('/restaurants/nearby', {
@@ -84,6 +98,10 @@ export const useRestaurantStore = defineStore('restaurant', () => {
       // Add keyword if it's a custom search
       if (currentDiningOption.value === 'custom' && searchKeyword.value) {
         params.keyword = searchKeyword.value;
+      }
+
+      if (selectedDietary.value.length > 0) {
+        params.dietary = selectedDietary.value.join(',');
       }
 
       const response = await api.get('/restaurants/reverse-geocode', {
@@ -197,6 +215,9 @@ export const useRestaurantStore = defineStore('restaurant', () => {
     currentDiningOption,
     setDiningOption,
     searchKeyword,
-    setSearchKeyword
+    setSearchKeyword,
+    selectedDietary,
+    setSelectedDietary,
+    clearSearchFilters
   };
 });
