@@ -27,10 +27,17 @@
             </ion-list>
           </div>
 
-          <div class="flex items-center justify-center w-full px-4">
+          <div class="flex items-center justify-between w-full px-4">
+            <div class="mx-6"></div>
+
             <span class="dark:text-white text-lg" v-show="searchedValue !== null">
               {{ !winner ? restaurantStore.restaurantCounter : '' }}
             </span>
+
+            <ion-button v-if="!winner && restaurantStore.restaurantCounter >= 0 && restaurant1 !== null && restaurant2 !== null" @click="handleRefresh" fill="clear" class="m-0">
+                <ion-icon :icon="refresh" class="bg-slate-200 dark:bg-gray-900 rounded-xl dark:text-white" />
+            </ion-button>
+                  
           </div>
         </div>
       </ion-header>
@@ -53,8 +60,17 @@
                     <RestaurantCard v-else :restaurantData="restaurant1" @chooseRestaurant="handleRestaurantChoice"
                       :key="`restaurant-1-${restaurant1?.place_id || 'empty'}`" />
                   </div>
-
                 </ion-col>
+
+                <ion-button 
+                  @click="neitherOption()" 
+                  :disabled="(restaurantStore.restaurantCounter || 0) <= 2"
+                  fill="clear"
+                  size="small"
+                >
+                  <ion-icon :icon="closeOutline" class="bg-slate-200 dark:bg-gray-900 rounded-xl dark:text-white" />
+                </ion-button>
+
                 <ion-col class="flex justify-center items-center h-full p-2">
                   <!-- Show skeleton while loading second restaurant -->
                   <div :class="{ 'slide-out-right': animateRestaurant2, 'slide-in-left': newRestaurantAnimation2 }"
@@ -117,13 +133,14 @@ import {
   IonButtons, toastController, actionSheetController
 } from '@ionic/vue';
 
-import { refresh, clipboardOutline, mailOutline, navigateOutline, locationOutline, shareOutline } from 'ionicons/icons';
+import { refresh, clipboardOutline, mailOutline, navigateOutline, locationOutline, shareOutline, closeOutline } from 'ionicons/icons';
 import RestaurantCard from '@/components/RestaurantCard.vue';
 import RetryConnection from '@/components/RetryConnection.vue';
 import { useUser } from '@clerk/vue';
 import { useRouter } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
 
+import { alertController } from '@ionic/vue'; // Add this to your imports
 const restaurantStore = useRestaurantStore();
 const searchQuery = ref('');
 const searchedValue = ref<string | null>(null);
@@ -142,6 +159,9 @@ const animateRestaurant2 = ref(false);
 const newRestaurantAnimation1 = ref(false);
 const newRestaurantAnimation2 = ref(false);
 const lastRetryAttempt = ref(0);
+const currentStreak = ref(0);
+const streakRestaurant = ref<any>(null);
+
 const RETRY_COOLDOWN_MS = 5000;
 const router = useRouter()
 const { user } = useUser();
@@ -150,6 +170,60 @@ interface GeolocationOptions {
   timeout?: number;
   maximumAge?: number;
 }
+
+const checkStreak = async (chosenRestaurant: any): Promise<boolean> => {
+  // Track streak
+  if (streakRestaurant.value && streakRestaurant.value.place_id === chosenRestaurant.place_id) {
+    currentStreak.value++;
+  } else {
+    currentStreak.value = 1;
+    streakRestaurant.value = chosenRestaurant;
+  }
+
+  // Check if we've hit 5 in a row
+  if (currentStreak.value >= 5) {
+    const alert = await alertController.create({
+      header: 'Found Your Favorite?',
+      message: `You've chosen "${chosenRestaurant.name}" 5 times in a row! Would you like to make this your winner?`,
+      buttons: [
+        {
+          text: 'Keep Going',
+          role: 'cancel',
+        },
+        {
+          text: 'This is the Winner!',
+          cssClass: 'primary',
+          handler: () => {
+            // Set as winner immediately
+            winner.value = chosenRestaurant;
+            restaurant1.value = null;
+            restaurant2.value = null;
+            currentStreak.value = 0;
+            streakRestaurant.value = null;
+            
+            // Fetch photos for the winner
+            if (winner.value && winner.value.place_id) {
+              restaurantStore.getRestaurantPhotos(winner.value.place_id)
+                .then(photos => {
+                  console.log(`Loaded ${photos.length} photos for winner`);
+                })
+                .catch(err => {
+                  console.error("Error loading photos for winner:", err);
+                });
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+    const result = await alert.onDidDismiss();
+    return result.role !== 'cancel';
+  }
+
+  return false;
+};
+
 const handleRestaurantChoice = async (chosenRestaurant: any) => {
   // Validate the chosen restaurant has a place_id
   if (!chosenRestaurant || !chosenRestaurant.place_id) {
@@ -157,18 +231,21 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
     return;
   }
 
-  // Safely check restaurantCounter to avoid n.value is undefined
+  const winnerSet = await checkStreak(chosenRestaurant);
+  if (winnerSet) {
+    return;
+  }
+
   const remainingRestaurants = restaurantStore.restaurantCounter || 0;
 
-  // If we're down to the last comparison, this is the winner
   if (remainingRestaurants === 0) {
-    // Set the winner first
-    winner.value = chosenRestaurant;
 
-    // Then fetch additional photos if needed - this happens after the UI updates
+    winner.value = chosenRestaurant;
+    currentStreak.value = 0;
+    streakRestaurant.value = null;
+
     if (winner.value && winner.value.place_id) {
       try {
-        // Fetch photos for the winner in the background
         restaurantStore.getRestaurantPhotos(winner.value.place_id)
           .then(photos => {
             console.log(`Loaded ${photos.length} photos for winner`);
@@ -181,7 +258,6 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
       }
     }
 
-    // Clear other restaurants
     restaurant1.value = null;
     restaurant2.value = null;
     return;
@@ -195,43 +271,94 @@ const handleRestaurantChoice = async (chosenRestaurant: any) => {
   const newRestaurantAnimation = isRestaurant1Clicked ? newRestaurantAnimation2 : newRestaurantAnimation1;
   const restaurantToReplace = isRestaurant1Clicked ? restaurant2 : restaurant1;
 
-  // Wait for next tick before starting animation
   await nextTick();
   restaurantToAnimate.value = true;
 
-  // Use a promise to handle the animation timing
   const animationPromise = new Promise<void>(resolve => {
-    setTimeout(() => resolve(), 300); // Match animation duration
+    setTimeout(() => resolve(), 300);
   });
 
   try {
-    // Wait for animation to complete
     await animationPromise;
-    // Get next restaurant
     const nextRestaurant = restaurantStore.getNewRestaurant();
     if (!nextRestaurant) {
       console.warn("No next restaurant available");
       return;
     }
 
-    // Reset animation flag for exiting restaurant
     restaurantToAnimate.value = false;
 
-    // Set the new restaurant on next tick to ensure clean DOM update
     await nextTick();
     restaurantToReplace.value = nextRestaurant;
 
-    // Wait for next render before starting slide-in animation
     await nextTick();
     newRestaurantAnimation.value = true;
 
-    // Reset the slide-in animation after it completes
     setTimeout(() => {
       newRestaurantAnimation.value = false;
-    }, 300); // Match animation duration
+    }, 300);
 
   } catch (error) {
     console.error('Error replacing restaurant:', error);
+    loadError.value = true;
+  }
+};
+
+const neitherOption = async () => {
+  const remainingRestaurants = restaurantStore.restaurantCounter || 0;
+  
+  if (remainingRestaurants <= 2) {
+    const toast = await toastController.create({
+      message: 'These are the final two restaurants. Please choose one!',
+      duration: 2000,
+      position: 'bottom',
+      color: 'warning'
+    });
+    await toast.present();
+    return;
+  }
+
+  await nextTick();
+  animateRestaurant1.value = true;
+  animateRestaurant2.value = true;
+
+  const animationPromise = new Promise<void>(resolve => {
+    setTimeout(() => resolve(), 300);
+  });
+
+  try {
+    await animationPromise;
+    const newRestaurant1 = restaurantStore.getNewRestaurant();
+    const newRestaurant2 = restaurantStore.getNewRestaurant();
+
+    if (!newRestaurant1 || !newRestaurant2) {
+      console.warn("Not enough restaurants available for neither option");
+      if (newRestaurant1 && !newRestaurant2) {
+        winner.value = newRestaurant1;
+        restaurant1.value = null;
+        restaurant2.value = null;
+      }
+      return;
+    }
+
+    animateRestaurant1.value = false;
+    animateRestaurant2.value = false;
+
+    await nextTick();
+    restaurant1.value = newRestaurant1;
+    restaurant2.value = newRestaurant2;
+
+    await nextTick();
+    newRestaurantAnimation1.value = true;
+    newRestaurantAnimation2.value = true;
+
+    setTimeout(() => {
+      newRestaurantAnimation1.value = false;
+      newRestaurantAnimation2.value = false;
+    }, 300);
+
+  } catch (error) {
+    console.error('Error replacing restaurants in neither option:', error);
     loadError.value = true;
   }
 };
@@ -595,11 +722,43 @@ const getGeolocationWithTimeout = async (timeoutMs = 5000): Promise<GeolocationP
 
 
 const showRefreshButton = computed(() => {
-  return restaurantStore.restaurantCounter === 0 && winner.value !== null;
+  return winner.value !== null; // Show when there IS a winner
 });
 
-const handleRefresh = async () => {
 
+const handleRefresh = async () => {
+  // Check if we're in competition view (not winner view)
+  if (!winner.value) {
+    // Show confirmation dialog
+    const alert = await alertController.create({
+      header: 'Reset Competition?',
+      message: 'Are you sure you want to start over? This will reset the current restaurant selection process.',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+        },
+        {
+          text: 'Reset',
+          cssClass: 'danger',
+          handler: async () => {
+            // Proceed with refresh
+            await performRefresh();
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  } else {
+    // We're in winner view, no confirmation needed
+    await performRefresh();
+  }
+};
+
+// Extract the actual refresh logic to a separate function
+const performRefresh = async () => {
   try {
     if (!user.value) {
       await router.push('/sign-in');

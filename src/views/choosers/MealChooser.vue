@@ -27,6 +27,16 @@
                 <MealCard :mealData="meal1" @replaceMeal="handleMealSelected" />
               </div>
             </ion-col>
+
+            <ion-button
+                @click="neitherOption()"
+                :disabled="(mealStore.mealCounter || 0) <= 2"
+                fill="clear"
+                size="small"
+              >
+                <ion-icon :icon="closeOutline" class="bg-slate-200 dark:bg-gray-900 rounded-xl dark:text-white" />
+              </ion-button>
+
             <ion-col class="flex justify-center items-center h-full p-2">
               <div :class="{ 'slide-out-right': animateMeal2, 'slide-in-left': newMealAnimation2 }"
                 class="meal-container h-full w-full">
@@ -112,11 +122,12 @@ import RetryConnection from '@/components/RetryConnection.vue';
 import { 
   IonPage, IonCol, IonGrid, IonRow, IonImg, IonHeader, IonToolbar, 
   IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonCard, IonSpinner,
-  IonCardHeader, IonCardTitle, toastController, actionSheetController
+  IonCardHeader, IonCardTitle, toastController, actionSheetController,
+alertController
 } from '@ionic/vue';
 import type { Meal } from '@/types/meal';
-// Add this import for the type
 import { RecipeLine } from '@/types/recipeline';
+import { nextTick } from 'vue';
 
 const route = useRoute();
 const mealStore = useMealStore();
@@ -130,6 +141,8 @@ const animateMeal2 = ref(false);
 const newMealAnimation1 = ref(false);
 const newMealAnimation2 = ref(false);
 const isLoading = ref(true);
+const currentStreak = ref(0);
+const streakMeal = ref<any>(null);
 const { user } = useUser();
 const router = useRouter();
 
@@ -153,6 +166,60 @@ const getFiltersFromRoute = () => {
   }
 
   return filters;
+};
+
+
+const checkStreak = async (chosenMeal: any): Promise<boolean> => {
+  // Track streak
+  if (streakMeal.value && streakMeal.value.place_id === chosenMeal.place_id) {
+    currentStreak.value++;
+  } else {
+    currentStreak.value = 1;
+    streakMeal.value = chosenMeal;
+  }
+
+  // Check if we've hit 5 in a row
+  if (currentStreak.value >= 5) {
+    const alert = await alertController.create({
+      header: 'Found Your Favorite?',
+      message: `You've chosen "${chosenMeal.name}" 5 times in a row! Would you like to make this your winner?`,
+      buttons: [
+        {
+          text: 'Keep Going',
+          role: 'cancel',
+        },
+        {
+          text: 'This is the Winner!',
+          cssClass: 'primary',
+          handler: () => {
+            // Set as winner immediately
+            winner.value = chosenMeal;
+            meal1.value = null;
+            meal2.value = null;
+            currentStreak.value = 0;
+            streakMeal.value = null;
+            
+            // Fetch photos for the winner
+            // if (winner.value && winner.value.place_id) {
+            //   restaurantStore.getRestaurantPhotos(winner.value.place_id)
+            //     .then(photos => {
+            //       console.log(`Loaded ${photos.length} photos for winner`);
+            //     })
+            //     .catch(err => {
+            //       console.error("Error loading photos for winner:", err);
+            //     });
+            // }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+    const result = await alert.onDidDismiss();
+    return result.role !== 'cancel';
+  }
+
+  return false;
 };
 
 // Updated formatRecipeLine function with better error handling
@@ -228,9 +295,16 @@ async function trackMealSelection(meal: Meal) {
 const handleMealSelected = async (clickedMeal: Meal) => {
   await trackMealSelection(clickedMeal);
 
+  const winnerSet = await checkStreak(clickedMeal);
+  if (winnerSet) {
+    return;
+  }
+
   if (mealStore.mealCounter === 0) {
     const rawMeal = toRaw(clickedMeal);
     winner.value = JSON.parse(JSON.stringify(rawMeal));
+    currentStreak.value = 0;
+    streakMeal.value = null;
     meal1.value = null;
     meal2.value = null;
     return;
@@ -330,6 +404,78 @@ const groupedIngredients = computed(() => {
 
   return groups;
 });
+
+const neitherOption = async () => {
+  // Check if we have enough restaurants remaining
+  const remainingMeals = mealStore.mealCounter || 0;
+  
+  // If we're down to the last two restaurants, we can't skip both
+  if (remainingMeals <= 2) {
+    const toast = await toastController.create({
+      message: 'These are the final two restaurants. Please choose one!',
+      duration: 2000,
+      position: 'bottom',
+      color: 'warning'
+    });
+    await toast.present();
+    return;
+  }
+
+  // Start animations for both restaurants sliding out
+  await nextTick();
+  animateMeal1.value = true;
+  animateMeal2.value = true;
+
+  // Wait for slide-out animation to complete
+  const animationPromise = new Promise<void>(resolve => {
+    setTimeout(() => resolve(), 300); // Match animation duration
+  });
+
+  try {
+    await animationPromise;
+
+    // Get two new restaurants
+    const newMeal1 = mealStore.getNewMeal();
+    const newMeal2 = mealStore.getNewMeal();
+
+    if (!newMeal1 || !newMeal2) {
+      console.warn("Not enough restaurants available for neither option");
+      // If we don't have two restaurants, we might only have one left
+      if (newMeal1 && !newMeal2) {
+        // Show the last restaurant as the winner
+        winner.value = newMeal1;
+        meal1.value = null;
+        meal2.value = null;
+      }
+      return;
+    }
+
+    // Reset slide-out animations
+    animateMeal1.value = false;
+    animateMeal2.value = false;
+
+    // Update both restaurants on next tick
+    await nextTick();
+    meal1.value = newMeal1;
+    meal2.value = newMeal2;
+
+    // Start slide-in animations for both new restaurants
+    await nextTick();
+    newMealAnimation1.value = true;
+    newMealAnimation2.value = true;
+
+    // Reset slide-in animations after completion
+    setTimeout(() => {
+      newMealAnimation1.value = false;
+      newMealAnimation2.value = false;
+    }, 300); // Match animation duration
+
+  } catch (error) {
+    console.error('Error replacing restaurants in neither option:', error);
+    loadError.value = true;
+  }
+};
+
 
 const handleShare = async () => {
   if (!winner.value) return;
