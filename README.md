@@ -1,10 +1,43 @@
+## PlatePicker
+
+PlatePicker is a web app that helps you decide your next meal — whether it’s something from your own recipe list or a local restaurant.
+
+Instead of endlessly scrolling menus or cookbooks, PlatePicker shows you two choices at a time. You pick your favorite, and it repeats until a single winner emerges.
+
 <img width="833" height="1801" alt="image" src="https://github.com/user-attachments/assets/584e6628-4952-44bf-abc8-75cb3f82e2a9" />
 
-<img width="833" height="1801" alt="image" src="https://github.com/user-attachments/assets/ca649bd5-e2fa-44f8-b844-f36f5afcab42" />
+### Features
+#### 🍳 Meal Picker
+
+Create a personalized database of meals.
+
+Start with prefilled meals or add your own.
+
+Mark meals active/inactive so they only appear when you want them.
+
+Each match-up compares 15 meals at a time, narrowed down by your selections.
+
+Built-in ingredient management with autocomplete for quick entry.
+
+#### 🍴 Restaurant Picker
+
+Enter a location to fetch the nearest 15 restaurants.
+
+Powered by Google Maps API + Mapbox.
+
+Shows key restaurant info:
+
+Address & location on map
+
+Opening hours
+
+Up to 5 images in a slider
+
+Same two-at-a-time elimination flow as meals.
+
 
 <img width="833" height="1801" alt="image" src="https://github.com/user-attachments/assets/6da44dd2-2414-41bb-940b-4b8791b56ab6" />
 
-<img width="833" height="1801" alt="image" src="https://github.com/user-attachments/assets/63ada360-9c9c-46a7-838a-a7a67324bd20" />
 
 <img width="833" height="1801" alt="image" src="https://github.com/user-attachments/assets/a17171ed-d0ac-4dee-91c1-89076c3a4e20" />
 
